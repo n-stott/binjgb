@@ -697,7 +697,7 @@ SetLogLevelError emulator_set_log_level_from_string(const char* s) {
     return SET_LOG_LEVEL_ERROR_UNKNOWN_LOG_SYSTEM;
   }
 
-  emulator_set_log_level(system, static_cast<LogSystem>(atoi(equals + 1)));
+  emulator_set_log_level(system, static_cast<LogLevel>(atoi(equals + 1)));
   return SET_LOG_LEVEL_ERROR_NONE;
 }
 
