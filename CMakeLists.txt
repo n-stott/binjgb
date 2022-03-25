@@ -16,8 +16,10 @@ if (MSVC)
   endif ()
 else ()
   add_definitions(
-    -Wall -Wextra -Wpointer-arith -pedantic -g
-    -Wno-implicit-fallthrough -std=c++17
+    -std=c++17 -g
+    -Wall -Wextra -Wpointer-arith -pedantic
+    -Wno-implicit-fallthrough
+    -Wno-gnu-anonymous-struct -Wno-nested-anon-types
   )
   if (WERROR)
     add_definitions(-Werror)

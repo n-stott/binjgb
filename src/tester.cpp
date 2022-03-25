@@ -33,10 +33,10 @@ static const char* s_joypad_filename;
 static int s_frames = DEFAULT_FRAMES;
 static const char* s_output_ppm;
 static Bool s_animate;
-static Bool s_print_ops;
-static u32 s_print_ops_limit = MAX_PRINT_OPS_LIMIT;
-static Bool s_profile;
-static u32 s_profile_limit = 30;
+[[maybe_unused]] static Bool s_print_ops;
+[[maybe_unused]] static u32 s_print_ops_limit = MAX_PRINT_OPS_LIMIT;
+[[maybe_unused]] static Bool s_profile;
+[[maybe_unused]] static u32 s_profile_limit = 30;
 static const char* s_rom_filename;
 static u32 s_random_seed = 0xcabba6e5;
 static u32 s_builtin_palette;
@@ -91,7 +91,7 @@ Result write_frame_ppm(Emulator* e, const char* filename) {
   ON_ERROR_CLOSE_FILE_AND_RETURN;
 }
 
-void usage(int argc, char** argv) {
+void usage([[maybe_unused]]int argc, char** argv) {
   static const char usage[] =
       "usage: %s [options] <in.gb>\n"
       "  -h,--help            help\n"
@@ -158,7 +158,6 @@ void parse_options(int argc, char**argv) {
   struct OptionParser* parser = option_parser_new(
       options, sizeof(options) / sizeof(options[0]), argc, argv);
 
-  int errors = 0;
   int done = 0;
   while (!done) {
     OptionResult result = option_parser_next(parser);
@@ -477,8 +476,8 @@ int main(int argc, char** argv) {
   printf("frames = %u total_ticks = %u\n", s_frames, total_ticks);
   Bool finish_at_next_frame = FALSE;
   u32 animation_frame = 0; /* Will likely differ from PPU frame. */
-  u32 next_input_frame = 0;
-  u32 next_input_frame_buttons = 0;
+  [[maybe_unused]] u32 next_input_frame = 0;
+  [[maybe_unused]] u32 next_input_frame_buttons = 0;
   f64 start_time = get_time_sec();
   while (TRUE) {
     EmulatorEvent event = emulator_run_until(e, until_ticks);
