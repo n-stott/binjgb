@@ -1126,7 +1126,7 @@ static Result get_cart_info(FileData* file_data, size_t offset,
   if(!(logo_checksum == 0xe06c8834)) return ERROR;
   cart_info->offset = offset;
   cart_info->data = data;
-  cart_info->rom_size = data[ROM_SIZE_ADDR];
+  cart_info->rom_size = static_cast<RomSize>(data[ROM_SIZE_ADDR]);
   /* HACK(binji): The mooneye-gb multicart test doesn't set any of the header
    * bits, even though multicart games all seem to. Just force the values in
    * reasonable defaults in that case. */
@@ -1139,11 +1139,11 @@ static Result get_cart_info(FileData* file_data, size_t offset,
   } else {
     if(!(is_rom_size_valid(cart_info->rom_size))) return ERROR; // "Invalid ROM size code: %u\n", cart_info->rom_size);
 
-    cart_info->cgb_flag = data[CGB_FLAG_ADDR];
-    cart_info->sgb_flag = data[SGB_FLAG_ADDR];
-    cart_info->cart_type = data[CART_TYPE_ADDR];
+    cart_info->cgb_flag = static_cast<CgbFlag>(data[CGB_FLAG_ADDR]);
+    cart_info->sgb_flag = static_cast<SgbFlag>(data[SGB_FLAG_ADDR]);
+    cart_info->cart_type = static_cast<CartType>(data[CART_TYPE_ADDR]);
     if(!(is_cart_type_valid(cart_info->cart_type))) return ERROR; // "Invalid cart type: %u\n", cart_info->cart_type);
-    cart_info->ext_ram_size = data[EXT_RAM_SIZE_ADDR];
+    cart_info->ext_ram_size = static_cast<ExtRamSize>(data[EXT_RAM_SIZE_ADDR]);
     if(!(is_ext_ram_size_valid(cart_info->ext_ram_size))) return ERROR; // "Invalid ext ram size: %u\n", cart_info->ext_ram_size);
   }
 
@@ -1812,7 +1812,7 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
     case IO_IE_ADDR:
       return INTR.ie;
     default:
-      HOOK(read_io_ignored_as, addr, get_io_reg_string(addr));
+      HOOK(read_io_ignored_as, addr, get_io_reg_string(static_cast<IOReg>(addr)));
       return INVALID_READ_BYTE;
   }
 }
@@ -1943,7 +1943,7 @@ static u8 read_u8_pair(Emulator* e, MemoryTypeAddressPair pair, Bool raw) {
       return INVALID_READ_BYTE;
     case MEMORY_MAP_IO: {
       u8 value = read_io(e, pair.addr);
-      HOOK(read_io_asb, pair.addr, get_io_reg_string(pair.addr), value);
+      HOOK(read_io_asb, pair.addr, get_io_reg_string(static_cast<IOReg>(pair.addr)), value);
       return value;
     }
     case MEMORY_MAP_APU:
@@ -1997,7 +1997,7 @@ static void write_oam_no_mode_check(Emulator* e, MaskedAddress addr, u8 value) {
     case 2: obj->tile = value; break;
     case 3:
       obj->byte3 = value;
-      obj->priority = UNPACK(value, OBJ_PRIORITY);
+      obj->priority = static_cast<ObjPriority>(UNPACK(value, OBJ_PRIORITY));
       obj->yflip = UNPACK(value, OBJ_YFLIP);
       obj->xflip = UNPACK(value, OBJ_XFLIP);
       obj->palette = UNPACK(value, OBJ_PALETTE);
@@ -2498,7 +2498,7 @@ static void do_sgb(Emulator* e) {
         case 0x13: // CHR_TRN
           memcpy(SGB.chr_ram + ((SGB.data[1] & 1) << 12), xfer_src, 4096);
           break;
-        case 0x14: // PCT_TRN
+        case 0x14: { // PCT_TRN
           for (int pal = 0; pal < 4; ++pal) {
             SGB.border_pal[pal][0] = 0;
             for (int col = 1; col < 16; ++col) {
@@ -2544,6 +2544,7 @@ static void do_sgb(Emulator* e) {
           // Update the mask in case we overwrote the center area.
           update_sgb_mask(e);
           break;
+        }
         case 0x15: // ATTR_TRN
           memcpy(SGB.attr_ram, xfer_src, sizeof(SGB.attr_ram));
           break;
@@ -2556,7 +2557,8 @@ static void do_sgb(Emulator* e) {
             update_sgb_mask(e);
           }
           break;
-        case 0x1e: case 0x1f:
+        case 0x1e:
+        case 0x1f:
           return;  // Invalid
       }
     }
@@ -2564,10 +2566,10 @@ static void do_sgb(Emulator* e) {
 }
 
 static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
-  HOOK(write_io_asb, addr, get_io_reg_string(addr), value);
+  HOOK(write_io_asb, addr, get_io_reg_string(static_cast<IOReg>(addr)), value);
   switch (addr) {
     case IO_JOYP_ADDR:
-      JOYP.joypad_select = UNPACK(value, JOYP_JOYPAD_SELECT);
+      JOYP.joypad_select = static_cast<JoypadSelect>(UNPACK(value, JOYP_JOYPAD_SELECT));
       do_sgb(e);
       check_joyp_intr(e);
       break;
@@ -2578,7 +2580,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
     case IO_SC_ADDR:
       serial_synchronize(e);
       SERIAL.transferring = UNPACK(value, SC_TRANSFER_START);
-      SERIAL.clock = UNPACK(value, SC_SHIFT_CLOCK);
+      SERIAL.clock = static_cast<SerialClock>(UNPACK(value, SC_SHIFT_CLOCK));
       if (SERIAL.transferring) {
         SERIAL.tick_count = 0;
         SERIAL.transferred_bits = 0;
@@ -2619,7 +2621,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       timer_synchronize(e);
       Bool old_timer_on = TIMER.on;
       u16 old_tima_mask = s_tima_mask[TIMER.clock_select];
-      TIMER.clock_select = UNPACK(value, TAC_CLOCK_SELECT);
+      TIMER.clock_select = static_cast<TimerClock>(UNPACK(value, TAC_CLOCK_SELECT));
       TIMER.on = UNPACK(value, TAC_TIMER_ON);
       /* tima is incremented when a specific bit of div_counter transitions
        * from 1 to 0. This can happen as a result of writing to DIV, or in this
@@ -2649,11 +2651,11 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       ppu_mode3_synchronize(e);
       Bool was_enabled = LCDC.display;
       LCDC.display = UNPACK(value, LCDC_DISPLAY);
-      LCDC.window_tile_map_select = UNPACK(value, LCDC_WINDOW_TILE_MAP_SELECT);
+      LCDC.window_tile_map_select = static_cast<TileMapSelect>(UNPACK(value, LCDC_WINDOW_TILE_MAP_SELECT));
       LCDC.window_display = UNPACK(value, LCDC_WINDOW_DISPLAY);
-      LCDC.bg_tile_data_select = UNPACK(value, LCDC_BG_TILE_DATA_SELECT);
-      LCDC.bg_tile_map_select = UNPACK(value, LCDC_BG_TILE_MAP_SELECT);
-      LCDC.obj_size = UNPACK(value, LCDC_OBJ_SIZE);
+      LCDC.bg_tile_data_select = static_cast<TileDataSelect>(UNPACK(value, LCDC_BG_TILE_DATA_SELECT));
+      LCDC.bg_tile_map_select = static_cast<TileMapSelect>(UNPACK(value, LCDC_BG_TILE_MAP_SELECT));
+      LCDC.obj_size = static_cast<ObjSize>(UNPACK(value, LCDC_OBJ_SIZE));
       LCDC.obj_display = UNPACK(value, LCDC_OBJ_DISPLAY);
       LCDC.bg_display = UNPACK(value, LCDC_BG_DISPLAY);
       if (was_enabled ^ LCDC.display) {
@@ -2743,13 +2745,13 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
     case IO_BGP_ADDR:
     case IO_OBP0_ADDR:
     case IO_OBP1_ADDR: {
-      PaletteType type = addr - IO_BGP_ADDR;
+      PaletteType type = static_cast<PaletteType>(addr - IO_BGP_ADDR);
       Palette* pal = &PPU.pal[type];
       ppu_mode3_synchronize(e);
-      pal->color[3] = UNPACK(value, PALETTE_COLOR3);
-      pal->color[2] = UNPACK(value, PALETTE_COLOR2);
-      pal->color[1] = UNPACK(value, PALETTE_COLOR1);
-      pal->color[0] = UNPACK(value, PALETTE_COLOR0);
+      pal->color[3] = static_cast<Color>(UNPACK(value, PALETTE_COLOR3));
+      pal->color[2] = static_cast<Color>(UNPACK(value, PALETTE_COLOR2));
+      pal->color[1] = static_cast<Color>(UNPACK(value, PALETTE_COLOR1));
+      pal->color[0] = static_cast<Color>(UNPACK(value, PALETTE_COLOR0));
       update_bw_palette_rgba(e, type);
       break;
     }
@@ -2795,7 +2797,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_HDMA5_ADDR:
       if (IS_CGB) {
-        HdmaTransferMode new_mode = UNPACK(value, HDMA5_TRANSFER_MODE);
+        HdmaTransferMode new_mode = static_cast<HdmaTransferMode>(UNPACK(value, HDMA5_TRANSFER_MODE));
         u8 new_blocks = UNPACK(value, HDMA5_BLOCKS);
         if (HDMA.mode == HDMA_TRANSFER_MODE_HDMA &&
             (HDMA.blocks & 0x80) == 0) { /* HDMA Active */
@@ -2818,7 +2820,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
     case IO_RP_ADDR:
       if (IS_CGB) {
         INFRARED.write = UNPACK(value, RP_WRITE_DATA);
-        INFRARED.enabled = UNPACK(value, RP_DATA_READ_ENABLE);
+        INFRARED.enabled = static_cast<DataReadEnable>(UNPACK(value, RP_DATA_READ_ENABLE));
       }
       break;
     case IO_BCPS_ADDR:
@@ -2864,7 +2866,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
 static void write_nrx1_reg(Emulator* e, Channel* channel, Address addr,
                            u8 value) {
   if (APU.enabled) {
-    channel->square_wave.duty = UNPACK(value, NRX1_WAVE_DUTY);
+    channel->square_wave.duty = static_cast<WaveDuty>(UNPACK(value, NRX1_WAVE_DUTY));
   }
   channel->length = NRX1_MAX_LENGTH - UNPACK(value, NRX1_LENGTH);
   HOOK(write_nrx1_abi, addr, value, channel->length);
