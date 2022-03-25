@@ -8,6 +8,7 @@
 
 #include <inttypes.h>
 #include <stdarg.h>
+#include <cassert>
 
 #define MAX_TRACE_STACK 16
 #define MAX_BREAKPOINTS 256
