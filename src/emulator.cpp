@@ -1123,7 +1123,7 @@ static Result get_cart_info(FileData* file_data, size_t offset,
   for (i = LOGO_START_ADDR; i <= LOGO_END_ADDR; ++i) {
     logo_checksum = (logo_checksum << 1) ^ data[i];
   }
-  CHECK(logo_checksum == 0xe06c8834);
+  if(!(logo_checksum == 0xe06c8834)) return ERROR;
   cart_info->offset = offset;
   cart_info->data = data;
   cart_info->rom_size = data[ROM_SIZE_ADDR];
@@ -1137,27 +1137,23 @@ static Result get_cart_info(FileData* file_data, size_t offset,
     cart_info->cart_type = CART_TYPE_MBC1;
     cart_info->ext_ram_size = EXT_RAM_SIZE_NONE;
   } else {
-    CHECK_MSG(is_rom_size_valid(cart_info->rom_size),
-              "Invalid ROM size code: %u\n", cart_info->rom_size);
+    if(!(is_rom_size_valid(cart_info->rom_size))) return ERROR; // "Invalid ROM size code: %u\n", cart_info->rom_size);
 
     cart_info->cgb_flag = data[CGB_FLAG_ADDR];
     cart_info->sgb_flag = data[SGB_FLAG_ADDR];
     cart_info->cart_type = data[CART_TYPE_ADDR];
-    CHECK_MSG(is_cart_type_valid(cart_info->cart_type),
-              "Invalid cart type: %u\n", cart_info->cart_type);
+    if(!(is_cart_type_valid(cart_info->cart_type))) return ERROR; // "Invalid cart type: %u\n", cart_info->cart_type);
     cart_info->ext_ram_size = data[EXT_RAM_SIZE_ADDR];
-    CHECK_MSG(is_ext_ram_size_valid(cart_info->ext_ram_size),
-              "Invalid ext ram size: %u\n", cart_info->ext_ram_size);
+    if(!(is_ext_ram_size_valid(cart_info->ext_ram_size))) return ERROR; // "Invalid ext ram size: %u\n", cart_info->ext_ram_size);
   }
 
   u32 rom_byte_size = s_rom_bank_count[cart_info->rom_size] << ROM_BANK_SHIFT;
   cart_info->size = rom_byte_size;
-  CHECK_MSG(file_data->size >= offset + rom_byte_size,
-            "File size too small (required %ld, got %ld)\n",
-            (long)(offset + rom_byte_size), (long)file_data->size);
+  if(!(file_data->size >= offset + rom_byte_size)) return ERROR;
+            // "File size too small (required %ld, got %ld)\n",
+            // (long)(offset + rom_byte_size), (long)file_data->size);
 
   return OK;
-  ON_ERROR_RETURN;
 }
 
 static Result get_cart_infos(Emulator* e) {
