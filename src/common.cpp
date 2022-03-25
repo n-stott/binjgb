@@ -12,8 +12,8 @@
 
 const char* replace_extension(const char* filename, const char* extension) {
   size_t length = strlen(filename) + strlen(extension) + 1; /* +1 for \0. */
-  char* result = xmalloc(length);
-  char* last_dot = strrchr(filename, '.');
+  char* result = reinterpret_cast<char*>(xmalloc(length));
+  const char* last_dot = strrchr(filename, '.');
   if (last_dot == NULL) {
     snprintf(result, length, "%s%s", filename, extension);
   } else {
@@ -37,7 +37,7 @@ Result file_read(const char* filename, FileData* out_file_data) {
   if(!(f)) return ERROR; // unable to open file filename
   long size;
   CHECK(SUCCESS(get_file_size(f, &size)));
-  u8* data = xmalloc(size);
+  u8* data = reinterpret_cast<u8*>(xmalloc(size));
   if(!(data)) return ERROR; // allocation failed
   if (!(fread(data, size, 1, f) == 1)) return ERROR; // fread failed
   fclose(f);
