@@ -200,7 +200,7 @@ DEFINE_NAMED_ENUM(PPU_MODE, PPUMode, ppu_mode, FOREACH_PPU_MODE, DEFINE_ENUM)
 DEFINE_NAMED_ENUM(PPU_STATE, PPUState, ppu_state, FOREACH_PPU_STATE,
                   DEFINE_ENUM)
 
-typedef enum {
+enum MbcType {
   MBC_TYPE_NO_MBC,
   MBC_TYPE_MBC1,
   MBC_TYPE_MBC2,
@@ -210,31 +210,31 @@ typedef enum {
   MBC_TYPE_TAMA5,
   MBC_TYPE_HUC3,
   MBC_TYPE_HUC1,
-} MbcType;
+};
 
-typedef enum {
+enum ExtRamType {
   EXT_RAM_TYPE_NO_RAM,
   EXT_RAM_TYPE_WITH_RAM,
-} ExtRamType;
+};
 
-typedef enum {
+enum BatteryType {
   BATTERY_TYPE_NO_BATTERY,
   BATTERY_TYPE_WITH_BATTERY,
-} BatteryType;
+};
 
-typedef enum {
+enum TimerType {
   TIMER_TYPE_NO_TIMER,
   TIMER_TYPE_WITH_TIMER,
-} TimerType;
+};
 
-typedef struct {
+struct CartTypeInfo {
   MbcType mbc_type;
   ExtRamType ext_ram_type;
   BatteryType battery_type;
   TimerType timer_type;
-} CartTypeInfo;
+};
 
-typedef enum {
+enum MemoryMapType {
   MEMORY_MAP_ROM0,
   MEMORY_MAP_ROM1,
   MEMORY_MAP_VRAM,
@@ -247,14 +247,14 @@ typedef enum {
   MEMORY_MAP_APU,
   MEMORY_MAP_WAVE_RAM,
   MEMORY_MAP_HIGH_RAM,
-} MemoryMapType;
+};
 
-typedef enum {
+enum BankMode {
   BANK_MODE_ROM = 0,
   BANK_MODE_RAM = 1,
-} BankMode;
+};
 
-typedef enum {
+enum JoypadSelect {
   JOYPAD_SELECT_BOTH = 0,
   JOYPAD_SELECT_BUTTONS = 1,
   JOYPAD_SELECT_DPAD = 2,
@@ -264,23 +264,23 @@ typedef enum {
   JOYPAD_SGB_P15_LOW = 1,
   JOYPAD_SGB_P14_LOW = 2,
   JOYPAD_SGB_BOTH_HIGH = 3,
-} JoypadSelect;
+};
 
-typedef enum {
+enum TimaState {
   TIMA_STATE_NORMAL,
   TIMA_STATE_OVERFLOW,
   TIMA_STATE_RESET,
-} TimaState;
+};
 
-typedef enum {
+enum SerialClock {
   SERIAL_CLOCK_EXTERNAL = 0,
   SERIAL_CLOCK_INTERNAL = 1,
-} SerialClock;
+};
 
-typedef enum {
+enum DataReadEnable {
   DATA_READ_DISABLE = 0,
   DATA_READ_ENABLE = 3,
-} DataReadEnable;
+};
 
 enum {
   SOUND1,
@@ -291,75 +291,75 @@ enum {
   SOUND_COUNT,
 };
 
-typedef enum {
+enum SweepDirection {
   SWEEP_DIRECTION_ADDITION = 0,
   SWEEP_DIRECTION_SUBTRACTION = 1,
-} SweepDirection;
+};
 
-typedef enum {
+enum EnvelopeDirection {
   ENVELOPE_ATTENUATE = 0,
   ENVELOPE_AMPLIFY = 1,
-} EnvelopeDirection;
+};
 
-typedef enum {
+enum WaveDuty {
   WAVE_DUTY_12_5 = 0,
   WAVE_DUTY_25 = 1,
   WAVE_DUTY_50 = 2,
   WAVE_DUTY_75 = 3,
   WAVE_DUTY_COUNT,
-} WaveDuty;
+};
 
-typedef enum {
+enum WaveVolume {
   WAVE_VOLUME_MUTE = 0,
   WAVE_VOLUME_100 = 1,
   WAVE_VOLUME_50 = 2,
   WAVE_VOLUME_25 = 3,
   WAVE_VOLUME_COUNT,
-} WaveVolume;
+};
 
-typedef enum {
+enum LfsrWidth {
   LFSR_WIDTH_15 = 0, /* 15-bit LFSR */
   LFSR_WIDTH_7 = 1,  /* 7-bit LFSR */
-} LfsrWidth;
+};
 
-typedef enum {
+enum DmaState {
   DMA_INACTIVE = 0,
   DMA_TRIGGERED = 1,
   DMA_ACTIVE = 2,
-} DmaState;
+};
 
-typedef enum {
+enum HdmaTransferMode {
   HDMA_TRANSFER_MODE_GDMA = 0,
   HDMA_TRANSFER_MODE_HDMA = 1,
-} HdmaTransferMode;
+};
 
-typedef enum {
+enum Speed {
   SPEED_NORMAL = 0,
   SPEED_DOUBLE = 1,
-} Speed;
+};
 
-typedef enum {
+enum SgbMask {
   SGB_MASK_CANCEL = 0,
   SGB_MASK_FREEZE = 1,
   SGB_MASK_BLACK = 2,
   SGB_MASK_COLOR0 = 3,
-} SgbMask;
+};
 
-typedef enum {
+enum SgbState {
   SGB_STATE_IDLE,
   SGB_STATE_WAIT_BIT,
   SGB_STATE_READ_BIT,
   SGB_STATE_STOP_BIT,
   SGB_STATE_STOP_WAIT,
-} SgbState;
+};
 
-typedef struct {
+struct ExtRam {
   u8 data[EXT_RAM_MAX_SIZE];
   size_t size;
   BatteryType battery_type;
-} ExtRam;
+};
 
-typedef struct {
+struct CartInfo {
   size_t offset; /* Offset of cart in FileData. */
   u8* data;      /* == FileData.data + offset */
   size_t size;
@@ -368,7 +368,7 @@ typedef struct {
   CartType cart_type;
   RomSize rom_size;
   ExtRamSize ext_ram_size;
-} CartInfo;
+};
 
 typedef struct {
   u8 byte_2000_3fff;
@@ -376,7 +376,7 @@ typedef struct {
   BankMode bank_mode;
 } Mbc1, Huc1, Mmm01;
 
-typedef struct {
+struct Mbc3 {
   u8 sec, min, hour;
   u16 day;
   bool day_carry;
@@ -384,20 +384,20 @@ typedef struct {
   u8 rtc_reg;
   bool rtc_halt;
   bool latched;
-} Mbc3;
+};
 
-typedef struct {
+struct Mbc5 {
   u8 byte_2000_2fff;
   u8 byte_3000_3fff;
-} Mbc5;
+};
 
-typedef struct {
+struct MemoryMap {
   u8 (*read_ext_ram)(Emulator*, MaskedAddress);
   void (*write_rom)(Emulator*, MaskedAddress, u8);
   void (*write_ext_ram)(Emulator*, MaskedAddress, u8);
-} MemoryMap;
+};
 
-typedef struct {
+struct MemoryMapState {
   u32 rom_base[2];
   u32 ext_ram_base;
   bool ext_ram_enabled;
@@ -408,21 +408,21 @@ typedef struct {
     Huc1 huc1;
     Mbc5 mbc5;
   };
-} MemoryMapState;
+};
 
-typedef struct {
+struct MemoryTypeAddressPair {
   MemoryMapType type;
   MaskedAddress addr;
-} MemoryTypeAddressPair;
+};
 
-typedef struct {
+struct Joypad {
   JoypadButtons buttons;
   JoypadSelect joypad_select;
   u8 last_p10_p13;
   Ticks last_callback; /* The last time joypad callback was called. */
-} Joypad;
+};
 
-typedef struct {
+struct SGB {
   u8 chr_ram[8192];
   u8 pal_ram[4096];
   u8 attr_ram[4050];
@@ -438,26 +438,26 @@ typedef struct {
   u8 current_player;
   u8 player_mask;
   bool player_incremented;
-} SGB;
+};
 
-typedef enum {
+enum CpuState {
   CPU_STATE_NORMAL = 0,
   CPU_STATE_STOP = 1,
   CPU_STATE_ENABLE_IME = 2,
   CPU_STATE_HALT_BUG = 3,
   CPU_STATE_HALT = 4,
   CPU_STATE_HALT_DI = 5,
-} CpuState;
+};
 
-typedef struct {
+struct Interrupt {
   bool ime;      /* Interrupt Master Enable */
   u8 ie;         /* Interrupt Enable */
   u8 if_;        /* Interrupt Request, delayed by 1 tick for some IRQs. */
   u8 new_if;     /* The new value of IF, updated in 1 tick. */
   CpuState state;
-} Interrupt;
+};
 
-typedef struct {
+struct Timer {
   Ticks sync_ticks;        /* Current synchronization ticks. */
   Ticks next_intr_ticks;   /* Tick when the next timer intr will occur. */
   TimerClock clock_select; /* Select the rate of TIMA */
@@ -466,9 +466,9 @@ typedef struct {
   u8 tima;         /* Incremented at rate defined by clock_select */
   u8 tma;          /* When TIMA overflows, it is set to this value */
   bool on;
-} Timer;
+};
 
-typedef struct {
+struct Serial {
   Ticks sync_ticks;       /* Current synchronization ticks. */
   Ticks tick_count;       /* 0..SERIAL_TICKS */
   Ticks next_intr_ticks;  /* Tick when the next intr will occur. */
@@ -476,15 +476,15 @@ typedef struct {
   bool transferring;
   u8 sb; /* Serial transfer data. */
   u8 transferred_bits;
-} Serial;
+};
 
-typedef struct {
+struct Infrared {
   bool write;
   bool read;
   DataReadEnable enabled;
-} Infrared;
+};
 
-typedef struct {
+struct Sweep {
   u8 period;
   SweepDirection direction;
   u8 shift;
@@ -492,28 +492,28 @@ typedef struct {
   u8 timer; /* 0..period */
   bool enabled;
   bool calculated_subtract;
-} Sweep;
+};
 
-typedef struct {
+struct Envelope {
   u8 initial_volume;
   EnvelopeDirection direction;
   u8 period;
   u8 volume;      /* 0..15 */
   u32 timer;      /* 0..period */
   bool automatic; /* true when MAX/MIN has not yet been reached. */
-} Envelope;
+};
 
 /* Channel 1 and 2 */
-typedef struct {
+struct SquareWave {
   WaveDuty duty;
   u8 sample;   /* Last sample generated, 0..1 */
   u32 period;  /* Calculated from the frequency. */
   u8 position; /* Position in the duty tick, 0..7 */
   u32 ticks;   /* 0..period */
-} SquareWave;
+};
 
 /* Channel 3 */
-typedef struct {
+struct Wave {
   WaveVolume volume;
   u8 volume_shift;
   u8 ram[WAVE_RAM_SIZE];
@@ -524,10 +524,10 @@ typedef struct {
   u32 ticks;         /* 0..period */
   bool playing;      /* true if the channel has been triggered but the DAC not
                              disabled. */
-} Wave;
+};
 
 /* Channel 4 */
-typedef struct {
+struct Noise {
   u8 clock_shift;
   LfsrWidth lfsr_width;
   u8 divisor; /* 0..NOISE_DIVISOR_COUNT */
@@ -535,9 +535,9 @@ typedef struct {
   u16 lfsr;   /* Linear feedback shift register, 15- or 7-bit. */
   u32 period; /* Calculated from the clock_shift and divisor. */
   u32 ticks;  /* 0..period */
-} Noise;
+};
 
-typedef struct {
+struct Channel {
   SquareWave square_wave; /* Channel 1, 2 */
   Envelope envelope;      /* Channel 1, 2, 4 */
   u16 frequency;          /* Channel 1, 2, 3 */
@@ -546,9 +546,9 @@ typedef struct {
   bool dac_enabled;
   bool status;     /* Status bit for NR52 */
   u32 accumulator; /* Accumulates samples for resampling. */
-} Channel;
+};
 
-typedef struct {
+struct Apu {
   u8 so_volume[SOUND_OUTPUT_COUNT];
   bool so_output[SOUND_COUNT][SOUND_OUTPUT_COUNT];
   bool enabled;
@@ -559,9 +559,9 @@ typedef struct {
   u8 frame;         /* 0..FRAME_SEQUENCER_COUNT */
   Ticks sync_ticks; /* Raw tick counter */
   bool initialized;
-} Apu;
+};
 
-typedef struct {
+struct Lcdc {
   bool display;
   TileMapSelect window_tile_map_select;
   bool window_display;
@@ -570,14 +570,14 @@ typedef struct {
   ObjSize obj_size;
   bool obj_display;
   bool bg_display;
-} Lcdc;
+};
 
-typedef struct {
+struct StatInterrupt {
   bool irq;
   bool trigger;
-} StatInterrupt;
+};
 
-typedef struct {
+struct Stat {
   StatInterrupt y_compare;
   StatInterrupt mode2;
   StatInterrupt vblank;
@@ -587,16 +587,16 @@ typedef struct {
   bool if_;             /* Internal interrupt flag for STAT interrupts. */
   PPUMode trigger_mode; /* This mode is used for checking STAT IRQ triggers. */
   bool new_ly_eq_lyc;   /* The new value for ly_eq_lyc, updated in 1 tick. */
-} Stat;
+};
 
-typedef struct {
+struct ColorPalettes {
   PaletteRGBA palettes[8];
   u8 data[64];
   u8 index;
   bool auto_increment;
-} ColorPalettes;
+};
 
-typedef struct {
+struct Ppu {
   Ticks sync_ticks;                 /* Current synchronization tick. */
   Ticks next_intr_ticks;            /* Tick when the next intr will occur. */
   Lcdc lcdc;                        /* LCD control */
@@ -623,42 +623,42 @@ typedef struct {
   u8 line_obj_count;     /* Number of sprites to draw on this line. */
   bool rendering_window; /* true when this line is rendering the window. */
   u8 display_delay_frames; /* Wait this many frames before displaying. */
-} Ppu;
+};
 
-typedef struct {
+struct Dma {
   Ticks sync_ticks;       /* Current synchronization tick. */
   Ticks tick_count;       /* 0..DMA_TICKS */
   DmaState state;         /* Used to implement DMA delay. */
   Address source;         /* Source address; dest is calculated from this. */
-} Dma;
+};
 
-typedef struct {
+struct CpuSpeed {
   Speed speed;
   bool switching;
-} CpuSpeed;
+};
 
-typedef struct {
+struct Vram {
   u8 data[VIDEO_RAM_SIZE];
   Address offset;
   u8 bank;
-} Vram;
+};
 
-typedef struct {
+struct Wram {
   u8 data[WORK_RAM_SIZE];
   Address offset;
   u8 bank;
-} Wram;
+};
 
-typedef struct {
+struct Hdma {
   DmaState state;
   Address source;
   Address dest;
   HdmaTransferMode mode;
   u8 blocks;
   u8 block_bytes;
-} Hdma;
+};
 
-typedef struct {
+struct EmulatorState {
   u32 header; /* Set to SAVE_STATE_HEADER; makes it easier to save state. */
   u32 random_seed;
   u8 cart_info_index;
@@ -687,7 +687,7 @@ typedef struct {
   bool is_sgb;
   bool ext_ram_updated;
   EmulatorEvent event;
-} EmulatorState;
+};
 
 const size_t s_emulator_state_size = sizeof(EmulatorState);
 
