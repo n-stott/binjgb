@@ -48,9 +48,9 @@ Result write_frame_ppm(Emulator* e, const char* filename) {
   FILE* f = fopen(filename, "wb");
   int width = s_use_sgb_border ? SGB_SCREEN_WIDTH : SCREEN_WIDTH;
   int height = s_use_sgb_border ? SGB_SCREEN_HEIGHT : SCREEN_HEIGHT;
-  CHECK_MSG(f, "unable to open file \"%s\".\n", filename);
-  CHECK_MSG(fprintf(f, "P3\n%u %u\n255\n", width, height) >= 0,
-            "fputs failed.\n");
+  if(!(f)) return ERROR; //, "unable to open file \"%s\".\n", filename);
+  if(!(fprintf(f, "P3\n%u %u\n255\n", width, height) >= 0)) if(f) fclose(f); return ERROR;
+            // "fputs failed.\n");
   int x, y;
   RGBA* data = *emulator_get_frame_buffer(e);
   RGBA* sgb_data = *emulator_get_sgb_frame_buffer(e);
