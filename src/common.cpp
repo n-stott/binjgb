@@ -34,12 +34,16 @@ static Result get_file_size(FILE* f, long* out_size) {
 
 Result file_read(const char* filename, FileData* out_file_data) {
   FILE* f = fopen(filename, "rb");
-  if(!(f)) return ERROR; // unable to open file filename
+  auto onError = [&]() {
+    if (f) { fclose(f); } 
+    return ERROR;
+  };
+  if(!(f)) return onError(); // unable to open file filename
   long size;
-  if(!(SUCCESS(get_file_size(f, &size)))) if (f) { fclose(f); } return ERROR;
+  if(!(SUCCESS(get_file_size(f, &size)))) return onError();
   u8* data = reinterpret_cast<u8*>(xmalloc(size));
   if(!(data)) return ERROR; // allocation failed
-  if (!(fread(data, size, 1, f) == 1)) if (f) { fclose(f); } return ERROR; // fread failed
+  if (!(fread(data, size, 1, f) == 1)) return onError(); // fread failed
   fclose(f);
   out_file_data->data = data;
   out_file_data->size = size;
