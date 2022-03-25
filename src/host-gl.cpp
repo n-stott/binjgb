@@ -19,7 +19,7 @@ FOREACH_GLEXT_PROC(V)
     if (!status) {                                       \
       GLint length;                                      \
       glGet##kind##iv(var, GL_INFO_LOG_LENGTH, &length); \
-      GLchar* log = malloc(length + 1); /* Leaks. */     \
+      GLchar* log = reinterpret_cast<GLchar*>(malloc(length + 1)); /* Leaks. */     \
       glGet##kind##InfoLog(var, length, NULL, log);      \
       PRINT_ERROR("%s ERROR: %s\n", kind_str, log);      \
       goto error;                                        \
@@ -28,12 +28,11 @@ FOREACH_GLEXT_PROC(V)
 
 Result host_gl_init_procs(void) {
 #define V(name, type)                  \
-  name = SDL_GL_GetProcAddress(#name); \
-  CHECK_MSG(name != 0, "Unable to get GL function: " #name);
+  name = reinterpret_cast<type>(SDL_GL_GetProcAddress(#name));
+  // CHECK_MSG(name != 0, "Unable to get GL function: " #name);
   FOREACH_GLEXT_PROC(V)
 #undef V
   return OK;
-  ON_ERROR_RETURN;
 }
 
 Result host_gl_shader(GLenum type, const GLchar* source, GLuint* out_shader) {
