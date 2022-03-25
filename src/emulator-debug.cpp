@@ -13,10 +13,10 @@
 #define MAX_BREAKPOINTS 256
 static Bool s_trace_stack[MAX_TRACE_STACK] = {FALSE};
 static size_t s_trace_stack_top = 1;
-static LogLevel s_log_level[NUM_LOG_SYSTEMS] = {1, 1, 1, 1, 1, 1};
+static LogLevel s_log_level[NUM_LOG_SYSTEMS] = {(LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1};
 static Breakpoint s_breakpoints[MAX_BREAKPOINTS];
 static Address s_breakpoint_mask[2];
-static const Breakpoint s_invalid_breakpoint;
+static const Breakpoint s_invalid_breakpoint{};
 static int s_breakpoint_count;
 static int s_breakpoint_max_id;
 
@@ -121,7 +121,7 @@ static void HOOK_exec_cb_op_i(Emulator*, const char* func_name, u8 opcode);
 
 FOREACH_LOG_HOOKS(DECLARE_LOG_HOOK)
 
-#include "emulator.c"
+#include "emulator.cpp"
 
 FOREACH_LOG_HOOKS(DEFINE_LOG_HOOK)
 
