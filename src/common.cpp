@@ -24,23 +24,22 @@ const char* replace_extension(const char* filename, const char* extension) {
 }
 
 static Result get_file_size(FILE* f, long* out_size) {
-  CHECK_MSG(fseek(f, 0, SEEK_END) >= 0, "fseek to end failed.\n");
+  if(!(fseek(f, 0, SEEK_END) >= 0)) return ERROR; // fseek to end failed
   long size = ftell(f);
-  CHECK_MSG(size >= 0, "ftell failed.");
-  CHECK_MSG(fseek(f, 0, SEEK_SET) >= 0, "fseek to beginning failed.\n");
+  if(!(size >= 0)) return ERROR; // ftell failed
+  if(!(fseek(f, 0, SEEK_SET) >= 0)) return ERROR; // fseek to beginning failed
   *out_size = size;
   return OK;
-  ON_ERROR_RETURN;
 }
 
 Result file_read(const char* filename, FileData* out_file_data) {
   FILE* f = fopen(filename, "rb");
-  CHECK_MSG(f, "unable to open file \"%s\".\n", filename);
+  if(!(f)) return ERROR; // unable to open file filename
   long size;
   CHECK(SUCCESS(get_file_size(f, &size)));
   u8* data = xmalloc(size);
-  CHECK_MSG(data, "allocation failed.\n");
-  CHECK_MSG(fread(data, size, 1, f) == 1, "fread failed.\n");
+  if(!(data)) return ERROR; // allocation failed
+  if (!(fread(data, size, 1, f) == 1)) return ERROR; // fread failed
   fclose(f);
   out_file_data->data = data;
   out_file_data->size = size;
@@ -50,9 +49,8 @@ Result file_read(const char* filename, FileData* out_file_data) {
 
 Result file_write(const char* filename, const FileData* file_data) {
   FILE* f = fopen(filename, "wb");
-  CHECK_MSG(f, "unable to open file \"%s\".\n", filename);
-  CHECK_MSG(fwrite(file_data->data, file_data->size, 1, f) == 1,
-            "fwrite failed.\n");
+  if(!(f)) return ERROR; // unable to open file filename
+  if(!(fwrite(file_data->data, file_data->size, 1, f) == 1)) return ERROR; // fwrite failed
   fclose(f);
   return OK;
   ON_ERROR_CLOSE_FILE_AND_RETURN;
