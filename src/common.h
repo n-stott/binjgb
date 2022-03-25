@@ -94,7 +94,9 @@ typedef u16 Address;
 typedef u16 MaskedAddress;
 typedef u32 RGBA;
 typedef u64 Ticks;
-typedef enum Bool { FALSE = 0, TRUE = 1 } Bool;
+typedef bool Bool;
+#define FALSE false
+#define TRUE true
 typedef enum Result { OK = 0, ERROR = 1 } Result;
 
 typedef struct FileData {
