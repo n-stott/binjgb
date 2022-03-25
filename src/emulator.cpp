@@ -178,10 +178,10 @@ static inline const char* get_enum_string(const char** strings,
 
 #define DEFINE_NAMED_ENUM(NAME, Name, name, foreach, enum_def)       \
   typedef enum { foreach (enum_def) NAME##_COUNT } Name;             \
-  static inline Bool is_##name##_valid(Name value) {                 \
+  [[maybe_unused]] static inline Bool is_##name##_valid(Name value) {                 \
     return value < NAME##_COUNT;                                     \
   }                                                                  \
-  static inline const char* get_##name##_string(Name value) {        \
+  [[maybe_unused]] static inline const char* get_##name##_string(Name value) {        \
     static const char* s_strings[] = {foreach (DEFINE_STRING)};      \
     return get_enum_string(s_strings, ARRAY_SIZE(s_strings), value); \
   }
@@ -1177,9 +1177,9 @@ static Result get_cart_infos(Emulator* e) {
   ON_ERROR_RETURN;
 }
 
-static void dummy_write(Emulator* e, MaskedAddress addr, u8 value) {}
+static void dummy_write([[maybe_unused]] Emulator* e, [[maybe_unused]] MaskedAddress addr, [[maybe_unused]] u8 value) {}
 
-static u8 dummy_read(Emulator* e, MaskedAddress addr) {
+static u8 dummy_read([[maybe_unused]] Emulator* e, [[maybe_unused]] MaskedAddress addr) {
   return INVALID_READ_BYTE;
 }
 
@@ -1957,7 +1957,7 @@ static u8 read_u8_pair(Emulator* e, MemoryTypeAddressPair pair, Bool raw) {
   }
 }
 
-static u8 read_u8_raw(Emulator* e, Address addr) {
+[[maybe_unused]] static u8 read_u8_raw(Emulator* e, Address addr) {
   return read_u8_pair(e, map_address(addr), TRUE);
 }
 
@@ -2863,7 +2863,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
   }
 }
 
-static void write_nrx1_reg(Emulator* e, Channel* channel, Address addr,
+static void write_nrx1_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value) {
   if (APU.enabled) {
     channel->square_wave.duty = static_cast<WaveDuty>(UNPACK(value, NRX1_WAVE_DUTY));
@@ -2872,7 +2872,7 @@ static void write_nrx1_reg(Emulator* e, Channel* channel, Address addr,
   HOOK(write_nrx1_abi, addr, value, channel->length);
 }
 
-static void write_nrx2_reg(Emulator* e, Channel* channel, Address addr,
+static void write_nrx2_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value) {
   channel->envelope.initial_volume = UNPACK(value, NRX2_INITIAL_VOLUME);
   channel->dac_enabled = UNPACK(value, NRX2_DAC_ENABLED) != 0;
@@ -2895,12 +2895,12 @@ static void write_nrx2_reg(Emulator* e, Channel* channel, Address addr,
        channel->envelope.initial_volume);
 }
 
-static void write_nrx3_reg(Emulator* e, Channel* channel, u8 value) {
+static void write_nrx3_reg([[maybe_unused]] Emulator* e, Channel* channel, u8 value) {
   channel->frequency = (channel->frequency & ~0xff) | value;
 }
 
 /* Returns TRUE if this channel was triggered. */
-static Bool write_nrx4_reg(Emulator* e, Channel* channel, Address addr,
+static Bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value, u16 max_length) {
   Bool trigger = UNPACK(value, NRX4_INITIAL);
   Bool was_length_enabled = channel->length_enabled;
@@ -2940,7 +2940,7 @@ static Bool write_nrx4_reg(Emulator* e, Channel* channel, Address addr,
 }
 
 static void trigger_nrx4_envelope(Emulator* e, Envelope* envelope,
-                                  Address addr) {
+                                  [[maybe_unused]] Address addr) {
   envelope->volume = envelope->initial_volume;
   envelope->timer = envelope->period ? envelope->period : ENVELOPE_MAX_PERIOD;
   envelope->automatic = TRUE;
@@ -2981,7 +2981,7 @@ static void write_wave_period(Emulator* e, Channel* channel) {
   HOOK(write_wave_period_info_iii, channel->frequency, WAVE.ticks, WAVE.period);
 }
 
-static void write_square_wave_period(Emulator* e, Channel* channel,
+static void write_square_wave_period([[maybe_unused]] Emulator* e, Channel* channel,
                                      SquareWave* square) {
   square->period = ((SOUND_MAX_FREQUENCY + 1) - channel->frequency) * 4;
   HOOK(write_square_wave_period_info_iii, channel->frequency, square->ticks,
@@ -3243,7 +3243,7 @@ static void write_u8_pair(Emulator* e, MemoryTypeAddressPair pair, u8 value) {
   }
 }
 
-static void write_u8_raw(Emulator* e, Address addr, u8 value) {
+[[maybe_unused]] static void write_u8_raw(Emulator* e, Address addr, u8 value) {
   write_u8_pair(e, map_address(addr), value);
 }
 

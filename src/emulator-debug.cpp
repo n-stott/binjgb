@@ -29,7 +29,7 @@ static int s_breakpoint_max_id;
   static void HOOK_##name(Emulator* e, const char* func_name, ...);
 
 #define DEFINE_LOG_HOOK(system, level, name, format)                        \
-  void HOOK_##name(Emulator* e, const char* func_name, ...) {               \
+  [[maybe_unused]] void HOOK_##name(Emulator* e, const char* func_name, ...) {               \
     if (s_log_level[LOG_SYSTEM_##system] >= LOG_LEVEL_##level) {            \
       va_list args;                                                         \
       va_start(args, func_name);                                            \
@@ -338,7 +338,7 @@ static int disassemble_instr(u8 data[3], char* buffer, size_t size) {
 
 int emulator_disassemble(Emulator* e, Address addr, char* buffer, size_t size) {
   char instr[120];
-  char hex[][3] = {"  ", "  ", "  "};
+  [[maybe_unused]] char hex[][3] = {"  ", "  ", "  "};
 
   u8 data[3] = {read_u8_raw(e, addr), read_u8_raw(e, addr + 1),
                 read_u8_raw(e, addr + 2)};
@@ -526,8 +526,8 @@ void emulator_clear_rom_usage(void) {
   memset(s_rom_usage, 0, sizeof(s_rom_usage));
 }
 
-void HOOK_read_rom_ib(Emulator* e, const char* func_name, u32 rom_addr,
-                      u8 value) {
+void HOOK_read_rom_ib([[maybe_unused]] Emulator* e, [[maybe_unused]] const char* func_name, u32 rom_addr,
+                      [[maybe_unused]] u8 value) {
   if (!s_rom_usage_enabled) {
     return;
   }
@@ -595,7 +595,7 @@ static inline Bool hit_breakpoint(Emulator* e) {
   return hit;
 }
 
-Bool HOOK_emulator_step(Emulator* e, const char* func_name) {
+Bool HOOK_emulator_step(Emulator* e, [[maybe_unused]] const char* func_name) {
   if (emulator_get_trace() && INTR.state < CPU_STATE_HALT) {
     printf("A:%02X F:%c%c%c%c BC:%04X DE:%04x HL:%04x SP:%04x PC:%04x", REG.A,
            REG.F.Z ? 'Z' : '-', REG.F.N ? 'N' : '-', REG.F.H ? 'H' : '-',
@@ -654,7 +654,7 @@ u32* emulator_get_profiling_counters(void) {
   return s_profiling_counters;
 }
 
-void HOOK_exec_op_ai(Emulator* e, const char* func_name, Address pc,
+void HOOK_exec_op_ai(Emulator* e, [[maybe_unused]] const char* func_name, Address pc,
                      u8 opcode) {
   u32 rom_addr = get_rom_addr(e, pc);
   mark_rom_usage_for_pc(e, rom_addr);
@@ -666,7 +666,7 @@ void HOOK_exec_op_ai(Emulator* e, const char* func_name, Address pc,
   }
 }
 
-void HOOK_exec_cb_op_i(Emulator* e, const char* func_name, u8 opcode) {
+void HOOK_exec_cb_op_i([[maybe_unused]] Emulator* e, [[maybe_unused]] const char* func_name, u8 opcode) {
   if (s_opcode_count_enabled) {
     s_cb_opcode_count[opcode]++;
   }

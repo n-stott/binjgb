@@ -75,7 +75,7 @@ static Bool buttons_are_equal(JoypadButtons* lhs, JoypadButtons* rhs) {
          lhs->B == rhs->B && lhs->A == rhs->A;
 }
 
-static void print_joypad_buttons(Ticks ticks, JoypadButtons buttons) {
+[[maybe_unused]] static void print_joypad_buttons(Ticks ticks, JoypadButtons buttons) {
   printf("joyp: %" PRIu64 " %c%c%c%c %c%c%c%c\n", ticks,
          buttons.down ? 'D' : '_', buttons.up ? 'U' : '_',
          buttons.left ? 'L' : '_', buttons.right ? 'R' : '_',

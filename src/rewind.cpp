@@ -141,7 +141,7 @@ static u8* write_varint(u32 value, u8* dst_begin, u8* dst_max_end) {
 
 static u32 read_varint(const u8** src) {
   const u8* s = *src;
-  u32 result = 0;
+  [[maybe_unused]] u32 result = 0;
   if ((s[0] & 0x80) == 0) {
     *src += 1;
     return s[0];
@@ -449,7 +449,7 @@ RewindStats rewind_get_stats(RewindBuffer* buffer) {
   return stats;
 }
 
-void rewind_sanity_check(RewindBuffer* buffer, Emulator* e) {
+void rewind_sanity_check([[maybe_unused]] RewindBuffer* buffer, [[maybe_unused]] Emulator* e) {
 #if SANITY_CHECK
   assert(buffer->data_range[0].begin <= buffer->data_range[0].end);
   assert(buffer->data_range[0].end <= buffer->data_range[1].begin);
