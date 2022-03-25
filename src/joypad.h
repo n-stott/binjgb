@@ -9,10 +9,6 @@
 
 #include "common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct Emulator;
 
 typedef struct {
@@ -67,9 +63,5 @@ void emulator_set_joypad_playback_callback(struct Emulator*, JoypadBuffer*,
 void joypad_init_file_data(JoypadBuffer*, FileData*);
 Result joypad_write(JoypadBuffer*, FileData*);
 Result joypad_read(const FileData*, JoypadBuffer** out_buffer);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_JOYPAD_H_ */

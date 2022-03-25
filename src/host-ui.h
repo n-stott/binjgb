@@ -15,10 +15,6 @@ struct SDL_Window;
 struct HostUI;
 struct HostTexture;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct HostUI* host_ui_new(struct SDL_Window*, Bool use_sgb_border);
 void host_ui_delete(struct HostUI*);
 void host_ui_event(struct HostUI*, union SDL_Event*);
@@ -30,9 +26,5 @@ void host_ui_set_palette(struct HostUI*, RGBA palette[4]);
 void host_ui_enable_palette(struct HostUI*, Bool enabled);
 void host_ui_render_screen_overlay(struct HostUI*, struct HostTexture*);
 Bool host_ui_capture_keyboard(struct HostUI*);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_HOST_UI_H_ */

@@ -10,10 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define TRACE_MEMORY 0
 
 #if TRACE_MEMORY
@@ -36,10 +32,6 @@ char* xstrdup_(const char* file, int line, const char*);
 #define xcalloc calloc
 #define xstrdup strdup
 
-#endif
-
-#ifdef __cplusplus
-} /* extern "C" */
 #endif
 
 #endif /*  BINJGB_MEMORY_H_ */

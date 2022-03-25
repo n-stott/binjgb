@@ -33,16 +33,8 @@ typedef struct OptionResult {
   };
 } OptionResult;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct OptionParser* option_parser_new(const Option* options,
                                        size_t num_options, int argc,
                                        char** argv);
 OptionResult option_parser_next(struct OptionParser*);
 void option_parser_delete(struct OptionParser*);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

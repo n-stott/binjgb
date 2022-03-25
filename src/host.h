@@ -11,10 +11,6 @@
 #include "joypad.h"
 #include "rewind.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define FOREACH_HOST_KEYCODE(_) \
   _(A)                          \
   _(B)                          \
@@ -187,10 +183,5 @@ HostTexture* host_create_texture(struct Host*, int w, int h, HostTextureFormat);
 void host_upload_texture(struct Host*, HostTexture*, int w, int h,
                          const void* data);
 void host_destroy_texture(struct Host*, HostTexture*);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_HOST_H_ */

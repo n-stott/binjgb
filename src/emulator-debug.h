@@ -10,10 +10,6 @@
 #include "common.h"
 #include "emulator.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define FOREACH_LOG_SYSTEM(V) \
   V(A, apu, APU)              \
   V(H, host, HOST)            \
@@ -164,9 +160,5 @@ Bool obj_is_visible(const Obj* obj);
 PaletteRGBA palette_to_palette_rgba(Emulator* e, PaletteType, Palette);
 
 int opcode_bytes(u8 opcode);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_EMULATOR_DEBUG_H_ */

@@ -9,10 +9,6 @@
 
 #include "common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 144
 #define SCREEN_HEIGHT_WITH_VBLANK 154
@@ -238,9 +234,5 @@ EmulatorEvent emulator_run_until(Emulator*, Ticks until_ticks);
 
 ApuLog* emulator_get_apu_log(Emulator*);
 void emulator_reset_apu_log(Emulator*);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_EMULATOR_H_ */

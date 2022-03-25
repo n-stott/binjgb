@@ -13,10 +13,6 @@
 
 #include "memory.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined(__clang__) || defined(__GNUC__)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 #define LIKELY(x) __builtin_expect(!!(x), 1)
@@ -113,9 +109,5 @@ const char* replace_extension(const char* filename, const char* extension);
 Result file_read(const char* filename, FileData* out);
 Result file_write(const char* filename, const FileData*);
 void file_data_delete(FileData*);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
 
 #endif /*  BINJGB_COMMON_H_ */

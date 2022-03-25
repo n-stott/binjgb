@@ -12,10 +12,6 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define FOREACH_GLEXT_PROC(V)                                    \
   V(glAttachShader, PFNGLATTACHSHADERPROC)                       \
   V(glBindBuffer, PFNGLBINDBUFFERPROC)                           \
@@ -50,9 +46,5 @@ Result host_gl_shader(GLenum type, const GLchar* source, GLuint* out_shader);
 Result host_gl_program(GLuint vert_shader, GLuint frag_shader,
                        GLuint* out_program);
 int host_gl_shader_version(void);  // e.g. 1.30 is returned as 130.
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_HOST_GL_H_ */

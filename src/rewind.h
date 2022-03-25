@@ -11,10 +11,6 @@
 
 struct Emulator;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum {
   RewindInfoKind_Base,
   RewindInfoKind_Diff,
@@ -108,9 +104,5 @@ void rewind_truncate_to(RewindBuffer*, struct Emulator*, RewindResult*);
 Ticks rewind_get_oldest_ticks(RewindBuffer*);
 Ticks rewind_get_newest_ticks(RewindBuffer*);
 RewindStats rewind_get_stats(RewindBuffer*);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BINJGB_REWIND_H_ */
