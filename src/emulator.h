@@ -41,7 +41,7 @@
 
 #define MAX_APU_LOG_FRAME_WRITES 1024
 
-typedef struct Emulator Emulator;
+struct Emulator;
 
 enum {
   APU_CHANNEL1,
@@ -51,56 +51,56 @@ enum {
   APU_CHANNEL_COUNT,
 };
 
-typedef void (*JoypadCallback)(struct JoypadButtons* joyp, void* user_data);
+using JoypadCallback = void (*)(JoypadButtons* joyp, void* user_data);
 
-typedef struct JoypadCallbackInfo {
+struct JoypadCallbackInfo {
   JoypadCallback callback;
   void* user_data;
-} JoypadCallbackInfo;
+};
 
-typedef RGBA FrameBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
-typedef RGBA SgbFrameBuffer[SGB_SCREEN_WIDTH * SGB_SCREEN_HEIGHT];
+using FrameBuffer = RGBA[SCREEN_WIDTH * SCREEN_HEIGHT];
+using SgbFrameBuffer = RGBA[SGB_SCREEN_WIDTH * SGB_SCREEN_HEIGHT];
 
-typedef enum Color {
+enum Color {
   COLOR_WHITE = 0,
   COLOR_LIGHT_GRAY = 1,
   COLOR_DARK_GRAY = 2,
   COLOR_BLACK = 3,
-} Color;
+};
 
-typedef enum PaletteType {
+enum PaletteType {
   PALETTE_TYPE_BGP,
   PALETTE_TYPE_OBP0,
   PALETTE_TYPE_OBP1,
   PALETTE_TYPE_COUNT,
-} PaletteType;
+};
 
-typedef enum {
+enum TileDataSelect {
   TILE_DATA_8800_97FF = 0,
   TILE_DATA_8000_8FFF = 1,
-} TileDataSelect;
+};
 
-typedef enum TileMapSelect {
+enum TileMapSelect {
   TILE_MAP_9800_9BFF = 0,
   TILE_MAP_9C00_9FFF = 1,
-} TileMapSelect;
+};
 
-typedef enum {
+enum ObjSize {
   OBJ_SIZE_8X8 = 0,
   OBJ_SIZE_8X16 = 1,
-} ObjSize;
+};
 
-typedef enum ObjPriority {
+enum ObjPriority {
   OBJ_PRIORITY_ABOVE_BG = 0,
   OBJ_PRIORITY_BEHIND_BG = 1,
-} ObjPriority;
+};
 
-typedef enum {
+enum TimerClock {
   TIMER_CLOCK_4096_HZ = 0,
   TIMER_CLOCK_262144_HZ = 1,
   TIMER_CLOCK_65536_HZ = 2,
   TIMER_CLOCK_16384_HZ = 3,
-} TimerClock;
+};
 
 /* TODO(binji): endianness */
 #define REGISTER_PAIR(X, Y) \
@@ -109,7 +109,7 @@ typedef enum {
     u16 X##Y;               \
   }
 
-typedef struct {
+struct Registers {
   u8 A;
   REGISTER_PAIR(B, C);
   REGISTER_PAIR(D, E);
@@ -117,9 +117,9 @@ typedef struct {
   u16 SP;
   u16 PC;
   struct { bool Z, N, H, C; } F;
-} Registers;
+};
 
-typedef struct Obj {
+struct Obj {
   u8 y;
   u8 x;
   u8 tile;
@@ -130,15 +130,17 @@ typedef struct Obj {
   u8 palette;
   u8 bank;
   u8 cgb_palette;
-} Obj;
+};
 
-typedef struct { Color color[PALETTE_COLOR_COUNT]; } Palette;
+struct Palette {
+  Color color[PALETTE_COLOR_COUNT];
+};
 
-typedef struct PaletteRGBA {
+struct PaletteRGBA {
   RGBA color[PALETTE_COLOR_COUNT];
-} PaletteRGBA;
+};
 
-typedef struct AudioBuffer {
+struct AudioBuffer {
   u32 frequency;    /* Sample frequency, as N samples per second */
   u32 freq_counter; /* Used for resampling; [0..APU_TICKS_PER_SECOND). */
   u32 divisor;
@@ -146,15 +148,15 @@ typedef struct AudioBuffer {
   u8* data;   /* Unsigned 8-bit 2-channel samples @ |frequency| */
   u8* end;
   u8* position;
-} AudioBuffer;
+};
 
-typedef enum CgbColorCurve {
+enum CgbColorCurve {
   CGB_COLOR_CURVE_NONE,
   CGB_COLOR_CURVE_SAMEBOY_EMULATE_HARDWARE,
   CGB_COLOR_CURVE_GAMBATTE,
-} CgbColorCurve;
+};
 
-typedef struct EmulatorInit {
+struct EmulatorInit {
   FileData rom;
   int audio_frequency;
   int audio_frames;
@@ -162,28 +164,29 @@ typedef struct EmulatorInit {
   u32 builtin_palette;
   bool force_dmg;
   CgbColorCurve cgb_color_curve;
-} EmulatorInit;
+};
 
-typedef struct EmulatorConfig {
+struct EmulatorConfig {
   bool disable_sound[APU_CHANNEL_COUNT];
   bool disable_bg;
   bool disable_window;
   bool disable_obj;
   bool allow_simulataneous_dpad_opposites;
   bool log_apu_writes;
-} EmulatorConfig;
+};
 
-typedef struct {
+struct ApuWrite {
   u8 addr;
   u8 value;
-} ApuWrite;
+};
 
-typedef struct {
+struct ApuLog {
   ApuWrite writes[MAX_APU_LOG_FRAME_WRITES];
   size_t write_count;
-} ApuLog;
+};
 
-typedef u32 EmulatorEvent;
+using EmulatorEvent = u32;
+
 enum {
   EMULATOR_EVENT_NEW_FRAME = 0x1,
   EMULATOR_EVENT_AUDIO_BUFFER_FULL = 0x2,
