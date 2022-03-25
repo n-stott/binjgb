@@ -16,9 +16,8 @@ if (MSVC)
   endif ()
 else ()
   add_definitions(
-    -Wall -Wextra -Wpointer-arith -Wno-unused-parameter -g
-    -Wno-unused-function -Wno-unused-variable
-    -Wno-implicit-fallthrough
+    -Wall -Wextra -Wpointer-arith -pedantic -g
+    -Wno-implicit-fallthrough -std=c++17
   )
   if (WERROR)
     add_definitions(-Werror)
@@ -50,6 +49,8 @@ if (NOT EMSCRIPTEN)
       src/rewind.cpp
       src/binjgb.cpp
     )
+    set_property(TARGET binjgb PROPERTY CXX_STANDARD 17)
+    set_property(TARGET binjgb PROPERTY CXX_STANDARD_REQUIRED ON)
     target_link_libraries(binjgb SDL2::SDL2 SDL2::SDL2main ${OPENGL_gl_LIBRARY})
 
     install(TARGETS binjgb DESTINATION bin)
@@ -85,7 +86,7 @@ if (NOT EMSCRIPTEN)
       src/debugger/rom-window.cc
       src/debugger/tiledata-window.cc
     )
-    set_property(TARGET binjgb-debugger PROPERTY CXX_STANDARD 11)
+    set_property(TARGET binjgb-debugger PROPERTY CXX_STANDARD 17)
     set_property(TARGET binjgb-debugger PROPERTY CXX_STANDARD_REQUIRED ON)
 
     if (CMAKE_COMPILER_IS_GNUCXX)

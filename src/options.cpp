@@ -39,7 +39,7 @@ static OptionResult make_option_result(OptionResultKind kind,
   return result;
 }
 
-static OptionResult make_option_result_with_value(OptionResultKind kind,
+static OptionResult make_option_result_with_value([[maybe_unused]]OptionResultKind kind,
                                                   const Option* option,
                                                   char* value) {
   if (strlen(value) == 0) {
