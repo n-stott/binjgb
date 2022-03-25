@@ -484,12 +484,22 @@ void read_ini_file(void) {
 int main(int argc, char** argv) {
   int result = 1;
 
+  auto onError = [&]() {
+    if (host) {
+      host_delete(host);
+    }
+    if (e) {
+      emulator_delete(e);
+    }
+    return result;
+  };
+
   read_ini_file();
 
   parse_arguments(argc, argv);
 
   FileData rom;
-  CHECK(SUCCESS(file_read(s_rom_filename, &rom)));
+  if(!(SUCCESS(file_read(s_rom_filename, &rom)))) return onError();
 
   EmulatorInit emulator_init;
   ZERO_MEMORY(emulator_init);
@@ -499,9 +509,9 @@ int main(int argc, char** argv) {
   emulator_init.random_seed = s_random_seed;
   emulator_init.builtin_palette = s_builtin_palette;
   emulator_init.force_dmg = s_force_dmg;
-  emulator_init.cgb_color_curve = s_cgb_color_curve;
+  emulator_init.cgb_color_curve = static_cast<CgbColorCurve>(s_cgb_color_curve);
   e = emulator_new(&emulator_init);
-  CHECK(e != NULL);
+  if(!(e != NULL)) return onError();
 
   HostInit host_init;
   ZERO_MEMORY(host_init);
@@ -516,7 +526,7 @@ int main(int argc, char** argv) {
   host_init.joypad_filename = s_read_joypad_filename;
   host_init.use_sgb_border = s_use_sgb_border;
   host = host_new(&host_init, e);
-  CHECK(host != NULL);
+  if(!(host != NULL)) return onError();
 
   const char* save_filename = replace_extension(s_rom_filename, SAVE_EXTENSION);
   s_save_state_filename =
@@ -555,7 +565,6 @@ int main(int argc, char** argv) {
   }
 
   result = 0;
-error:
   if (host) {
     host_delete(host);
   }

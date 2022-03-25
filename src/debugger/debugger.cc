@@ -305,7 +305,6 @@ void Debugger::OnAudioBufferFull() {
   }
 }
 
-static void Toggle(Bool& value) { value = static_cast<Bool>(!value); }
 static void Toggle(bool& value) { value = !value; }
 
 void Debugger::ToggleTrace() {
