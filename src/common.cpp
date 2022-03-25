@@ -36,24 +36,22 @@ Result file_read(const char* filename, FileData* out_file_data) {
   FILE* f = fopen(filename, "rb");
   if(!(f)) return ERROR; // unable to open file filename
   long size;
-  CHECK(SUCCESS(get_file_size(f, &size)));
+  if(!(SUCCESS(get_file_size(f, &size)))) if (f) { fclose(f); } return ERROR;
   u8* data = reinterpret_cast<u8*>(xmalloc(size));
   if(!(data)) return ERROR; // allocation failed
-  if (!(fread(data, size, 1, f) == 1)) return ERROR; // fread failed
+  if (!(fread(data, size, 1, f) == 1)) if (f) { fclose(f); } return ERROR; // fread failed
   fclose(f);
   out_file_data->data = data;
   out_file_data->size = size;
   return OK;
-  ON_ERROR_CLOSE_FILE_AND_RETURN;
 }
 
 Result file_write(const char* filename, const FileData* file_data) {
   FILE* f = fopen(filename, "wb");
   if(!(f)) return ERROR; // unable to open file filename
-  if(!(fwrite(file_data->data, file_data->size, 1, f) == 1)) return ERROR; // fwrite failed
+  if(!(fwrite(file_data->data, file_data->size, 1, f) == 1)) if (f) { fclose(f); } return ERROR;; // fwrite failed
   fclose(f);
   return OK;
-  ON_ERROR_CLOSE_FILE_AND_RETURN;
 }
 
 void file_data_delete(FileData* file_data) {
