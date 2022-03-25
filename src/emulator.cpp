@@ -2858,7 +2858,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       INTR.ie = value;
       break;
     default:
-      HOOK(write_io_ignored_as, addr, get_io_reg_string(addr), value);
+      HOOK(write_io_ignored_as, addr, get_io_reg_string((IOReg)addr), value);
       break;
   }
 }
@@ -2889,7 +2889,7 @@ static void write_nrx2_reg(Emulator* e, Channel* channel, Address addr,
       channel->envelope.volume = new_volume;
     }
   }
-  channel->envelope.direction = UNPACK(value, NRX2_ENVELOPE_DIRECTION);
+  channel->envelope.direction = static_cast<EnvelopeDirection>(UNPACK(value, NRX2_ENVELOPE_DIRECTION));
   channel->envelope.period = UNPACK(value, NRX2_ENVELOPE_PERIOD);
   HOOK(write_nrx2_initial_volume_abi, addr, value,
        channel->envelope.initial_volume);
@@ -2948,7 +2948,7 @@ static void trigger_nrx4_envelope(Emulator* e, Envelope* envelope,
   if (UNLIKELY(APU.frame + 1 == FRAME_SEQUENCER_UPDATE_ENVELOPE_FRAME)) {
     envelope->timer++;
   }
-  HOOK(trigger_nrx4_info_asii, addr, get_apu_reg_string(addr), envelope->volume,
+  HOOK(trigger_nrx4_info_asii, addr, get_apu_reg_string((APUReg)addr), envelope->volume,
        envelope->timer);
 }
 
@@ -3014,7 +3014,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       /* Always can write to NR52; it's necessary to re-enable power to APU. */
     } else {
       /* Ignore all other writes. */
-      HOOK(write_apu_disabled_asb, addr, get_apu_reg_string(addr), value);
+      HOOK(write_apu_disabled_asb, addr, get_apu_reg_string((APUReg)addr), value);
       return;
     }
   }
@@ -3023,12 +3023,12 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
     apu_synchronize(e);
   }
 
-  HOOK(write_apu_asb, addr, get_apu_reg_string(addr), value);
+  HOOK(write_apu_asb, addr, get_apu_reg_string((APUReg)addr), value);
   switch (addr) {
     case APU_NR10_ADDR: {
       SweepDirection old_direction = SWEEP.direction;
       SWEEP.period = UNPACK(value, NR10_SWEEP_PERIOD);
-      SWEEP.direction = UNPACK(value, NR10_SWEEP_DIRECTION);
+      SWEEP.direction = static_cast<SweepDirection>(UNPACK(value, NR10_SWEEP_DIRECTION));
       SWEEP.shift = UNPACK(value, NR10_SWEEP_SHIFT);
       if (old_direction == SWEEP_DIRECTION_SUBTRACTION &&
           SWEEP.direction == SWEEP_DIRECTION_ADDITION &&
@@ -3087,7 +3087,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       CHANNEL3.length = NR31_MAX_LENGTH - value;
       break;
     case APU_NR32_ADDR:
-      WAVE.volume = UNPACK(value, NR32_SELECT_WAVE_VOLUME);
+      WAVE.volume = static_cast<WaveVolume>(UNPACK(value, NR32_SELECT_WAVE_VOLUME));
       assert(WAVE.volume < WAVE_VOLUME_COUNT);
       WAVE.volume_shift = s_wave_volume_shift[WAVE.volume];
       break;
@@ -3134,7 +3134,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case APU_NR43_ADDR: {
       NOISE.clock_shift = UNPACK(value, NR43_CLOCK_SHIFT);
-      NOISE.lfsr_width = UNPACK(value, NR43_LFSR_WIDTH);
+      NOISE.lfsr_width = static_cast<LfsrWidth>(UNPACK(value, NR43_LFSR_WIDTH));
       NOISE.divisor = UNPACK(value, NR43_DIVISOR);
       write_noise_period(e);
       break;
@@ -4316,7 +4316,7 @@ static void execute_instruction(Emulator* e) {
           if (CPU_SPEED.switching) {
             intr_synchronize(e);
             CPU_SPEED.switching = FALSE;
-            CPU_SPEED.speed ^= 1;
+            CPU_SPEED.speed = static_cast<Speed>(static_cast<int>(CPU_SPEED.speed) ^ 1);
             INTR.state = CPU_STATE_NORMAL;
             if (CPU_SPEED.speed == SPEED_NORMAL) {
               e->state.cpu_tick = CPU_TICK;
@@ -4646,7 +4646,7 @@ static const char* get_result_string(Result value) {
 
 static void log_cart_info(CartInfo* cart_info) {
   char* title_start = (char*)cart_info->data + TITLE_START_ADDR;
-  char* title_end = memchr(title_start, '\0', TITLE_MAX_LENGTH);
+  char* title_end = reinterpret_cast<char*>(memchr(title_start, '\0', TITLE_MAX_LENGTH));
   int title_length =
       (int)(title_end ? title_end - title_start : TITLE_MAX_LENGTH);
   printf("title: \"%.*s\"\n", title_length, title_start);
@@ -4666,7 +4666,7 @@ Result init_audio_buffer(Emulator* e, u32 frequency, u32 frames) {
   audio_buffer->frames = frames;
   size_t buffer_size =
       (frames + AUDIO_BUFFER_EXTRA_FRAMES) * SOUND_OUTPUT_COUNT;
-  audio_buffer->data = xmalloc(buffer_size);
+  audio_buffer->data = reinterpret_cast<u8*>(xmalloc(buffer_size));
   CHECK_MSG(audio_buffer->data != NULL, "Audio buffer allocation failed.\n");
   audio_buffer->end = audio_buffer->data + buffer_size;
   audio_buffer->position = audio_buffer->data;
@@ -4707,7 +4707,7 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
       0x60, 0x0d, 0xda, 0xdd, 0x50, 0x0f, 0xad, 0xed,
       0xc0, 0xde, 0xf0, 0x0d, 0xbe, 0xef, 0xfe, 0xed,
   };
-  CHECK(SUCCESS(get_cart_infos(e)));
+  if(!(SUCCESS(get_cart_infos(e)))) return ERROR;
   log_cart_info(e->cart_info);
   MMAP_STATE.rom_base[0] = 0;
   MMAP_STATE.rom_base[1] = 1 << ROM_BANK_SHIFT;
@@ -4779,7 +4779,6 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
   e->state.cpu_tick = CPU_TICK;
   calculate_next_ppu_intr(e);
   return OK;
-  ON_ERROR_RETURN;
 }
 
 void emulator_set_joypad_buttons(Emulator* e, JoypadButtons* buttons) {
@@ -4858,22 +4857,22 @@ Bool emulator_was_ext_ram_updated(Emulator* e) {
 
 void emulator_init_state_file_data(FileData* file_data) {
   file_data->size = sizeof(EmulatorState);
-  file_data->data = xmalloc(file_data->size);
+  file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
 void emulator_init_ext_ram_file_data(Emulator* e, FileData* file_data) {
   file_data->size = EXT_RAM.size;
-  file_data->data = xmalloc(file_data->size);
+  file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
 Result emulator_read_state(Emulator* e, const FileData* file_data) {
-  CHECK_MSG(file_data->size == sizeof(EmulatorState),
-            "save state file is wrong size: %ld, expected %ld.\n",
-            (long)file_data->size, (long)sizeof(EmulatorState));
+  if(!(file_data->size == sizeof(EmulatorState))) return ERROR;
+            // "save state file is wrong size: %ld, expected %ld.\n",
+            // (long)file_data->size, (long)sizeof(EmulatorState));
   EmulatorState* new_state = (EmulatorState*)file_data->data;
-  CHECK_MSG(new_state->header == SAVE_STATE_HEADER,
-            "header mismatch: %u, expected %u.\n", new_state->header,
-            SAVE_STATE_HEADER);
+  if(!(new_state->header == SAVE_STATE_HEADER)) return ERROR;
+            // "header mismatch: %u, expected %u.\n", new_state->header,
+            // SAVE_STATE_HEADER);
   memcpy(&e->state, new_state, sizeof(EmulatorState));
   set_cart_info(e, e->state.cart_info_index);
 
@@ -4885,7 +4884,6 @@ Result emulator_read_state(Emulator* e, const FileData* file_data) {
   update_bw_palette_rgba(e, PALETTE_TYPE_OBP0);
   update_bw_palette_rgba(e, PALETTE_TYPE_OBP1);
   return OK;
-  ON_ERROR_RETURN;
 }
 
 Result emulator_write_state(Emulator* e, FileData* file_data) {
@@ -4939,7 +4937,7 @@ Result emulator_write_ext_ram_to_file(Emulator* e, const char* filename) {
   Result result = ERROR;
   FileData file_data;
   file_data.size = EXT_RAM.size;
-  file_data.data = xmalloc(file_data.size);
+  file_data.data = reinterpret_cast<u8*>(xmalloc(file_data.size));
   CHECK(SUCCESS(emulator_write_ext_ram(e, &file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
@@ -4973,7 +4971,7 @@ error:
 }
 
 Emulator* emulator_new(const EmulatorInit* init) {
-  Emulator* e = xcalloc(1, sizeof(Emulator));
+  Emulator* e = reinterpret_cast<Emulator*>(xcalloc(1, sizeof(Emulator)));
   CHECK(SUCCESS(set_rom_file_data(e, &init->rom)));
   CHECK(SUCCESS(init_emulator(e, init)));
   CHECK(
@@ -5013,9 +5011,9 @@ void emulator_set_builtin_palette(Emulator* e, u32 index) {
   };
   size_t count = sizeof(pals) / sizeof(*pals);
   if (index >= count) { return; }
-  emulator_set_bw_palette(e, 0, &pals[index][0]);
-  emulator_set_bw_palette(e, 1, &pals[index][1]);
-  emulator_set_bw_palette(e, 2, &pals[index][2]);
+  emulator_set_bw_palette(e, static_cast<PaletteType>(0), &pals[index][0]);
+  emulator_set_bw_palette(e, static_cast<PaletteType>(1), &pals[index][1]);
+  emulator_set_bw_palette(e, static_cast<PaletteType>(2), &pals[index][2]);
   for (int i = 0; i < 4; ++i) {
     SGB.screen_pal[i] = pals[index][0];
   }
