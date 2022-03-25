@@ -93,9 +93,9 @@ static Result host_ui_init(struct HostUI* ui, SDL_Window* window,
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer), vertex_buffer,
                GL_STATIC_DRAW);
   GLuint vs, fs;
-  CHECK(SUCCESS(host_gl_shader(GL_VERTEX_SHADER, s_vertex_shader, &vs)));
-  CHECK(SUCCESS(host_gl_shader(GL_FRAGMENT_SHADER, s_fragment_shader, &fs)));
-  CHECK(SUCCESS(host_gl_program(vs, fs, &ui->program)));
+  if(!(SUCCESS(host_gl_shader(GL_VERTEX_SHADER, s_vertex_shader, &vs)))) return ERROR;
+  if(!(SUCCESS(host_gl_shader(GL_FRAGMENT_SHADER, s_fragment_shader, &fs)))) return ERROR;
+  if(!(SUCCESS(host_gl_program(vs, fs, &ui->program)))) return ERROR;
 
   GLint aPos = glGetAttribLocation(ui->program, "aPos");
   GLint aTexCoord = glGetAttribLocation(ui->program, "aTexCoord");
@@ -112,11 +112,10 @@ static Result host_ui_init(struct HostUI* ui, SDL_Window* window,
   glVertexAttribPointer(aTexCoord, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                         (void*)offsetof(Vertex, tex_coord));
   return OK;
-  ON_ERROR_RETURN;
 }
 
 struct HostUI* host_ui_new(struct SDL_Window* window, Bool use_sgb_border) {
-  HostUI* ui = xcalloc(1, sizeof(HostUI));
+  HostUI* ui = reinterpret_cast<HostUI*>(xcalloc(1, sizeof(HostUI)));
   CHECK(SUCCESS(host_ui_init(ui, window, use_sgb_border)));
   return ui;
 error:
