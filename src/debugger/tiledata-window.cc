@@ -90,7 +90,7 @@ void Debugger::TiledataWindow::Tick() {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     ImVec2 cursor = ImGui::GetCursorScreenPos();
-    int width = TILE_DATA_TEXTURE_WIDTH / kTileSize.x;
+    [[maybe_unused]] int width = TILE_DATA_TEXTURE_WIDTH / kTileSize.x;
     if (size8x16) {
       th = (th + 1) & ~1;
     }

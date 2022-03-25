@@ -414,15 +414,15 @@ void HostUI::render_draw_lists(ImDrawData* draw_data) {
   glDisable(GL_BLEND);
 }
 
-void HostUI::set_clipboard_text(void* user_data, const char* text) {
+void HostUI::set_clipboard_text([[maybe_unused]] void* user_data, const char* text) {
   SDL_SetClipboardText(text);
 }
 
-const char* HostUI::get_clipboard_text(void* user_data) {
+const char* HostUI::get_clipboard_text([[maybe_unused]] void* user_data) {
   return SDL_GetClipboardText();
 }
 
-HostUI* host_ui_new(struct SDL_Window* window, Bool use_sgb_border) {
+HostUI* host_ui_new(struct SDL_Window* window, [[maybe_unused]] Bool use_sgb_border) {
   HostUI* ui = new HostUI(window);
   if (!SUCCESS(ui->init())) {
     delete ui;
@@ -440,8 +440,8 @@ void host_ui_event(struct HostUI* ui, union SDL_Event* event) {
   ui->event(event);
 }
 
-void host_ui_begin_frame(HostUI* ui, HostTexture* fb_texture,
-                         HostTexture* sgb_fb_texture) {
+void host_ui_begin_frame(HostUI* ui, [[maybe_unused]] HostTexture* fb_texture,
+                         [[maybe_unused]] HostTexture* sgb_fb_texture) {
   ui->begin_frame();
 }
 
@@ -457,11 +457,11 @@ void host_ui_enable_palette(struct HostUI* ui, Bool enabled) {
   ui->enable_palette(enabled);
 }
 
-void host_ui_render_screen_overlay(struct HostUI* ui, HostTexture* tex) {
+void host_ui_render_screen_overlay([[maybe_unused]] struct HostUI* ui, [[maybe_unused]] HostTexture* tex) {
   // TODO(binji)
   assert(0);
 }
 
-Bool host_ui_capture_keyboard(struct HostUI* ui) {
+Bool host_ui_capture_keyboard([[maybe_unused]] struct HostUI* ui) {
   return static_cast<Bool>(ImGui::GetIO().WantCaptureKeyboard);
 }

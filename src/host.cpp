@@ -83,7 +83,7 @@ static Emulator* host_get_emulator(Host* host) {
 }
 
 static Result host_init_video(Host* host) {
-  Emulator* e = host_get_emulator(host);
+  [[maybe_unused]] Emulator* e = host_get_emulator(host);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -156,7 +156,7 @@ static HostKeycode scancode_to_keycode(SDL_Scancode scancode) {
 }
 
 Bool host_poll_events(Host* host) {
-  Emulator* e = host_get_emulator(host);
+  [[maybe_unused]] Emulator* e = host_get_emulator(host);
   Bool running = TRUE;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
@@ -397,7 +397,7 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
 }
 
 void host_end_rewind(Host* host) {
-  Ticks ticks = emulator_get_ticks(host_get_emulator(host));
+  [[maybe_unused]] Ticks ticks = emulator_get_ticks(host_get_emulator(host));
   assert(host->rewind_state.rewinding);
 
   if (host->rewind_state.rewind_result.info) {
@@ -560,7 +560,7 @@ static GLTextureFormat host_apply_texture_format(HostTextureFormat format) {
   return result;
 }
 
-HostTexture* host_create_texture(Host* host, int w, int h,
+HostTexture* host_create_texture([[maybe_unused]] Host* host, int w, int h,
                                  HostTextureFormat format) {
   HostTexture* texture = reinterpret_cast<HostTexture*>(xmalloc(sizeof(HostTexture)));
   texture->width = next_power_of_two(w);
@@ -580,7 +580,7 @@ HostTexture* host_create_texture(Host* host, int w, int h,
   return texture;
 }
 
-void host_upload_texture(Host* host, HostTexture* texture, int w, int h,
+void host_upload_texture([[maybe_unused]] Host* host, HostTexture* texture, int w, int h,
                          const void* data) {
   assert(w <= texture->width);
   assert(h <= texture->height);
@@ -590,7 +590,7 @@ void host_upload_texture(Host* host, HostTexture* texture, int w, int h,
                   gl_format.type, data);
 }
 
-void host_destroy_texture(Host* host, HostTexture* texture) {
+void host_destroy_texture([[maybe_unused]] Host* host, HostTexture* texture) {
   GLuint tex = texture->handle;
   glDeleteTextures(1, &tex);
   xfree(texture);
@@ -601,7 +601,7 @@ void host_render_screen_overlay(struct Host* host,
   host_ui_render_screen_overlay(host->ui, texture);
 }
 
-Ticks host_oldest_ticks(Host* host) {
+Ticks host_oldest_ticks([[maybe_unused]] Host* host) {
   return 0;
 }
 

@@ -21,6 +21,7 @@ else ()
     -Wno-implicit-fallthrough
     -Wno-gnu-anonymous-struct -Wno-nested-anon-types
     -Wno-gnu-zero-variadic-macro-arguments -Wno-c99-designator
+    -Wno-format-security
   )
   if (WERROR)
     add_definitions(-Werror)

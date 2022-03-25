@@ -22,7 +22,7 @@ static bool s_force_dmg;
 static u32 s_cgb_color_curve;
 static bool s_use_sgb_border;
 
-static void usage(int argc, char** argv) {
+static void usage([[maybe_unused]] int argc, char** argv) {
   PRINT_ERROR(
       "usage: %s [options] <in.gb>\n"
       "  -h,--help          help\n"
@@ -60,7 +60,6 @@ void parse_arguments(int argc, char** argv) {
   struct OptionParser* parser = option_parser_new(
       options, sizeof(options) / sizeof(options[0]), argc, argv);
 
-  int errors = 0;
   int done = 0;
   while (!done) {
     OptionResult result = option_parser_next(parser);

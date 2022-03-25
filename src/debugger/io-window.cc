@@ -15,7 +15,7 @@ Debugger::IOWindow::IOWindow(Debugger* d) : Window(d) {}
 
 namespace {
 
-void TextRegBits(Emulator* e, u8 v) {}
+void TextRegBits([[maybe_unused]] Emulator* e, [[maybe_unused]] u8 v) {}
 
 struct BitArg {
   u8 mask;
@@ -213,7 +213,7 @@ void Debugger::IOWindow::Tick() {
   if (!is_open) return;
 
   if (ImGui::Begin(Debugger::s_io_window_name, &is_open)) {
-    u8 v;
+    [[maybe_unused]] u8 v;
     TextReg(d->e, 0xff00, "JOYP", InvBit(0x18, "D"), InvBit(0x14, "U"),
             InvBit(0x12, "L"), InvBit(0x11, "R"), InvBit(0x28, "+"),
             InvBit(0x24, "-"), InvBit(0x22, "B"), InvBit(0x21, "A"));

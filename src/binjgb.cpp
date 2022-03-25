@@ -271,7 +271,7 @@ static void end_rewind(void) {
   s_rewinding = FALSE;
 }
 
-static void key_down(HostHookContext* ctx, HostKeycode code) {
+static void key_down([[maybe_unused]] HostHookContext* ctx, HostKeycode code) {
   switch (code) {
     case HOST_KEYCODE_1: toggle_audio_channel(APU_CHANNEL1); break;
     case HOST_KEYCODE_2: toggle_audio_channel(APU_CHANNEL2); break;
@@ -295,7 +295,7 @@ static void key_down(HostHookContext* ctx, HostKeycode code) {
   }
 }
 
-static void key_up(HostHookContext* ctx, HostKeycode code) {
+static void key_up([[maybe_unused]] HostHookContext* ctx, HostKeycode code) {
   switch (code) {
     case HOST_KEYCODE_LSHIFT: set_no_sync(FALSE); break;
     case HOST_KEYCODE_F11: toggle_fullscreen(); break;
@@ -304,7 +304,7 @@ static void key_up(HostHookContext* ctx, HostKeycode code) {
   }
 }
 
-static void usage(int argc, char** argv) {
+static void usage([[maybe_unused]] int argc, char** argv) {
   PRINT_ERROR(
       "usage: %s [options] <in.gb>\n"
       "  -h,--help               help\n"
@@ -338,7 +338,6 @@ void parse_arguments(int argc, char** argv) {
   struct OptionParser* parser = option_parser_new(
       options, sizeof(options) / sizeof(options[0]), argc, argv);
 
-  int errors = 0;
   int done = 0;
   while (!done) {
     OptionResult result = option_parser_next(parser);
