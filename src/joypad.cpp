@@ -21,7 +21,7 @@
 #define CMP_LT(x, y) ((x) < (y))
 
 JoypadBuffer* joypad_new(void) {
-  JoypadBuffer* buffer = xmalloc(sizeof(JoypadBuffer));
+  JoypadBuffer* buffer = reinterpret_cast<JoypadBuffer*>(xmalloc(sizeof(JoypadBuffer)));
   ZERO_MEMORY(*buffer);
   buffer->sentinel.next = buffer->sentinel.prev = &buffer->sentinel;
   joypad_append(buffer, &buffer->last_buttons, 0);
@@ -43,8 +43,8 @@ void joypad_delete(JoypadBuffer* buffer) {
 }
 
 static JoypadChunk* alloc_joypad_chunk(size_t capacity) {
-  JoypadChunk* chunk = xcalloc(1, sizeof(JoypadChunk));
-  chunk->data = xcalloc(1, capacity * sizeof(JoypadState));
+  JoypadChunk* chunk = reinterpret_cast<JoypadChunk*>(xcalloc(1, sizeof(JoypadChunk)));
+  chunk->data = reinterpret_cast<JoypadState*>(xcalloc(1, capacity * sizeof(JoypadState)));
   chunk->capacity = capacity;
   return chunk;
 }
@@ -210,7 +210,7 @@ static size_t joypad_file_size(JoypadBuffer* buffer) {
 
 void joypad_init_file_data(JoypadBuffer* buffer, FileData* file_data) {
   file_data->size = joypad_file_size(buffer);
-  file_data->data = xmalloc(file_data->size);
+  file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
 Result joypad_write(JoypadBuffer* buffer, FileData* file_data) {
@@ -226,27 +226,28 @@ Result joypad_write(JoypadBuffer* buffer, FileData* file_data) {
 }
 
 Result joypad_read(const FileData* file_data, JoypadBuffer** out_buffer) {
-  CHECK_MSG(file_data->size % sizeof(JoypadState) == 0,
-            "Expected joypad file size to be multiple of %zu\n",
-            sizeof(JoypadState));
+  if(!(file_data->size % sizeof(JoypadState) == 0)) return ERROR;
+            // "Expected joypad file size to be multiple of %zu\n",
+            // sizeof(JoypadState));
   size_t size = file_data->size / sizeof(JoypadState);
   size_t i;
   Ticks last_ticks = 0;
   for (i = 0; i < size; ++i) {
     JoypadState* state = (JoypadState*)file_data->data + i;
     Ticks ticks = state->ticks;
-    CHECK_MSG(ticks >= last_ticks,
-              "Expected ticks to be sorted, got %" PRIu64 " then %" PRIu64 "\n",
-              last_ticks, ticks);
+    if(!(ticks >= last_ticks)) return ERROR;
+              // "Expected ticks to be sorted, got %" PRIu64 " then %" PRIu64 "\n",
+              // last_ticks, ticks);
     size_t j;
     for (j = 0; j < ARRAY_SIZE(state->padding); ++j) {
-      CHECK_MSG(state->padding[j] == 0, "Expected padding to be zero, got %u\n",
-                state->padding[i]);
+      if(!(state->padding[j] == 0)) return ERROR;
+              // , "Expected padding to be zero, got %u\n",
+                // state->padding[i]);
     }
     last_ticks = ticks;
   }
 
-  JoypadBuffer* buffer = xcalloc(1, sizeof(JoypadBuffer));
+  JoypadBuffer* buffer = reinterpret_cast<JoypadBuffer*>(xcalloc(1, sizeof(JoypadBuffer)));
   JoypadChunk* new_chunk = alloc_joypad_chunk(size);
   memcpy(new_chunk->data, file_data->data, file_data->size);
   new_chunk->size = size;
@@ -254,13 +255,12 @@ Result joypad_read(const FileData* file_data, JoypadBuffer** out_buffer) {
   buffer->sentinel.prev = buffer->sentinel.next = new_chunk;
   *out_buffer = buffer;
   return OK;
-  ON_ERROR_RETURN;
 }
 
 static void joypad_playback_callback(struct JoypadButtons* joyp,
                                      void* user_data) {
   Bool changed = FALSE;
-  JoypadPlayback* playback = user_data;
+  JoypadPlayback* playback = reinterpret_cast<JoypadPlayback*>(user_data);
   Ticks ticks = emulator_get_ticks(playback->e);
   if (ticks < playback->current.state->ticks) {
     playback->current = joypad_find_state(playback->buffer, ticks);
