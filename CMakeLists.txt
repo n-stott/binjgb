@@ -39,16 +39,16 @@ if (NOT EMSCRIPTEN)
 
   if (SDL2_FOUND AND OPENGL_FOUND)
     add_executable(binjgb
-      src/memory.c
-      src/common.c
-      src/options.c
-      src/emulator.c
-      src/host.c
-      src/host-gl.c
-      src/host-ui-simple.c
-      src/joypad.c
-      src/rewind.c
-      src/binjgb.c
+      src/memory.cpp
+      src/common.cpp
+      src/options.cpp
+      src/emulator.cpp
+      src/host.cpp
+      src/host-gl.cpp
+      src/host-ui-simple.cpp
+      src/joypad.cpp
+      src/rewind.cpp
+      src/binjgb.cpp
     )
     target_link_libraries(binjgb SDL2::SDL2 SDL2::SDL2main ${OPENGL_gl_LIBRARY})
 
@@ -63,15 +63,15 @@ if (NOT EMSCRIPTEN)
       third_party/imgui/imgui_draw.cpp
       third_party/imgui/imgui_tables.cpp
       third_party/imgui/imgui_widgets.cpp
-      src/memory.c
-      src/common.c
-      src/options.c
-      src/emulator-debug.c
-      src/host.c
-      src/host-gl.c
+      src/memory.cpp
+      src/common.cpp
+      src/options.cpp
+      src/emulator-debug.cpp
+      src/host.cpp
+      src/host-gl.cpp
       src/host-ui-imgui.cc
-      src/joypad.c
-      src/rewind.c
+      src/joypad.cpp
+      src/rewind.cpp
       src/debugger/main.cc
       src/debugger/debugger.cc
       src/debugger/audio-window.cc
@@ -115,33 +115,33 @@ if (NOT EMSCRIPTEN)
   endif ()
 
   add_executable(binjgb-tester
-    src/memory.c
-    src/common.c
-    src/options.c
-    src/emulator.c
-    src/joypad.c
-    src/tester.c
+    src/memory.cpp
+    src/common.cpp
+    src/options.cpp
+    src/emulator.cpp
+    src/joypad.cpp
+    src/tester.cpp
   )
   install(TARGETS binjgb-tester DESTINATION bin)
   target_copy_to_bin(binjgb-tester)
 
   add_executable(binjgb-tester-debug
-    src/memory.c
-    src/common.c
-    src/options.c
-    src/emulator-debug.c
-    src/joypad.c
-    src/tester.c
+    src/memory.cpp
+    src/common.cpp
+    src/options.cpp
+    src/emulator-debug.cpp
+    src/joypad.cpp
+    src/tester.cpp
   )
   target_compile_definitions(binjgb-tester-debug PUBLIC TESTER_DEBUGGER)
   install(TARGETS binjgb-tester-debug DESTINATION bin)
   target_copy_to_bin(binjgb-tester-debug)
 else (EMSCRIPTEN)
   add_executable(binjgb
-    src/memory.c
-    src/emulator.c
-    src/joypad.c
-    src/rewind.c
+    src/memory.cpp
+    src/emulator.cpp
+    src/joypad.cpp
+    src/rewind.cpp
     src/emscripten/wrapper.c)
   set(EXPORTED_JSON ${PROJECT_SOURCE_DIR}/src/emscripten/exported.json)
   target_include_directories(binjgb PUBLIC ${PROJECT_SOURCE_DIR}/src)
