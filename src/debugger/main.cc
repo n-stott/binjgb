@@ -84,7 +84,7 @@ void parse_arguments(int argc, char** argv) {
             goto error;
 
           case 't':
-            emulator_set_trace(TRUE);
+            // emulator_set_trace(true);
             break;
 
           case 'f':
@@ -128,9 +128,9 @@ void parse_arguments(int argc, char** argv) {
 
           default:
             if (strcmp(result.option->long_name, "force-dmg") == 0) {
-              s_force_dmg = TRUE;
+              s_force_dmg = true;
             } else if (strcmp(result.option->long_name, "sgb-border") == 0) {
-              s_use_sgb_border = TRUE;
+              s_use_sgb_border = true;
             } else {
               abort();
             }

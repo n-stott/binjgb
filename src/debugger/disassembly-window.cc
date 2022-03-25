@@ -241,12 +241,12 @@ void Debugger::DisassemblyWindow::Tick() {
         if (ImGui::InvisibleButton("##bp", bp_size)) {
           if (bp.valid) {
             if (bp.enabled) {
-              emulator_enable_breakpoint(bp.id, FALSE);
+              emulator_enable_breakpoint(bp.id, false);
             } else {
               emulator_remove_breakpoint(bp.id);
             }
           } else {
-            emulator_add_breakpoint(d->e, addr, TRUE);
+            emulator_add_breakpoint(d->e, addr, true);
           }
         }
         if (bp.valid && ImGui::IsItemHovered()) {

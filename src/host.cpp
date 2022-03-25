@@ -127,7 +127,7 @@ f64 host_get_time_ms(Host* host) {
 }
 
 static Result host_init_audio(Host* host) {
-  host->audio.ready = FALSE;
+  host->audio.ready = false;
   host_set_audio_volume(host, host->init.audio_volume);
   SDL_AudioSpec want;
   want.freq = host->init.audio_frequency;
@@ -157,7 +157,7 @@ static HostKeycode scancode_to_keycode(SDL_Scancode scancode) {
 
 Bool host_poll_events(Host* host) {
   [[maybe_unused]] Emulator* e = host_get_emulator(host);
-  Bool running = TRUE;
+  Bool running = true;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     host_ui_event(host->ui, &event);
@@ -189,7 +189,7 @@ Bool host_poll_events(Host* host) {
         break;
       }
       case SDL_QUIT:
-        running = FALSE;
+        running = false;
         break;
       default: break;
     }
@@ -207,7 +207,7 @@ void host_end_video(Host* host) {
 }
 
 void host_reset_audio(Host* host) {
-  host->audio.ready = FALSE;
+  host->audio.ready = false;
   SDL_ClearQueuedAudio(host->audio.dev);
   SDL_PauseAudioDevice(host->audio.dev, 1);
 }
@@ -244,7 +244,7 @@ void host_render_audio(Host* host) {
   }
   if (!audio->ready && queued_size >= AUDIO_TARGET_QUEUED_SIZE) {
     HOOK(audio_buffer_ready, queued_size);
-    audio->ready = TRUE;
+    audio->ready = true;
     SDL_PauseAudioDevice(audio->dev, 0);
   }
 }
@@ -370,7 +370,7 @@ static EmulatorEvent host_run_until_ticks(struct Host* host, Ticks ticks) {
 
 void host_begin_rewind(Host* host) {
   assert(!host->rewind_state.rewinding);
-  host->rewind_state.rewinding = TRUE;
+  host->rewind_state.rewinding = true;
 }
 
 Result host_rewind_to_ticks(Host* host, Ticks ticks) {

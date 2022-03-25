@@ -202,5 +202,5 @@ void host_ui_render_screen_overlay(struct HostUI* ui, HostTexture* tex) {
 }
 
 Bool host_ui_capture_keyboard([[maybe_unused]] struct HostUI* ui) {
-  return FALSE;
+  return false;
 }

@@ -50,7 +50,7 @@ static const char* s_rom_filename;
 static const char* s_read_joypad_filename;
 static const char* s_write_joypad_filename;
 static const char* s_save_state_filename;
-static Bool s_running = TRUE;
+static Bool s_running = true;
 static Bool s_step_frame;
 static Bool s_paused;
 static f32 s_audio_volume = 0.5f;
@@ -228,7 +228,7 @@ static void load_state(void) {
 static void begin_rewind(void) {
   if (!s_rewinding) {
     host_begin_rewind(host);
-    s_rewinding = TRUE;
+    s_rewinding = true;
     s_rewind_start = emulator_get_ticks(e);
   }
 }
@@ -268,7 +268,7 @@ static void rewind_by(Ticks delta) {
 
 static void end_rewind(void) {
   host_end_rewind(host);
-  s_rewinding = FALSE;
+  s_rewinding = false;
 }
 
 static void key_down([[maybe_unused]] HostHookContext* ctx, HostKeycode code) {
@@ -282,10 +282,10 @@ static void key_down([[maybe_unused]] HostHookContext* ctx, HostKeycode code) {
     case HOST_KEYCODE_O: toggle_layer(LAYER_OBJ); break;
     case HOST_KEYCODE_F6: save_state(); break;
     case HOST_KEYCODE_F9: load_state(); break;
-    case HOST_KEYCODE_N: s_step_frame = TRUE; s_paused = FALSE; break;
+    case HOST_KEYCODE_N: s_step_frame = true; s_paused = false; break;
     case HOST_KEYCODE_SPACE: s_paused ^= 1; break;
-    case HOST_KEYCODE_ESCAPE: s_running = FALSE; break;
-    case HOST_KEYCODE_LSHIFT: set_no_sync(TRUE); break;
+    case HOST_KEYCODE_ESCAPE: s_running = false; break;
+    case HOST_KEYCODE_LSHIFT: set_no_sync(true); break;
     case HOST_KEYCODE_MINUS: inc_audio_volume(-0.05f); break;
     case HOST_KEYCODE_EQUALS: inc_audio_volume(+0.05f); break;
     case HOST_KEYCODE_BACKSPACE: begin_rewind(); break;
@@ -297,7 +297,7 @@ static void key_down([[maybe_unused]] HostHookContext* ctx, HostKeycode code) {
 
 static void key_up([[maybe_unused]] HostHookContext* ctx, HostKeycode code) {
   switch (code) {
-    case HOST_KEYCODE_LSHIFT: set_no_sync(FALSE); break;
+    case HOST_KEYCODE_LSHIFT: set_no_sync(false); break;
     case HOST_KEYCODE_F11: toggle_fullscreen(); break;
     case HOST_KEYCODE_BACKSPACE: end_rewind(); break;
     default: break;
@@ -387,9 +387,9 @@ void parse_arguments(int argc, char** argv) {
 
           default:
             if (strcmp(result.option->long_name, "force-dmg") == 0) {
-              s_force_dmg = TRUE;
+              s_force_dmg = true;
             } else if (strcmp(result.option->long_name, "sgb-border") == 0) {
-              s_use_sgb_border = TRUE;
+              s_use_sgb_border = true;
             } else {
               abort();
             }
@@ -543,12 +543,12 @@ int main(int argc, char** argv) {
       EmulatorEvent event = host_run_ms(host, refresh_ms);
       if (event & EMULATOR_EVENT_INVALID_OPCODE) {
         set_status_text("invalid opcode!");
-        s_paused = TRUE;
+        s_paused = true;
       }
       if (s_step_frame) {
         host_reset_audio(host);
-        s_paused = TRUE;
-        s_step_frame = FALSE;
+        s_paused = true;
+        s_step_frame = false;
       }
     }
 

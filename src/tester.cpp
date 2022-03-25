@@ -183,7 +183,7 @@ void parse_options(int argc, char**argv) {
 
 #ifdef TESTER_DEBUGGER
           case 't':
-            emulator_set_trace(TRUE);
+            emulator_set_trace(true);
             break;
 
           case 'l':
@@ -219,7 +219,7 @@ void parse_options(int argc, char**argv) {
             break;
 
           case 'a':
-            s_animate = TRUE;
+            s_animate = true;
             break;
 
           case 's':
@@ -233,8 +233,8 @@ void parse_options(int argc, char**argv) {
           default:
 #ifdef TESTER_DEBUGGER
             if (strcmp(result.option->long_name, "print-ops") == 0) {
-              s_print_ops = TRUE;
-              emulator_set_opcode_count_enabled(TRUE);
+              s_print_ops = true;
+              emulator_set_opcode_count_enabled(true);
             } else if (strcmp(result.option->long_name, "print-ops-limit") ==
                        0) {
               s_print_ops_limit = atoi(result.value);
@@ -242,20 +242,20 @@ void parse_options(int argc, char**argv) {
                 s_print_ops_limit = MAX_PRINT_OPS_LIMIT;
               }
             } else if (strcmp(result.option->long_name, "profile") == 0) {
-              s_profile = TRUE;
-              emulator_set_profiling_enabled(TRUE);
+              s_profile = true;
+              emulator_set_profiling_enabled(true);
             } else if (strcmp(result.option->long_name, "profile-limit") == 0) {
               s_profile_limit = atoi(result.value);
               if (s_profile_limit >= MAX_PROFILE_LIMIT) {
                 s_profile_limit = MAX_PROFILE_LIMIT;
               }
 #else
-            if (FALSE) {
+            if (false) {
 #endif
             } else if (strcmp(result.option->long_name, "force-dmg") == 0) {
-              s_force_dmg = TRUE;
+              s_force_dmg = true;
             } else if (strcmp(result.option->long_name, "sgb-border") == 0) {
-              s_use_sgb_border = TRUE;
+              s_use_sgb_border = true;
             } else {
               abort();
             }
@@ -326,7 +326,7 @@ void print_ops(void) {
   char mnemonic[100];
   u64 total = 0;
   int distinct = 0;
-  Bool skipped = FALSE;
+  Bool skipped = false;
   for (i = 0; i < 512; ++i) {
     if (pairs[i].count > 0) {
       u16 opcode = pairs[i].value;
@@ -340,7 +340,7 @@ void print_ops(void) {
         emulator_get_opcode_mnemonic(opcode, mnemonic, sizeof(mnemonic));
         printf(": %10d - %s\n", pairs[i].count, mnemonic);
       } else {
-        skipped = TRUE;
+        skipped = true;
       }
       ++distinct;
       total += pairs[i].count;
@@ -468,18 +468,18 @@ int main(int argc, char** argv) {
 
 #ifdef TESTER_DEBUGGER
   /* Disable rom usage collecting since it's slow and not useful here. */
-  emulator_set_rom_usage_enabled(FALSE);
+  emulator_set_rom_usage_enabled(false);
 #endif
 
   u32 total_ticks = (u32)(s_frames * PPU_FRAME_TICKS);
   u32 until_ticks = emulator_get_ticks(e) + total_ticks;
   printf("frames = %u total_ticks = %u\n", s_frames, total_ticks);
-  Bool finish_at_next_frame = FALSE;
+  Bool finish_at_next_frame = false;
   u32 animation_frame = 0; /* Will likely differ from PPU frame. */
   [[maybe_unused]] u32 next_input_frame = 0;
   [[maybe_unused]] u32 next_input_frame_buttons = 0;
   f64 start_time = get_time_sec();
-  while (TRUE) {
+  while (true) {
     EmulatorEvent event = emulator_run_until(e, until_ticks);
     if (event & EMULATOR_EVENT_NEW_FRAME) {
       if (s_output_ppm && s_animate) {
@@ -495,7 +495,7 @@ int main(int argc, char** argv) {
       }
     }
     if (event & EMULATOR_EVENT_UNTIL_TICKS) {
-      finish_at_next_frame = TRUE;
+      finish_at_next_frame = true;
       until_ticks += PPU_FRAME_TICKS;
     }
     if (event & EMULATOR_EVENT_INVALID_OPCODE) {

@@ -12,7 +12,7 @@
 
 #define MAX_TRACE_STACK 16
 #define MAX_BREAKPOINTS 256
-static Bool s_trace_stack[MAX_TRACE_STACK] = {FALSE};
+static Bool s_trace_stack[MAX_TRACE_STACK] = {false};
 static size_t s_trace_stack_top = 1;
 static LogLevel s_log_level[NUM_LOG_SYSTEMS] = {(LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1};
 static Breakpoint s_breakpoints[MAX_BREAKPOINTS];
@@ -23,7 +23,7 @@ static int s_breakpoint_max_id;
 
 #define HOOK0(name) HOOK_##name(e, __func__)
 #define HOOK(name, ...) HOOK_##name(e, __func__, __VA_ARGS__)
-#define HOOK0_FALSE(name) HOOK_##name(e, __func__)
+#define HOOK0_false(name) HOOK_##name(e, __func__)
 
 #define DECLARE_LOG_HOOK(system, level, name, format) \
   static void HOOK_##name(Emulator* e, const char* func_name, ...);
@@ -429,8 +429,8 @@ int emulator_add_empty_breakpoint(void) {
     if (!bp->valid) {
       bp->id = id;
       bp->addr = bp->bank = 0;
-      bp->enabled = FALSE;
-      bp->valid = TRUE;
+      bp->enabled = false;
+      bp->valid = true;
       s_breakpoint_max_id = MAX(id + 1, s_breakpoint_max_id);
       ++s_breakpoint_count;
       return id;
@@ -471,7 +471,7 @@ void emulator_remove_breakpoint(int id) {
   if (!is_breakpoint_valid(id)) {
     return;
   }
-  s_breakpoints[id].valid = FALSE;
+  s_breakpoints[id].valid = false;
   if (id + 1 == s_breakpoint_max_id) {
     while (s_breakpoint_max_id > 0 &&
            !s_breakpoints[s_breakpoint_max_id - 1].valid) {
@@ -500,7 +500,7 @@ void emulator_write_u8_raw(Emulator* e, Address addr, u8 value) {
 }
 
 // Store as 1-1 mapping of bytes, low 3 bits used only.
-static Bool s_rom_usage_enabled = TRUE;
+static Bool s_rom_usage_enabled = true;
 static u8 s_rom_usage[MAXIMUM_ROM_SIZE];
 
 Bool emulator_get_rom_usage_enabled(void) {
@@ -570,13 +570,13 @@ static Bool address_matches_breakpoint_mask(Address addr) {
 
 static inline Bool hit_breakpoint(Emulator* e) {
   if (s_breakpoint_count == 0) {
-    return FALSE;
+    return false;
   }
   u16 pc = e->state.reg.PC;
   if (!address_matches_breakpoint_mask(pc)) {
-    return FALSE;
+    return false;
   }
-  Bool hit = FALSE;
+  Bool hit = false;
   int id;
   for (id = 0; id < s_breakpoint_max_id; ++id) {
     Breakpoint* bp = &s_breakpoints[id];
@@ -586,11 +586,11 @@ static inline Bool hit_breakpoint(Emulator* e) {
     }
     /* Don't hit the same breakpoint twice in a row. */
     if (bp->hit) {
-      bp->hit = FALSE;
+      bp->hit = false;
       continue;
     }
 
-    hit = bp->hit = TRUE;
+    hit = bp->hit = true;
   }
   return hit;
 }
@@ -613,15 +613,15 @@ Bool HOOK_emulator_step(Emulator* e, [[maybe_unused]] const char* func_name) {
   }
   if (hit_breakpoint(e)) {
     e->state.event |= EMULATOR_EVENT_BREAKPOINT;
-    return TRUE;
+    return true;
   }
-  return FALSE;
+  return false;
 }
 
-static Bool s_opcode_count_enabled = FALSE;
+static Bool s_opcode_count_enabled = false;
 static u32 s_opcode_count[256];
 static u32 s_cb_opcode_count[256];
-static Bool s_profiling_enabled = FALSE;
+static Bool s_profiling_enabled = false;
 static u32 s_profiling_counters[MAXIMUM_ROM_SIZE];
 
 Bool emulator_get_opcode_count_enabled(void) {

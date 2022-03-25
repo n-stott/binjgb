@@ -78,21 +78,19 @@
     var = begin_;                                                       \
   }
 
-typedef int8_t s8;
-typedef int32_t s32;
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef float f32;
-typedef double f64;
-typedef u16 Address;
-typedef u16 MaskedAddress;
-typedef u32 RGBA;
-typedef u64 Ticks;
-typedef bool Bool;
-#define FALSE false
-#define TRUE true
+using s8 = int8_t;
+using s32 = int32_t;
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using f32 = float;
+using f64 = double;
+using Address = u16;
+using MaskedAddress = u16;
+using RGBA = u32;
+using Ticks = u64;
+using Bool = bool;
 typedef enum Result { OK = 0, ERROR = 1 } Result;
 
 typedef struct FileData {

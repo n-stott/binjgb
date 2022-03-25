@@ -28,7 +28,7 @@ void Debugger::SetPaletteAndEnable(ImDrawList* draw_list,
     Context* ctx = static_cast<Context*>(cmd->UserCallbackData);
     Host* host = ctx->first;
     host_set_palette(host, ctx->second.color);
-    host_enable_palette(host, TRUE);
+    host_enable_palette(host, true);
     delete ctx;
   };
 
@@ -38,7 +38,7 @@ void Debugger::SetPaletteAndEnable(ImDrawList* draw_list,
 void Debugger::DisablePalette(ImDrawList* draw_list) {
   auto func = [](const ImDrawList*, const ImDrawCmd* cmd) {
     Host* host = static_cast<Host*>(cmd->UserCallbackData);
-    host_enable_palette(host, FALSE);
+    host_enable_palette(host, false);
   };
 
   draw_list->AddCallback(func, host);
@@ -136,7 +136,7 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
   emulator_init.audio_frames = audio_frames;
   emulator_init.random_seed = random_seed;
   emulator_init.builtin_palette = builtin_palette;
-  emulator_init.force_dmg = force_dmg ? TRUE : FALSE;
+  emulator_init.force_dmg = force_dmg ? true : false;
   emulator_init.cgb_color_curve = cgb_color_curve;
   e = emulator_new(&emulator_init);
   if (e == nullptr) {
@@ -165,7 +165,7 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
   // TODO: make these configurable?
   host_init.rewind.frames_per_base_state = 45;
   host_init.rewind.buffer_capacity = MEGABYTES(32);
-  host_init.use_sgb_border = use_sgb_border ? TRUE : FALSE;
+  host_init.use_sgb_border = use_sgb_border ? true : false;
   host = host_new(&host_init, e);
   if (host == nullptr) {
     return false;
@@ -315,7 +315,7 @@ void Debugger::ToggleTrace() {
 
 void Debugger::SetTrace(bool trace) {
   if (run_state != Rewinding) {
-    emulator_set_trace(trace ? TRUE : FALSE);
+    emulator_set_trace(trace ? true : false);
   }
 }
 
@@ -337,7 +337,7 @@ void Debugger::OnKeyDown(HostKeycode code) {
     case HOST_KEYCODE_N: StepFrame(); break;
     case HOST_KEYCODE_SPACE: TogglePause(); break;
     case HOST_KEYCODE_ESCAPE: Exit(); break;
-    case HOST_KEYCODE_LSHIFT: host_config.no_sync = TRUE; break;
+    case HOST_KEYCODE_LSHIFT: host_config.no_sync = true; break;
     case HOST_KEYCODE_MINUS: SetAudioVolume(audio_volume - 0.05f); break;
     case HOST_KEYCODE_EQUALS: SetAudioVolume(audio_volume + 0.05f); break;
     case HOST_KEYCODE_BACKSPACE: BeginAutoRewind(); break;
@@ -352,7 +352,7 @@ void Debugger::OnKeyUp(HostKeycode code) {
   HostConfig host_config = host_get_config(host);
 
   switch (code) {
-    case HOST_KEYCODE_LSHIFT: host_config.no_sync = FALSE; break;
+    case HOST_KEYCODE_LSHIFT: host_config.no_sync = false; break;
     case HOST_KEYCODE_F11: Toggle(host_config.fullscreen); break;
     case HOST_KEYCODE_BACKSPACE: EndAutoRewind(); break;
     default: return;
@@ -466,7 +466,7 @@ std::string Debugger::PrettySize(size_t size) {
 
 void Debugger::BeginAutoRewind() {
   if (run_state == Running || run_state == Paused) {
-    emulator_push_trace(FALSE);
+    emulator_push_trace(false);
     host_begin_rewind(host);
     run_state = AutoRewinding;
   }

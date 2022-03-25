@@ -166,7 +166,7 @@ void Debugger::RewindWindow::Tick() {
 
 void Debugger::BeginRewind() {
   if (run_state == Running || run_state == Paused) {
-    emulator_push_trace(FALSE);
+    emulator_push_trace(false);
     host_begin_rewind(host);
     run_state = Rewinding;
   }

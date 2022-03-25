@@ -261,7 +261,7 @@ void rewind_append(RewindBuffer* buf, Emulator* e) {
 
     if (data_end == NULL) {
       /* Failed to write, need to wrap. */
-      wrap = TRUE;
+      wrap = true;
       continue;
     }
     break;
