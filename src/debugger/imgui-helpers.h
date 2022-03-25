@@ -18,10 +18,10 @@ inline bool Combo(const char* label, T* value, const char* (&names)[N]) {
   return result;
 }
 
-inline bool CheckboxNot(const char* label, Bool* v) {
+inline bool CheckboxNot(const char* label, bool* v) {
   bool bv = !*v;
   bool result = Checkbox(label, &bv);
-  *v = static_cast<Bool>(!bv);
+  *v = static_cast<bool>(!bv);
   return result;
 }
 

@@ -89,30 +89,30 @@ typedef struct {
 
 void emulator_set_log_level(LogSystem, LogLevel);
 SetLogLevelError emulator_set_log_level_from_string(const char*);
-Bool emulator_get_trace();
-void emulator_set_trace(Bool trace);
-void emulator_push_trace(Bool trace);
+bool emulator_get_trace();
+void emulator_set_trace(bool trace);
+void emulator_push_trace(bool trace);
 void emulator_pop_trace();
 const char* emulator_get_log_system_name(LogSystem);
 LogLevel emulator_get_log_level(LogSystem);
 void emulator_print_log_systems();
 
-Bool emulator_is_cgb(Emulator*);
-Bool emulator_is_sgb(Emulator*);
+bool emulator_is_cgb(Emulator*);
+bool emulator_is_sgb(Emulator*);
 
 int emulator_get_rom_size(Emulator*);
-Bool emulator_get_rom_usage_enabled(void);
-void emulator_set_rom_usage_enabled(Bool enable);
+bool emulator_get_rom_usage_enabled(void);
+void emulator_set_rom_usage_enabled(bool enable);
 u8* emulator_get_rom_usage(void);
 void emulator_clear_rom_usage(void);
 
-Bool emulator_get_opcode_count_enabled(void);
-void emulator_set_opcode_count_enabled(Bool enable);
+bool emulator_get_opcode_count_enabled(void);
+void emulator_set_opcode_count_enabled(bool enable);
 u32* emulator_get_opcode_count(void);
 u32* emulator_get_cb_opcode_count(void);
 
-Bool emulator_get_profiling_enabled(void);
-void emulator_set_profiling_enabled(Bool enable);
+bool emulator_get_profiling_enabled(void);
+void emulator_set_profiling_enabled(bool enable);
 u32* emulator_get_profiling_counters(void);
 
 void emulator_get_opcode_mnemonic(u16 opcode, char* buffer, size_t size);
@@ -125,9 +125,9 @@ int emulator_get_max_breakpoint_id(void);
 Breakpoint emulator_get_breakpoint(int id);
 Breakpoint emulator_get_breakpoint_by_address(Emulator*, Address addr);
 int emulator_add_empty_breakpoint(void);
-int emulator_add_breakpoint(Emulator*, Address, Bool enabled);
+int emulator_add_breakpoint(Emulator*, Address, bool enabled);
 void emulator_set_breakpoint_address(Emulator*, int id, Address);
-void emulator_enable_breakpoint(int id, Bool enabled);
+void emulator_enable_breakpoint(int id, bool enabled);
 void emulator_remove_breakpoint(int id);
 
 int emulator_get_rom_bank(Emulator*, Address);
@@ -148,14 +148,14 @@ void emulator_get_sgb_attr_map(Emulator*, u8[90]);
 void emulator_get_bg_scroll(Emulator*, u8* x, u8* y);
 void emulator_get_window_scroll(Emulator*, u8* x, u8* y);
 
-Bool emulator_get_display(Emulator*);
-Bool emulator_get_bg_display(Emulator*);
-Bool emulator_get_window_display(Emulator*);
-Bool emulator_get_obj_display(Emulator*);
+bool emulator_get_display(Emulator*);
+bool emulator_get_bg_display(Emulator*);
+bool emulator_get_window_display(Emulator*);
+bool emulator_get_obj_display(Emulator*);
 
 ObjSize emulator_get_obj_size(Emulator*);
 Obj emulator_get_obj(Emulator*, int index);
-Bool obj_is_visible(const Obj* obj);
+bool obj_is_visible(const Obj* obj);
 
 PaletteRGBA palette_to_palette_rgba(Emulator* e, PaletteType, Palette);
 

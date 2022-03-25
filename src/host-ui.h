@@ -15,7 +15,7 @@ struct SDL_Window;
 struct HostUI;
 struct HostTexture;
 
-struct HostUI* host_ui_new(struct SDL_Window*, Bool use_sgb_border);
+struct HostUI* host_ui_new(struct SDL_Window*, bool use_sgb_border);
 void host_ui_delete(struct HostUI*);
 void host_ui_event(struct HostUI*, union SDL_Event*);
 void host_ui_begin_frame(struct HostUI*, struct HostTexture* fb_texture,
@@ -23,8 +23,8 @@ void host_ui_begin_frame(struct HostUI*, struct HostTexture* fb_texture,
 void host_ui_end_frame(struct HostUI*);
 intptr_t host_ui_get_frame_buffer_texture(struct HostUI*);
 void host_ui_set_palette(struct HostUI*, RGBA palette[4]);
-void host_ui_enable_palette(struct HostUI*, Bool enabled);
+void host_ui_enable_palette(struct HostUI*, bool enabled);
 void host_ui_render_screen_overlay(struct HostUI*, struct HostTexture*);
-Bool host_ui_capture_keyboard(struct HostUI*);
+bool host_ui_capture_keyboard(struct HostUI*);
 
 #endif /* BINJGB_HOST_UI_H_ */

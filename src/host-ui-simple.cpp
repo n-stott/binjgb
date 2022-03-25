@@ -27,13 +27,13 @@ typedef struct HostUI {
   GLint uUsePalette;
   GLint uPalette;
   int width, height;
-  Bool use_sgb_border;
+  bool use_sgb_border;
 } HostUI;
 
 static f32 InvLerpClipSpace(f32 x, f32 max) { return 2 * (x / max) - 1; }
 
 static Result host_ui_init(struct HostUI* ui, SDL_Window* window,
-                           Bool use_sgb_border) {
+                           bool use_sgb_border) {
   const f32 left = InvLerpClipSpace(SGB_SCREEN_LEFT, SGB_SCREEN_WIDTH);
   const f32 right = InvLerpClipSpace(SGB_SCREEN_RIGHT, SGB_SCREEN_WIDTH);
   const f32 top = -InvLerpClipSpace(SGB_SCREEN_TOP, SGB_SCREEN_HEIGHT);
@@ -114,7 +114,7 @@ static Result host_ui_init(struct HostUI* ui, SDL_Window* window,
   return OK;
 }
 
-struct HostUI* host_ui_new(struct SDL_Window* window, Bool use_sgb_border) {
+struct HostUI* host_ui_new(struct SDL_Window* window, bool use_sgb_border) {
   HostUI* ui = reinterpret_cast<HostUI*>(xcalloc(1, sizeof(HostUI)));
   CHECK(SUCCESS(host_ui_init(ui, window, use_sgb_border)));
   return ui;
@@ -187,7 +187,7 @@ void host_ui_set_palette(struct HostUI* ui, RGBA palette[4]) {
   glUniform4fv(ui->uPalette, 4, p);
 }
 
-void host_ui_enable_palette(struct HostUI* ui, Bool enabled) {
+void host_ui_enable_palette(struct HostUI* ui, bool enabled) {
   glUseProgram(ui->program);
   glUniform1i(ui->uUsePalette, enabled ? 1 : 0);
 }
@@ -201,6 +201,6 @@ void host_ui_render_screen_overlay(struct HostUI* ui, HostTexture* tex) {
   glDisable(GL_BLEND);
 }
 
-Bool host_ui_capture_keyboard([[maybe_unused]] struct HostUI* ui) {
+bool host_ui_capture_keyboard([[maybe_unused]] struct HostUI* ui) {
   return false;
 }

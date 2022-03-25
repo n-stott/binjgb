@@ -116,7 +116,7 @@ typedef struct {
   REGISTER_PAIR(H, L);
   u16 SP;
   u16 PC;
-  struct { Bool Z, N, H, C; } F;
+  struct { bool Z, N, H, C; } F;
 } Registers;
 
 typedef struct Obj {
@@ -125,8 +125,8 @@ typedef struct Obj {
   u8 tile;
   u8 byte3;
   ObjPriority priority;
-  Bool yflip;
-  Bool xflip;
+  bool yflip;
+  bool xflip;
   u8 palette;
   u8 bank;
   u8 cgb_palette;
@@ -160,17 +160,17 @@ typedef struct EmulatorInit {
   int audio_frames;
   u32 random_seed;
   u32 builtin_palette;
-  Bool force_dmg;
+  bool force_dmg;
   CgbColorCurve cgb_color_curve;
 } EmulatorInit;
 
 typedef struct EmulatorConfig {
-  Bool disable_sound[APU_CHANNEL_COUNT];
-  Bool disable_bg;
-  Bool disable_window;
-  Bool disable_obj;
-  Bool allow_simulataneous_dpad_opposites;
-  Bool log_apu_writes;
+  bool disable_sound[APU_CHANNEL_COUNT];
+  bool disable_bg;
+  bool disable_window;
+  bool disable_obj;
+  bool allow_simulataneous_dpad_opposites;
+  bool log_apu_writes;
 } EmulatorConfig;
 
 typedef struct {
@@ -215,7 +215,7 @@ void emulator_set_all_bw_palettes(Emulator*, const PaletteRGBA*);
 void emulator_ticks_to_time(Ticks, u32* day, u32* hr, u32* min, u32* sec,
                             u32* ms);
 
-Bool emulator_was_ext_ram_updated(Emulator*);
+bool emulator_was_ext_ram_updated(Emulator*);
 
 void emulator_init_state_file_data(FileData*);
 void emulator_init_ext_ram_file_data(Emulator*, FileData*);

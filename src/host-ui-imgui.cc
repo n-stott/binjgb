@@ -422,7 +422,7 @@ const char* HostUI::get_clipboard_text([[maybe_unused]] void* user_data) {
   return SDL_GetClipboardText();
 }
 
-HostUI* host_ui_new(struct SDL_Window* window, [[maybe_unused]] Bool use_sgb_border) {
+HostUI* host_ui_new(struct SDL_Window* window, [[maybe_unused]] bool use_sgb_border) {
   HostUI* ui = new HostUI(window);
   if (!SUCCESS(ui->init())) {
     delete ui;
@@ -453,7 +453,7 @@ void host_ui_set_palette(struct HostUI* ui, RGBA palette[4]) {
   ui->set_palette(palette);
 }
 
-void host_ui_enable_palette(struct HostUI* ui, Bool enabled) {
+void host_ui_enable_palette(struct HostUI* ui, bool enabled) {
   ui->enable_palette(enabled);
 }
 
@@ -462,6 +462,6 @@ void host_ui_render_screen_overlay([[maybe_unused]] struct HostUI* ui, [[maybe_u
   assert(0);
 }
 
-Bool host_ui_capture_keyboard([[maybe_unused]] struct HostUI* ui) {
-  return static_cast<Bool>(ImGui::GetIO().WantCaptureKeyboard);
+bool host_ui_capture_keyboard([[maybe_unused]] struct HostUI* ui) {
+  return static_cast<bool>(ImGui::GetIO().WantCaptureKeyboard);
 }

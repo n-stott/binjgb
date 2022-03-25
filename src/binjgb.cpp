@@ -50,16 +50,16 @@ static const char* s_rom_filename;
 static const char* s_read_joypad_filename;
 static const char* s_write_joypad_filename;
 static const char* s_save_state_filename;
-static Bool s_running = true;
-static Bool s_step_frame;
-static Bool s_paused;
+static bool s_running = true;
+static bool s_step_frame;
+static bool s_paused;
 static f32 s_audio_volume = 0.5f;
-static Bool s_rewinding;
+static bool s_rewinding;
 static Ticks s_rewind_start;
 static u32 s_random_seed = 0xcabba6e5;
 static u32 s_builtin_palette;
-static Bool s_force_dmg;
-static Bool s_use_sgb_border;
+static bool s_force_dmg;
+static bool s_use_sgb_border;
 static u32 s_cgb_color_curve;
 static u32 s_render_scale = 4;
 
@@ -113,7 +113,7 @@ static void draw_char(int x, int y, RGBA color, char c) {
          y + GLYPH_HEIGHT <= SCREEN_HEIGHT);
   if (uc < 32 || uc >= 128) return;
   u16 data = s_font[uc - 32];
-  Bool has_descender = data & 1;
+  bool has_descender = data & 1;
   data >>= 1;
   if (has_descender) y += 1;
   int i, j;
@@ -197,7 +197,7 @@ static void toggle_layer(Layer layer) {
                   emu_config.disable_obj ? "___" : "obj");
 }
 
-static void set_no_sync(Bool set) {
+static void set_no_sync(bool set) {
   HostConfig host_config = host_get_config(host);
   host_config.no_sync = set;
   host_set_config(host, &host_config);

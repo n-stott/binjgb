@@ -12,7 +12,7 @@
 
 #define MAX_TRACE_STACK 16
 #define MAX_BREAKPOINTS 256
-static Bool s_trace_stack[MAX_TRACE_STACK] = {false};
+static bool s_trace_stack[MAX_TRACE_STACK] = {false};
 static size_t s_trace_stack_top = 1;
 static LogLevel s_log_level[NUM_LOG_SYSTEMS] = {(LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1, (LogLevel)1};
 static Breakpoint s_breakpoints[MAX_BREAKPOINTS];
@@ -113,7 +113,7 @@ static int s_breakpoint_max_id;
   X(M, D, write_io_ignored_as, "(%#04x, %#02x) ignored")                       \
   X(M, D, write_ram_disabled_ab, "(%#04x, %#02x) ignored, ram disabled")
 
-static Bool HOOK_emulator_step(Emulator*, const char* func_name);
+static bool HOOK_emulator_step(Emulator*, const char* func_name);
 static void HOOK_read_rom_ib(Emulator*, const char* func_name, u32 rom_addr,
                              u8 value);
 static void HOOK_exec_op_ai(Emulator*, const char* func_name, Address,
@@ -381,7 +381,7 @@ int emulator_get_max_breakpoint_id(void) {
   return s_breakpoint_max_id;
 }
 
-static Bool is_breakpoint_valid(int id) {
+static bool is_breakpoint_valid(int id) {
   return id >= 0 && id < s_breakpoint_max_id && s_breakpoints[id].valid;
 }
 
@@ -389,7 +389,7 @@ Breakpoint emulator_get_breakpoint(int id) {
   return is_breakpoint_valid(id) ? s_breakpoints[id] : s_invalid_breakpoint;
 }
 
-static Bool address_matches_bank(Emulator* e, Address addr, int bank) {
+static bool address_matches_bank(Emulator* e, Address addr, int bank) {
   return addr >= 0x8000 || emulator_get_rom_bank(e, addr) == bank;
 }
 
@@ -439,7 +439,7 @@ int emulator_add_empty_breakpoint(void) {
   return -1;
 }
 
-int emulator_add_breakpoint(Emulator* e, Address addr, Bool enabled) {
+int emulator_add_breakpoint(Emulator* e, Address addr, bool enabled) {
   int id = emulator_add_empty_breakpoint();
   if (id < 0) {
     return id;
@@ -459,7 +459,7 @@ void emulator_set_breakpoint_address(Emulator* e, int id, Address addr) {
   calculate_breakpoint_mask();
 }
 
-void emulator_enable_breakpoint(int id, Bool enabled) {
+void emulator_enable_breakpoint(int id, bool enabled) {
   if (!is_breakpoint_valid(id)) {
     return;
   }
@@ -500,14 +500,14 @@ void emulator_write_u8_raw(Emulator* e, Address addr, u8 value) {
 }
 
 // Store as 1-1 mapping of bytes, low 3 bits used only.
-static Bool s_rom_usage_enabled = true;
+static bool s_rom_usage_enabled = true;
 static u8 s_rom_usage[MAXIMUM_ROM_SIZE];
 
-Bool emulator_get_rom_usage_enabled(void) {
+bool emulator_get_rom_usage_enabled(void) {
   return s_rom_usage_enabled;
 }
 
-void emulator_set_rom_usage_enabled(Bool enable) {
+void emulator_set_rom_usage_enabled(bool enable) {
   s_rom_usage_enabled = enable;
 }
 
@@ -563,12 +563,12 @@ static void mark_rom_usage_for_pc(Emulator* e, u32 rom_addr) {
   }
 }
 
-static Bool address_matches_breakpoint_mask(Address addr) {
+static bool address_matches_breakpoint_mask(Address addr) {
   return (addr & s_breakpoint_mask[0]) == 0 &&
          (addr & s_breakpoint_mask[1]) == s_breakpoint_mask[1];
 }
 
-static inline Bool hit_breakpoint(Emulator* e) {
+static inline bool hit_breakpoint(Emulator* e) {
   if (s_breakpoint_count == 0) {
     return false;
   }
@@ -576,7 +576,7 @@ static inline Bool hit_breakpoint(Emulator* e) {
   if (!address_matches_breakpoint_mask(pc)) {
     return false;
   }
-  Bool hit = false;
+  bool hit = false;
   int id;
   for (id = 0; id < s_breakpoint_max_id; ++id) {
     Breakpoint* bp = &s_breakpoints[id];
@@ -595,7 +595,7 @@ static inline Bool hit_breakpoint(Emulator* e) {
   return hit;
 }
 
-Bool HOOK_emulator_step(Emulator* e, [[maybe_unused]] const char* func_name) {
+bool HOOK_emulator_step(Emulator* e, [[maybe_unused]] const char* func_name) {
   if (emulator_get_trace() && INTR.state < CPU_STATE_HALT) {
     printf("A:%02X F:%c%c%c%c BC:%04X DE:%04x HL:%04x SP:%04x PC:%04x", REG.A,
            REG.F.Z ? 'Z' : '-', REG.F.N ? 'N' : '-', REG.F.H ? 'H' : '-',
@@ -618,17 +618,17 @@ Bool HOOK_emulator_step(Emulator* e, [[maybe_unused]] const char* func_name) {
   return false;
 }
 
-static Bool s_opcode_count_enabled = false;
+static bool s_opcode_count_enabled = false;
 static u32 s_opcode_count[256];
 static u32 s_cb_opcode_count[256];
-static Bool s_profiling_enabled = false;
+static bool s_profiling_enabled = false;
 static u32 s_profiling_counters[MAXIMUM_ROM_SIZE];
 
-Bool emulator_get_opcode_count_enabled(void) {
+bool emulator_get_opcode_count_enabled(void) {
   return s_opcode_count_enabled;
 }
 
-void emulator_set_opcode_count_enabled(Bool enable) {
+void emulator_set_opcode_count_enabled(bool enable) {
   s_opcode_count_enabled = enable;
 }
 
@@ -642,11 +642,11 @@ u32* emulator_get_cb_opcode_count(void) {
   return s_cb_opcode_count;
 }
 
-Bool emulator_get_profiling_enabled(void) {
+bool emulator_get_profiling_enabled(void) {
   return s_profiling_enabled;
 }
 
-void emulator_set_profiling_enabled(Bool enable) {
+void emulator_set_profiling_enabled(bool enable) {
   s_profiling_enabled = enable;
 }
 
@@ -702,15 +702,15 @@ SetLogLevelError emulator_set_log_level_from_string(const char* s) {
   return SET_LOG_LEVEL_ERROR_NONE;
 }
 
-Bool emulator_get_trace() {
+bool emulator_get_trace() {
   return s_trace_stack[s_trace_stack_top - 1];
 }
 
-void emulator_set_trace(Bool trace) {
+void emulator_set_trace(bool trace) {
   s_trace_stack[s_trace_stack_top - 1] = trace;
 }
 
-void emulator_push_trace(Bool trace) {
+void emulator_push_trace(bool trace) {
   assert(s_trace_stack_top < MAX_TRACE_STACK);
   s_trace_stack[s_trace_stack_top++] = trace;
 }
@@ -745,8 +745,8 @@ void emulator_print_log_systems(void) {
   }
 }
 
-Bool emulator_is_cgb(Emulator* e) { return e->state.is_cgb; }
-Bool emulator_is_sgb(Emulator* e) { return e->state.is_sgb; }
+bool emulator_is_cgb(Emulator* e) { return e->state.is_cgb; }
+bool emulator_is_sgb(Emulator* e) { return e->state.is_sgb; }
 
 int emulator_get_rom_size(Emulator* e) {
   return s_rom_bank_count[e->cart_info->rom_size] << ROM_BANK_SHIFT;
@@ -863,19 +863,19 @@ void emulator_get_window_scroll(Emulator* e, u8* x, u8* y) {
   *y = PPU.wy;
 }
 
-Bool emulator_get_display(Emulator* e) {
+bool emulator_get_display(Emulator* e) {
   return PPU.lcdc.display;
 }
 
-Bool emulator_get_bg_display(Emulator* e) {
+bool emulator_get_bg_display(Emulator* e) {
   return PPU.lcdc.bg_display;
 }
 
-Bool emulator_get_window_display(Emulator* e) {
+bool emulator_get_window_display(Emulator* e) {
   return PPU.lcdc.window_display;
 }
 
-Bool emulator_get_obj_display(Emulator* e) {
+bool emulator_get_obj_display(Emulator* e) {
   return PPU.lcdc.obj_display;
 }
 
@@ -891,7 +891,7 @@ Obj emulator_get_obj(Emulator* e, int index) {
   return s_dummy_obj;
 }
 
-Bool obj_is_visible(const Obj* obj) {
+bool obj_is_visible(const Obj* obj) {
   u8 obj_x = obj->x + OBJ_X_OFFSET - 1;
   u8 obj_y = obj->y + OBJ_Y_OFFSET - 1;
   return obj_x < SCREEN_WIDTH + OBJ_X_OFFSET - 1 &&

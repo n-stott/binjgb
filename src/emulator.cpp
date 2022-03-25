@@ -178,7 +178,7 @@ static inline const char* get_enum_string(const char** strings,
 
 #define DEFINE_NAMED_ENUM(NAME, Name, name, foreach, enum_def)       \
   typedef enum { foreach (enum_def) NAME##_COUNT } Name;             \
-  [[maybe_unused]] static inline Bool is_##name##_valid(Name value) {                 \
+  [[maybe_unused]] static inline bool is_##name##_valid(Name value) {                 \
     return value < NAME##_COUNT;                                     \
   }                                                                  \
   [[maybe_unused]] static inline const char* get_##name##_string(Name value) {        \
@@ -379,11 +379,11 @@ typedef struct {
 typedef struct {
   u8 sec, min, hour;
   u16 day;
-  Bool day_carry;
+  bool day_carry;
   Ticks latch_ticks;
   u8 rtc_reg;
-  Bool rtc_halt;
-  Bool latched;
+  bool rtc_halt;
+  bool latched;
 } Mbc3;
 
 typedef struct {
@@ -400,7 +400,7 @@ typedef struct {
 typedef struct {
   u32 rom_base[2];
   u32 ext_ram_base;
-  Bool ext_ram_enabled;
+  bool ext_ram_enabled;
   union {
     Mbc1 mbc1;
     Mmm01 mmm01;
@@ -437,7 +437,7 @@ typedef struct {
   u8 packet_count;
   u8 current_player;
   u8 player_mask;
-  Bool player_incremented;
+  bool player_incremented;
 } SGB;
 
 typedef enum {
@@ -450,7 +450,7 @@ typedef enum {
 } CpuState;
 
 typedef struct {
-  Bool ime;      /* Interrupt Master Enable */
+  bool ime;      /* Interrupt Master Enable */
   u8 ie;         /* Interrupt Enable */
   u8 if_;        /* Interrupt Request, delayed by 1 tick for some IRQs. */
   u8 new_if;     /* The new value of IF, updated in 1 tick. */
@@ -465,7 +465,7 @@ typedef struct {
   u16 div_counter; /* Internal clock counter, upper 8 bits are DIV. */
   u8 tima;         /* Incremented at rate defined by clock_select */
   u8 tma;          /* When TIMA overflows, it is set to this value */
-  Bool on;
+  bool on;
 } Timer;
 
 typedef struct {
@@ -473,14 +473,14 @@ typedef struct {
   Ticks tick_count;       /* 0..SERIAL_TICKS */
   Ticks next_intr_ticks;  /* Tick when the next intr will occur. */
   SerialClock clock;
-  Bool transferring;
+  bool transferring;
   u8 sb; /* Serial transfer data. */
   u8 transferred_bits;
 } Serial;
 
 typedef struct {
-  Bool write;
-  Bool read;
+  bool write;
+  bool read;
   DataReadEnable enabled;
 } Infrared;
 
@@ -490,8 +490,8 @@ typedef struct {
   u8 shift;
   u16 frequency;
   u8 timer; /* 0..period */
-  Bool enabled;
-  Bool calculated_subtract;
+  bool enabled;
+  bool calculated_subtract;
 } Sweep;
 
 typedef struct {
@@ -500,7 +500,7 @@ typedef struct {
   u8 period;
   u8 volume;      /* 0..15 */
   u32 timer;      /* 0..period */
-  Bool automatic; /* true when MAX/MIN has not yet been reached. */
+  bool automatic; /* true when MAX/MIN has not yet been reached. */
 } Envelope;
 
 /* Channel 1 and 2 */
@@ -522,7 +522,7 @@ typedef struct {
   u32 period;        /* Calculated from the frequency. */
   u8 position;       /* 0..31 */
   u32 ticks;         /* 0..period */
-  Bool playing;      /* true if the channel has been triggered but the DAC not
+  bool playing;      /* true if the channel has been triggered but the DAC not
                              disabled. */
 } Wave;
 
@@ -542,39 +542,39 @@ typedef struct {
   Envelope envelope;      /* Channel 1, 2, 4 */
   u16 frequency;          /* Channel 1, 2, 3 */
   u16 length;             /* All channels */
-  Bool length_enabled;    /* All channels */
-  Bool dac_enabled;
-  Bool status;     /* Status bit for NR52 */
+  bool length_enabled;    /* All channels */
+  bool dac_enabled;
+  bool status;     /* Status bit for NR52 */
   u32 accumulator; /* Accumulates samples for resampling. */
 } Channel;
 
 typedef struct {
   u8 so_volume[SOUND_OUTPUT_COUNT];
-  Bool so_output[SOUND_COUNT][SOUND_OUTPUT_COUNT];
-  Bool enabled;
+  bool so_output[SOUND_COUNT][SOUND_OUTPUT_COUNT];
+  bool enabled;
   Sweep sweep;
   Wave wave;
   Noise noise;
   Channel channel[APU_CHANNEL_COUNT];
   u8 frame;         /* 0..FRAME_SEQUENCER_COUNT */
   Ticks sync_ticks; /* Raw tick counter */
-  Bool initialized;
+  bool initialized;
 } Apu;
 
 typedef struct {
-  Bool display;
+  bool display;
   TileMapSelect window_tile_map_select;
-  Bool window_display;
+  bool window_display;
   TileDataSelect bg_tile_data_select;
   TileMapSelect bg_tile_map_select;
   ObjSize obj_size;
-  Bool obj_display;
-  Bool bg_display;
+  bool obj_display;
+  bool bg_display;
 } Lcdc;
 
 typedef struct {
-  Bool irq;
-  Bool trigger;
+  bool irq;
+  bool trigger;
 } StatInterrupt;
 
 typedef struct {
@@ -582,18 +582,18 @@ typedef struct {
   StatInterrupt mode2;
   StatInterrupt vblank;
   StatInterrupt hblank;
-  Bool ly_eq_lyc;       /* true if ly=lyc, delayed by 1 tick. */
+  bool ly_eq_lyc;       /* true if ly=lyc, delayed by 1 tick. */
   PPUMode mode;         /* The current PPU mode. */
-  Bool if_;             /* Internal interrupt flag for STAT interrupts. */
+  bool if_;             /* Internal interrupt flag for STAT interrupts. */
   PPUMode trigger_mode; /* This mode is used for checking STAT IRQ triggers. */
-  Bool new_ly_eq_lyc;   /* The new value for ly_eq_lyc, updated in 1 tick. */
+  bool new_ly_eq_lyc;   /* The new value for ly_eq_lyc, updated in 1 tick. */
 } Stat;
 
 typedef struct {
   PaletteRGBA palettes[8];
   u8 data[64];
   u8 index;
-  Bool auto_increment;
+  bool auto_increment;
 } ColorPalettes;
 
 typedef struct {
@@ -621,7 +621,7 @@ typedef struct {
   u8 win_y;       /* The window Y is only incremented when rendered. */
   Obj line_obj[OBJ_PER_LINE_COUNT]; /* Cached from OAM during mode2. */
   u8 line_obj_count;     /* Number of sprites to draw on this line. */
-  Bool rendering_window; /* true when this line is rendering the window. */
+  bool rendering_window; /* true when this line is rendering the window. */
   u8 display_delay_frames; /* Wait this many frames before displaying. */
 } Ppu;
 
@@ -634,7 +634,7 @@ typedef struct {
 
 typedef struct {
   Speed speed;
-  Bool switching;
+  bool switching;
 } CpuSpeed;
 
 typedef struct {
@@ -683,9 +683,9 @@ typedef struct {
   Ticks ticks;
   Ticks cpu_tick;
   Ticks next_intr_ticks; /* For Timer, Serial, or PPU interrupts. */
-  Bool is_cgb;
-  Bool is_sgb;
-  Bool ext_ram_updated;
+  bool is_cgb;
+  bool is_sgb;
+  bool ext_ram_updated;
   EmulatorEvent event;
 } EmulatorState;
 
@@ -1325,8 +1325,8 @@ static void mbc3_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case 3: { /* 6000-7fff */
       Mbc3* mbc3 = &MMAP_STATE.mbc3;
-      Bool was_latched = mbc3->latched;
-      Bool latched = value == 1;
+      bool was_latched = mbc3->latched;
+      bool latched = value == 1;
       if (!was_latched && latched && !mbc3->rtc_halt) {
         // Update the clock by how much time has passed since it was last
         // latched.
@@ -1337,7 +1337,7 @@ static void mbc3_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
           u32 ms, sec, min, hour, day;
           emulator_ticks_to_time(delta, &day, &hour, &min, &sec, &ms);
 
-          Bool secovf = false;
+          bool secovf = false;
           if (mbc3->sec >= 60) {
             mbc3->sec += sec;
             if (mbc3->sec >= 64) {
@@ -1349,7 +1349,7 @@ static void mbc3_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
             if (mbc3->sec >= 60) { mbc3->sec -= 60; ++min; secovf = true; }
           }
 
-          Bool minovf = false;
+          bool minovf = false;
           if (min > 0 || secovf) {
             if (mbc3->min >= 60) {
               mbc3->min += min;
@@ -1363,7 +1363,7 @@ static void mbc3_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
             }
           }
 
-          Bool hourovf = false;
+          bool hourovf = false;
           if (hour > 0 || minovf) {
             if (mbc3->hour >= 24) {
               mbc3->hour += hour;
@@ -1455,7 +1455,7 @@ static void mbc3_write_ext_ram(Emulator* e, MaskedAddress addr, u8 value) {
     case 12: {
       mbc3->day = (UNPACK(value, MBC3_RTC_DAY_HI) << 8) | (mbc3->day & 0xff);
       mbc3->day_carry = UNPACK(value, MBC3_RTC_DAY_CARRY);
-      Bool old_rtc_halt = mbc3->rtc_halt;
+      bool old_rtc_halt = mbc3->rtc_halt;
       mbc3->rtc_halt = UNPACK(value, MBC3_RTC_HALT);
       if (mbc3->rtc_halt != old_rtc_halt) {
         // Update the tick timer; if the clock is halted, then store the
@@ -1572,7 +1572,7 @@ static Result init_memory_map(Emulator* e) {
       memory_map->write_rom = dummy_write;
       break;
     case MBC_TYPE_MBC1: {
-      Bool is_mbc1m = e->cart_info_count > 1;
+      bool is_mbc1m = e->cart_info_count > 1;
       memory_map->write_rom = is_mbc1m ? mbc1m_write_rom : mbc1_write_rom;
       break;
     }
@@ -1610,11 +1610,11 @@ static Result init_memory_map(Emulator* e) {
   return OK;
 }
 
-static Bool is_almost_mode3(Emulator* e) {
+static bool is_almost_mode3(Emulator* e) {
   return PPU.state_ticks == CPU_TICK && STAT.mode == PPU_MODE_MODE2;
 }
 
-static Bool is_using_vram(Emulator* e, Bool write) {
+static bool is_using_vram(Emulator* e, bool write) {
   if (write) {
     return STAT.mode == PPU_MODE_MODE3;
   } else {
@@ -1622,7 +1622,7 @@ static Bool is_using_vram(Emulator* e, Bool write) {
   }
 }
 
-static Bool is_using_oam(Emulator* e, Bool write) {
+static bool is_using_oam(Emulator* e, bool write) {
   if (write) {
     return (STAT.mode == PPU_MODE_MODE2 && !is_almost_mode3(e)) ||
            STAT.mode == PPU_MODE_MODE3;
@@ -1676,10 +1676,10 @@ static u8 read_joyp_p10_p13(Emulator* e) {
               PACK(JOYP.buttons.A, JOYP_BUTTON_A);
   }
 
-  Bool left = JOYP.buttons.left;
-  Bool right = JOYP.buttons.right;
-  Bool up = JOYP.buttons.up;
-  Bool down = JOYP.buttons.down;
+  bool left = JOYP.buttons.left;
+  bool right = JOYP.buttons.right;
+  bool up = JOYP.buttons.up;
+  bool down = JOYP.buttons.down;
   if (!e->config.allow_simulataneous_dpad_opposites) {
     if (left && right) {
       left = false;
@@ -1697,7 +1697,7 @@ static u8 read_joyp_p10_p13(Emulator* e) {
   return ~result;
 }
 
-static void call_joyp_callback(Emulator* e, Bool wait) {
+static void call_joyp_callback(Emulator* e, bool wait) {
   if (e->joypad_info.callback &&
       (!wait || TICKS - JOYP.last_callback >= JOYP_INTERRUPT_WAIT_TICKS)) {
     e->joypad_info.callback(&JOYP.buttons, e->joypad_info.user_data);
@@ -1910,12 +1910,12 @@ static u8 read_wave_ram(Emulator* e, MaskedAddress addr) {
   }
 }
 
-static Bool is_dma_access_ok(Emulator* e, Address addr) {
+static bool is_dma_access_ok(Emulator* e, Address addr) {
   /* TODO: need to figure out bus conflicts during DMA for non-OAM accesses. */
   return DMA.state != DMA_ACTIVE || (addr & 0xff00) != 0xfe00;
 }
 
-static u8 read_u8_pair(Emulator* e, MemoryTypeAddressPair pair, Bool raw) {
+static u8 read_u8_pair(Emulator* e, MemoryTypeAddressPair pair, bool raw) {
   switch (pair.type) {
     /* Take advantage of the fact that MEMORY_MAP_ROM9 is 0, and ROM1 is 1 when
      * indexing into rom_base. */
@@ -2022,7 +2022,7 @@ static void calculate_next_intr(Emulator* e) {
       MIN(SERIAL.next_intr_ticks, TIMER.next_intr_ticks), PPU.next_intr_ticks);
 }
 
-static Bool is_div_falling_edge(Emulator* e, u16 old_div_counter,
+static bool is_div_falling_edge(Emulator* e, u16 old_div_counter,
                                 u16 div_counter) {
   u16 falling_edge = ((old_div_counter ^ div_counter) & ~div_counter);
   return falling_edge & s_tima_mask[TIMER.clock_select];
@@ -2138,7 +2138,7 @@ static void check_stat(Emulator* e) {
   }
 }
 
-static void check_ly_eq_lyc(Emulator* e, Bool write) {
+static void check_ly_eq_lyc(Emulator* e, bool write) {
   if (PPU.ly == PPU.lyc ||
       (write && PPU.last_ly == SCREEN_HEIGHT_WITH_VBLANK - 1 &&
        PPU.last_ly == PPU.lyc)) {
@@ -2253,7 +2253,7 @@ static void clear_frame_buffer(Emulator* e, RGBA color) {
 
 static void update_sgb_mask(Emulator* e) {
   RGBA color = RGBA_BLACK;
-  Bool should_clear = true;
+  bool should_clear = true;
   switch (SGB.mask) {
     case SGB_MASK_CANCEL: should_clear = false; break;
     case SGB_MASK_FREEZE: should_clear = false; break;
@@ -2302,7 +2302,7 @@ static u16 map_select_to_address(TileMapSelect map_select) {
 static void do_sgb(Emulator* e) {
   if (!IS_SGB) { return; }
 
-  Bool do_command = false;
+  bool do_command = false;
 
   switch (SGB.state) {
     case SGB_STATE_IDLE:
@@ -2619,14 +2619,14 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_TAC_ADDR: {
       timer_synchronize(e);
-      Bool old_timer_on = TIMER.on;
+      bool old_timer_on = TIMER.on;
       u16 old_tima_mask = s_tima_mask[TIMER.clock_select];
       TIMER.clock_select = static_cast<TimerClock>(UNPACK(value, TAC_CLOCK_SELECT));
       TIMER.on = UNPACK(value, TAC_TIMER_ON);
       /* tima is incremented when a specific bit of div_counter transitions
        * from 1 to 0. This can happen as a result of writing to DIV, or in this
        * case modifying which bit we're looking at. */
-      Bool tima_tick = false;
+      bool tima_tick = false;
       if (!old_timer_on) {
         u16 tima_mask = s_tima_mask[TIMER.clock_select];
         if (TIMER.on) {
@@ -2649,7 +2649,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
     case IO_LCDC_ADDR: {
       ppu_synchronize(e);
       ppu_mode3_synchronize(e);
-      Bool was_enabled = LCDC.display;
+      bool was_enabled = LCDC.display;
       LCDC.display = UNPACK(value, LCDC_DISPLAY);
       LCDC.window_tile_map_select = static_cast<TileMapSelect>(UNPACK(value, LCDC_WINDOW_TILE_MAP_SELECT));
       LCDC.window_display = UNPACK(value, LCDC_WINDOW_DISPLAY);
@@ -2686,12 +2686,12 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
     }
     case IO_STAT_ADDR: {
       ppu_synchronize(e);
-      Bool new_vblank_irq = UNPACK(value, STAT_VBLANK_INTR);
-      Bool new_hblank_irq = UNPACK(value, STAT_HBLANK_INTR);
+      bool new_vblank_irq = UNPACK(value, STAT_VBLANK_INTR);
+      bool new_hblank_irq = UNPACK(value, STAT_HBLANK_INTR);
       if (LCDC.display) {
-        Bool hblank = TRIGGER_MODE_IS(HBLANK) && !STAT.hblank.irq;
-        Bool vblank = TRIGGER_MODE_IS(VBLANK) && !STAT.vblank.irq;
-        Bool y_compare = STAT.new_ly_eq_lyc && !STAT.y_compare.irq;
+        bool hblank = TRIGGER_MODE_IS(HBLANK) && !STAT.hblank.irq;
+        bool vblank = TRIGGER_MODE_IS(VBLANK) && !STAT.vblank.irq;
+        bool y_compare = STAT.new_ly_eq_lyc && !STAT.y_compare.irq;
         if (IS_CGB) {
           /* CGB only triggers on STAT write if the value being written
            * actually sets that IRQ */
@@ -2900,10 +2900,10 @@ static void write_nrx3_reg([[maybe_unused]] Emulator* e, Channel* channel, u8 va
 }
 
 /* Returns true if this channel was triggered. */
-static Bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
+static bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value, u16 max_length) {
-  Bool trigger = UNPACK(value, NRX4_INITIAL);
-  Bool was_length_enabled = channel->length_enabled;
+  bool trigger = UNPACK(value, NRX4_INITIAL);
+  bool was_length_enabled = channel->length_enabled;
   channel->length_enabled = UNPACK(value, NRX4_LENGTH_ENABLED);
   channel->frequency &= 0xff;
   channel->frequency |= UNPACK(value, NRX4_FREQUENCY_HI) << 8;
@@ -2911,7 +2911,7 @@ static Bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[may
   /* Extra length clocking occurs on NRX4 writes if the next APU frame isn't a
    * length counter frame. This only occurs on transition from disabled to
    * enabled. */
-  Bool next_frame_is_length = (APU.frame & 1) == 1;
+  bool next_frame_is_length = (APU.frame & 1) == 1;
   if (UNLIKELY(!was_length_enabled && channel->length_enabled &&
                !next_frame_is_length && channel->length > 0)) {
     channel->length--;
@@ -3048,7 +3048,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
       break;
     case APU_NR14_ADDR: {
-      Bool trigger = write_nrx4_reg(e, &CHANNEL1, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = write_nrx4_reg(e, &CHANNEL1, addr, value, NRX1_MAX_LENGTH);
       write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
       if (trigger) {
         trigger_nrx4_envelope(e, &CHANNEL1.envelope, addr);
@@ -3068,7 +3068,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       write_square_wave_period(e, &CHANNEL2, &CHANNEL2.square_wave);
       break;
     case APU_NR24_ADDR: {
-      Bool trigger = write_nrx4_reg(e, &CHANNEL2, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = write_nrx4_reg(e, &CHANNEL2, addr, value, NRX1_MAX_LENGTH);
       write_square_wave_period(e, &CHANNEL2, &CHANNEL2.square_wave);
       if (trigger) {
         trigger_nrx4_envelope(e, &CHANNEL2.envelope, addr);
@@ -3096,7 +3096,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       write_wave_period(e, &CHANNEL3);
       break;
     case APU_NR34_ADDR: {
-      Bool trigger = write_nrx4_reg(e, &CHANNEL3, addr, value, NR31_MAX_LENGTH);
+      bool trigger = write_nrx4_reg(e, &CHANNEL3, addr, value, NR31_MAX_LENGTH);
       write_wave_period(e, &CHANNEL3);
       if (trigger) {
         if (!IS_CGB && WAVE.playing) {
@@ -3140,7 +3140,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     }
     case APU_NR44_ADDR: {
-      Bool trigger = write_nrx4_reg(e, &CHANNEL4, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = write_nrx4_reg(e, &CHANNEL4, addr, value, NRX1_MAX_LENGTH);
       if (trigger) {
         write_noise_period(e);
         trigger_nrx4_envelope(e, &CHANNEL4.envelope, addr);
@@ -3167,8 +3167,8 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       APU.so_output[SOUND1][0] = UNPACK(value, NR51_SOUND1_SO1);
       break;
     case APU_NR52_ADDR: {
-      Bool was_enabled = APU.enabled;
-      Bool is_enabled = UNPACK(value, NR52_ALL_SOUND_ENABLED);
+      bool was_enabled = APU.enabled;
+      bool is_enabled = UNPACK(value, NR52_ALL_SOUND_ENABLED);
       if (was_enabled && !is_enabled) {
         HOOK0(apu_power_down_v);
         int i;
@@ -3294,7 +3294,7 @@ static u32 mode3_tick_count(Emulator* e) {
   ZERO_MEMORY(buckets);
   u8 scx_fine = PPU.scx & 7;
   u32 ticks = PPU_MODE3_MIN_TICKS + scx_fine;
-  Bool has_zero = false;
+  bool has_zero = false;
   int i;
   for (i = 0; i < PPU.line_obj_count; ++i) {
     Obj* o = &PPU.line_obj[i];
@@ -3322,9 +3322,9 @@ static void ppu_mode3_synchronize(Emulator* e) {
   const u8 y = PPU.line_y;
   if (STAT.mode != PPU_MODE_MODE3 || x >= SCREEN_WIDTH) return;
 
-  Bool display_bg = (IS_CGB || LCDC.bg_display) && !e->config.disable_bg;
-  const Bool display_obj = LCDC.obj_display && !e->config.disable_obj;
-  Bool rendering_window = PPU.rendering_window;
+  bool display_bg = (IS_CGB || LCDC.bg_display) && !e->config.disable_bg;
+  const bool display_obj = LCDC.obj_display && !e->config.disable_obj;
+  bool rendering_window = PPU.rendering_window;
   int window_counter = rendering_window ? 0 : 255;
   if (!rendering_window && LCDC.window_display && !e->config.disable_window &&
       PPU.wx <= WINDOW_MAX_X && y >= PPU.wy) {
@@ -3349,11 +3349,11 @@ static void ppu_mode3_synchronize(Emulator* e) {
   PaletteRGBA* pal = NULL;
   u8 lo = 0, hi = 0;
 
-  Bool priority = false;
+  bool priority = false;
   int i;
   for (; PPU.mode3_render_ticks < TICKS && x < SCREEN_WIDTH;
        PPU.mode3_render_ticks += CPU_TICK, pixel += 4, x += 4) {
-    Bool bg_is_zero[4] = {true, true, true, true},
+    bool bg_is_zero[4] = {true, true, true, true},
          bg_priority[4] = {false, false, false, false};
 
     for (i = 0; i < 4; ++i, ++mx) {
@@ -4220,7 +4220,7 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define XOR_N RA ^= READ_N; XOR_FLAGS
 
 static void dispatch_interrupt(Emulator* e) {
-  Bool was_halt = INTR.state >= CPU_STATE_HALT;
+  bool was_halt = INTR.state >= CPU_STATE_HALT;
   if (!(INTR.ime || was_halt)) {
     return;
   }
@@ -4235,7 +4235,7 @@ static void dispatch_interrupt(Emulator* e) {
    * This behavior is needed to pass the ie_push mooneye-gb test. */
   u8 interrupt = INTR.new_if & INTR.ie;
 
-  Bool delay = false;
+  bool delay = false;
   u8 mask = 0;
   Address vector = 0;
   if (interrupt & IF_VBLANK) {
@@ -4299,7 +4299,7 @@ static void execute_instruction(Emulator* e) {
     }
   }
 
-  Bool should_dispatch = false;
+  bool should_dispatch = false;
 
   if (LIKELY(INTR.state == CPU_STATE_NORMAL)) {
     should_dispatch = INTR.ime && (INTR.new_if & INTR.ie) != 0;
@@ -4849,8 +4849,8 @@ static Result set_rom_file_data(Emulator* e, const FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-Bool emulator_was_ext_ram_updated(Emulator* e) {
-  Bool result = e->state.ext_ram_updated;
+bool emulator_was_ext_ram_updated(Emulator* e) {
+  bool result = e->state.ext_ram_updated;
   e->state.ext_ram_updated = false;
   return result;
 }

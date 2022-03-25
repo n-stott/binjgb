@@ -47,14 +47,14 @@ typedef struct {
   SDL_AudioDeviceID dev;
   SDL_AudioSpec spec;
   u8* buffer; /* Size is spec.size. */
-  Bool ready;
+  bool ready;
   f32 volume; /* [0..1] */
 } Audio;
 
 typedef struct {
   RewindResult rewind_result;
   JoypadPlayback joypad_playback;
-  Bool rewinding;
+  bool rewinding;
 } RewindState;
 
 typedef struct Host {
@@ -75,7 +75,7 @@ typedef struct Host {
   RewindState rewind_state;
   JoypadPlayback joypad_playback;
   Ticks last_ticks;
-  Bool key_state[HOST_KEYCODE_COUNT];
+  bool key_state[HOST_KEYCODE_COUNT];
 } Host;
 
 static Emulator* host_get_emulator(Host* host) {
@@ -155,9 +155,9 @@ static HostKeycode scancode_to_keycode(SDL_Scancode scancode) {
   return s_map[scancode];
 }
 
-Bool host_poll_events(Host* host) {
+bool host_poll_events(Host* host) {
   [[maybe_unused]] Emulator* e = host_get_emulator(host);
-  Bool running = true;
+  bool running = true;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     host_ui_event(host->ui, &event);
@@ -417,7 +417,7 @@ void host_end_rewind(Host* host) {
   memset(&host->rewind_state, 0, sizeof(host->rewind_state));
 }
 
-Bool host_is_rewinding(Host* host) {
+bool host_is_rewinding(Host* host) {
   return host->rewind_state.rewinding;
 }
 
@@ -517,7 +517,7 @@ void host_set_palette(Host* host, RGBA palette[4]) {
   host_ui_set_palette(host->ui, palette);
 }
 
-void host_enable_palette(Host* host, Bool enabled) {
+void host_enable_palette(Host* host, bool enabled) {
   host_ui_enable_palette(host->ui, enabled);
 }
 

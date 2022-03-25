@@ -32,16 +32,16 @@
 static const char* s_joypad_filename;
 static int s_frames = DEFAULT_FRAMES;
 static const char* s_output_ppm;
-static Bool s_animate;
-[[maybe_unused]] static Bool s_print_ops;
+static bool s_animate;
+[[maybe_unused]] static bool s_print_ops;
 [[maybe_unused]] static u32 s_print_ops_limit = MAX_PRINT_OPS_LIMIT;
-[[maybe_unused]] static Bool s_profile;
+[[maybe_unused]] static bool s_profile;
 [[maybe_unused]] static u32 s_profile_limit = 30;
 static const char* s_rom_filename;
 static u32 s_random_seed = 0xcabba6e5;
 static u32 s_builtin_palette;
-static Bool s_force_dmg;
-static Bool s_use_sgb_border;
+static bool s_force_dmg;
+static bool s_use_sgb_border;
 
 
 Result write_frame_ppm(Emulator* e, const char* filename) {
@@ -326,7 +326,7 @@ void print_ops(void) {
   char mnemonic[100];
   u64 total = 0;
   int distinct = 0;
-  Bool skipped = false;
+  bool skipped = false;
   for (i = 0; i < 512; ++i) {
     if (pairs[i].count > 0) {
       u16 opcode = pairs[i].value;
@@ -474,7 +474,7 @@ int main(int argc, char** argv) {
   u32 total_ticks = (u32)(s_frames * PPU_FRAME_TICKS);
   u32 until_ticks = emulator_get_ticks(e) + total_ticks;
   printf("frames = %u total_ticks = %u\n", s_frames, total_ticks);
-  Bool finish_at_next_frame = false;
+  bool finish_at_next_frame = false;
   u32 animation_frame = 0; /* Will likely differ from PPU frame. */
   [[maybe_unused]] u32 next_input_frame = 0;
   [[maybe_unused]] u32 next_input_frame_buttons = 0;

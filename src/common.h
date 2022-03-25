@@ -90,7 +90,6 @@ using Address = u16;
 using MaskedAddress = u16;
 using RGBA = u32;
 using Ticks = u64;
-using Bool = bool;
 typedef enum Result { OK = 0, ERROR = 1 } Result;
 
 typedef struct FileData {
@@ -99,8 +98,8 @@ typedef struct FileData {
 } FileData;
 
 typedef struct JoypadButtons {
-  Bool down, up, left, right;
-  Bool start, select, B, A;
+  bool down, up, left, right;
+  bool start, select, B, A;
 } JoypadButtons;
 
 const char* replace_extension(const char* filename, const char* extension);

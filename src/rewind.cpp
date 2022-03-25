@@ -222,7 +222,7 @@ void rewind_append(RewindBuffer* buf, Emulator* e) {
   RewindDataRange* data_range = buf->data_range;
   RewindInfoRange* info_range = buf->info_range;
   RewindInfo* new_info = --info_range[0].begin;
-  Bool wrap = (u8*)new_info <= data_range[1].end;
+  bool wrap = (u8*)new_info <= data_range[1].end;
   while (1) {
     if (wrap) {
       /* Need to wrap, roll back decrement and swap ranges. */
@@ -390,7 +390,7 @@ void rewind_truncate_to(RewindBuffer* buffer, Emulator* e,
   rewind_sanity_check(buffer, e);
 }
 
-static Bool is_rewind_range_empty(RewindInfoRange* r) {
+static bool is_rewind_range_empty(RewindInfoRange* r) {
   return r->end == r->begin;
 }
 
@@ -458,7 +458,7 @@ void rewind_sanity_check([[maybe_unused]] RewindBuffer* buffer, [[maybe_unused]]
   assert(buffer->info_range[1].end <= buffer->info_range[0].begin);
   assert(buffer->info_range[0].begin <= buffer->info_range[0].end);
 
-  Bool has_base = FALSE;
+  bool has_base = FALSE;
   FileData base;
   FileData diff;
   FileData temp;

@@ -123,12 +123,12 @@ typedef struct HostInit {
   f32 audio_volume;
   RewindInit rewind;
   const char* joypad_filename;
-  Bool use_sgb_border;
+  bool use_sgb_border;
 } HostInit;
 
 typedef struct HostConfig {
-  Bool no_sync;
-  Bool fullscreen;
+  bool no_sync;
+  bool fullscreen;
 } HostConfig;
 
 typedef enum HostTextureFormat {
@@ -145,7 +145,7 @@ typedef struct HostTexture {
 
 struct Host* host_new(const HostInit*, struct Emulator*);
 void host_delete(struct Host*);
-Bool host_poll_events(struct Host*);
+bool host_poll_events(struct Host*);
 EmulatorEvent host_run_ms(struct Host*, f64 delta_ms);
 EmulatorEvent host_step(struct Host*);
 void host_render_audio(struct Host*);
@@ -158,7 +158,7 @@ HostConfig host_get_config(struct Host*);
 void host_begin_video(struct Host*);
 void host_end_video(struct Host*);
 void host_set_palette(struct Host*, RGBA palette[4]);
-void host_enable_palette(struct Host*, Bool enabled);
+void host_enable_palette(struct Host*, bool enabled);
 void host_render_screen_overlay(struct Host*, struct HostTexture*);
 
 /* Rewind support. */
@@ -176,7 +176,7 @@ Result host_write_joypad_to_file(struct Host*, const char* filename);
 void host_begin_rewind(struct Host*);
 Result host_rewind_to_ticks(struct Host*, Ticks ticks);
 void host_end_rewind(struct Host*);
-Bool host_is_rewinding(struct Host*);
+bool host_is_rewinding(struct Host*);
 
 HostTexture* host_get_frame_buffer_texture(struct Host*);
 HostTexture* host_create_texture(struct Host*, int w, int h, HostTextureFormat);
