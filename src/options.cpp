@@ -21,7 +21,7 @@ typedef struct OptionParser {
 
 OptionParser* option_parser_new(const Option* options, size_t num_options,
                                 int argc, char** argv) {
-  OptionParser* parser = xcalloc(1, sizeof(OptionParser));
+  OptionParser* parser = reinterpret_cast<OptionParser*>(xcalloc(1, sizeof(OptionParser)));
   parser->options = options;
   parser->num_options = num_options;
   parser->argc = argc;
