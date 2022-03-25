@@ -88,12 +88,12 @@
 static void rewind_sanity_check(RewindBuffer*, Emulator*);
 
 RewindBuffer* rewind_new(const RewindInit* init, Emulator* e) {
-  RewindBuffer* buffer = xmalloc(sizeof(RewindBuffer));
+  RewindBuffer* buffer = reinterpret_cast<RewindBuffer*>(xmalloc(sizeof(RewindBuffer)));
   ZERO_MEMORY(*buffer);
   buffer->init = *init;
 
   size_t capacity = init->buffer_capacity;
-  u8* data = xmalloc(capacity);
+  u8* data = reinterpret_cast<u8*>(xmalloc(capacity));
   emulator_init_state_file_data(&buffer->last_state);
   emulator_init_state_file_data(&buffer->last_base_state);
   emulator_init_state_file_data(&buffer->rewind_diff_state);
