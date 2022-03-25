@@ -90,17 +90,17 @@ using Address = u16;
 using MaskedAddress = u16;
 using RGBA = u32;
 using Ticks = u64;
-typedef enum Result { OK = 0, ERROR = 1 } Result;
+enum Result { OK = 0, ERROR = 1 };
 
-typedef struct FileData {
+struct FileData {
   u8* data;
   size_t size;
-} FileData;
+};
 
-typedef struct JoypadButtons {
+struct JoypadButtons {
   bool down, up, left, right;
   bool start, select, B, A;
-} JoypadButtons;
+};
 
 const char* replace_extension(const char* filename, const char* extension);
 Result file_read(const char* filename, FileData* out);
