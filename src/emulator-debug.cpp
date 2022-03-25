@@ -551,7 +551,7 @@ static void mark_rom_usage_for_pc(Emulator* e, u32 rom_addr) {
   }
   u8 opcode = e->cart_info->data[rom_addr];
   u8 count = s_opcode_bytes[opcode];
-  mark_rom_usage(rom_addr, ROM_USAGE_CODE | ROM_USAGE_CODE_START);
+  mark_rom_usage(rom_addr, static_cast<RomUsage>( static_cast<int>(ROM_USAGE_CODE) | static_cast<int>(ROM_USAGE_CODE_START)));
   switch (count) {
     case 3:
       mark_rom_usage(rom_addr + 2, ROM_USAGE_CODE);
@@ -686,9 +686,9 @@ SetLogLevelError emulator_set_log_level_from_string(const char* s) {
   LogSystem system = NUM_LOG_SYSTEMS;
   int i;
   for (i = 0; i < NUM_LOG_SYSTEMS; ++i) {
-    const char* name = emulator_get_log_system_name(i);
+    const char* name = emulator_get_log_system_name(static_cast<LogSystem>(i));
     if (strncmp(log_system_name, name, strlen(name)) == 0) {
-      system = i;
+      system = static_cast<LogSystem>(i);
       break;
     }
   }
@@ -697,7 +697,7 @@ SetLogLevelError emulator_set_log_level_from_string(const char* s) {
     return SET_LOG_LEVEL_ERROR_UNKNOWN_LOG_SYSTEM;
   }
 
-  emulator_set_log_level(system, atoi(equals + 1));
+  emulator_set_log_level(system, static_cast<LogSystem>(atoi(equals + 1)));
   return SET_LOG_LEVEL_ERROR_NONE;
 }
 
@@ -740,7 +740,7 @@ void emulator_print_log_systems(void) {
   PRINT_ERROR("valid log systems:\n");
   int i;
   for (i = 0; i < NUM_LOG_SYSTEMS; ++i) {
-    PRINT_ERROR("  %s\n", emulator_get_log_system_name(i));
+    PRINT_ERROR("  %s\n", emulator_get_log_system_name(static_cast<LogSystem>(i)));
   }
 }
 
