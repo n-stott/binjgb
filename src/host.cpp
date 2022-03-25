@@ -139,7 +139,7 @@ static Result host_init_audio(Host* host) {
   host->audio.dev = SDL_OpenAudioDevice(NULL, 0, &want, &host->audio.spec, 0);
   CHECK_MSG(host->audio.dev != 0, "SDL_OpenAudioDevice failed.\n");
 
-  host->audio.buffer = xcalloc(1, host->audio.spec.size);
+  host->audio.buffer = reinterpret_cast<u8*>(xcalloc(1, host->audio.spec.size));
   CHECK_MSG(host->audio.buffer != NULL, "Audio buffer allocation failed.\n");
   return OK;
   ON_ERROR_RETURN;
@@ -250,7 +250,7 @@ void host_render_audio(Host* host) {
 }
 
 static void joypad_callback(JoypadButtons* joyp, void* user_data) {
-  Host* host = user_data;
+  Host* host = reinterpret_cast<Host*>(user_data);
   joyp->up = host->key_state[HOST_KEYCODE_UP];
   joyp->down = host->key_state[HOST_KEYCODE_DOWN];
   joyp->left = host->key_state[HOST_KEYCODE_LEFT];
@@ -377,10 +377,10 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
   assert(host->rewind_state.rewinding);
 
   RewindResult* result = &host->rewind_state.rewind_result;
-  CHECK(SUCCESS(rewind_to_ticks(host->rewind_buffer, ticks, result)));
+  if(!(SUCCESS(rewind_to_ticks(host->rewind_buffer, ticks, result)))) return ERROR;
 
   Emulator* e = host_get_emulator(host);
-  CHECK(SUCCESS(emulator_read_state(e, &result->file_data)));
+  if(!(SUCCESS(emulator_read_state(e, &result->file_data)))) return ERROR;
   assert(emulator_get_ticks(e) == result->info->ticks);
 
   if (emulator_get_ticks(e) < ticks) {
@@ -394,7 +394,6 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
   }
 
   return OK;
-  ON_ERROR_RETURN;
 }
 
 void host_end_rewind(Host* host) {
@@ -456,7 +455,7 @@ EmulatorEvent host_step(Host* host) {
 }
 
 Host* host_new(const HostInit *init, Emulator* e) {
-  Host* host = xcalloc(1, sizeof(Host));
+  Host* host = reinterpret_cast<Host*>(xcalloc(1, sizeof(Host)));
   host->init = *init;
   host->hook_ctx.host = host;
   host->hook_ctx.e = e;
@@ -563,7 +562,7 @@ static GLTextureFormat host_apply_texture_format(HostTextureFormat format) {
 
 HostTexture* host_create_texture(Host* host, int w, int h,
                                  HostTextureFormat format) {
-  HostTexture* texture = xmalloc(sizeof(HostTexture));
+  HostTexture* texture = reinterpret_cast<HostTexture*>(xmalloc(sizeof(HostTexture)));
   texture->width = next_power_of_two(w);
   texture->height = next_power_of_two(h);
 

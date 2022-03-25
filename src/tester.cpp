@@ -399,7 +399,7 @@ void print_profile(Emulator* e) {
   u32 rom_size = emulator_get_rom_size(e);
   u32* counters = emulator_get_profiling_counters();
   const u32 heap_limit = s_profile_limit;
-  U32Pair* min_heap = xcalloc(heap_limit + 1, sizeof(U32Pair));
+  U32Pair* min_heap = reinterpret_cast<U32Pair*>(xcalloc(heap_limit + 1, sizeof(U32Pair)));
 
   u32 i;
   for (i = 0; i < heap_limit; ++i) {
@@ -432,10 +432,20 @@ int main(int argc, char** argv) {
   Emulator* e = NULL;
   JoypadBuffer* joypad_buffer = NULL;
 
+  auto onError = [&]() {
+    if (joypad_buffer) {
+      joypad_delete(joypad_buffer);
+    }
+    if (e) {
+      emulator_delete(e);
+    }
+    return result;
+  };
+
   parse_options(argc, argv);
 
   FileData rom;
-  CHECK(SUCCESS(file_read(s_rom_filename, &rom)));
+  if(!(SUCCESS(file_read(s_rom_filename, &rom)))) return onError();
 
   EmulatorInit emulator_init;
   ZERO_MEMORY(emulator_init);
@@ -446,13 +456,13 @@ int main(int argc, char** argv) {
   emulator_init.builtin_palette = s_builtin_palette;
   emulator_init.force_dmg = s_force_dmg;
   e = emulator_new(&emulator_init);
-  CHECK(e != NULL);
+  if(!(e != NULL)) return onError();
 
   JoypadPlayback joypad_playback;
   if (s_joypad_filename) {
     FileData file_data;
-    CHECK(SUCCESS(file_read(s_joypad_filename, &file_data)));
-    CHECK(SUCCESS(joypad_read(&file_data, &joypad_buffer)));
+    if(!(SUCCESS(file_read(s_joypad_filename, &file_data)))) return onError();
+    if(!(SUCCESS(joypad_read(&file_data, &joypad_buffer)))) return onError();
     file_data_delete(&file_data);
     emulator_set_joypad_playback_callback(e, joypad_buffer, &joypad_playback);
   }
@@ -477,7 +487,7 @@ int main(int argc, char** argv) {
         char buffer[32];
         snprintf(buffer, sizeof(buffer), ".%08d.ppm", animation_frame++);
         const char* result = replace_extension(s_output_ppm, buffer);
-        CHECK(SUCCESS(write_frame_ppm(e, result)));
+        if(!(SUCCESS(write_frame_ppm(e, result)))) return onError();
         xfree((char*)result);
       }
 
@@ -506,7 +516,7 @@ int main(int argc, char** argv) {
          gb_time / host_time);
 
   if (s_output_ppm && !s_animate) {
-    CHECK(SUCCESS(write_frame_ppm(e, s_output_ppm)));
+    if(!(SUCCESS(write_frame_ppm(e, s_output_ppm)))) return onError();
   }
 
 #ifdef TESTER_DEBUGGER
@@ -520,7 +530,6 @@ int main(int argc, char** argv) {
 #endif
 
   result = 0;
-error:
   if (joypad_buffer) {
     joypad_delete(joypad_buffer);
   }
