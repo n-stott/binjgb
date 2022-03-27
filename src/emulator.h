@@ -911,14 +911,15 @@ struct Emulator {
 
   Ticks emulator_get_ticks();
   u32 emulator_get_ppu_frame();
+
+  void emulator_set_builtin_palette(u32 index);
+  void emulator_set_bw_palette(PaletteType, const PaletteRGBA*);
+  void emulator_set_all_bw_palettes(const PaletteRGBA*);
 };
 
 extern const size_t s_emulator_state_size;
 
 u32 audio_buffer_get_frames(AudioBuffer*);
-void emulator_set_builtin_palette(Emulator*, u32 index);
-void emulator_set_bw_palette(Emulator*, PaletteType, const PaletteRGBA*);
-void emulator_set_all_bw_palettes(Emulator*, const PaletteRGBA*);
 
 void emulator_ticks_to_time(Ticks, u32* day, u32* hr, u32* min, u32* sec,
                             u32* ms);

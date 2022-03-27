@@ -182,7 +182,7 @@ static void toggle_audio_channel(int channel) {
 static void inc_palette(int delta) {
   s_builtin_palette = (s_builtin_palette + delta + BUILTIN_PALETTE_COUNT) %
                       BUILTIN_PALETTE_COUNT;
-  emulator_set_builtin_palette(e, s_builtin_palette);
+  e->emulator_set_builtin_palette(s_builtin_palette);
   set_status_text("Palette: %d", s_builtin_palette);
 }
 

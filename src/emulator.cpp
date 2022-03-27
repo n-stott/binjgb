@@ -1583,8 +1583,8 @@ static void set_sgb_palette(Emulator* e, int pal, u8 lo0, u8 hi0, u8 lo1,
   SGB.screen_pal[pal].color[2] = unpack_cgb_color8(e, lo2, hi2);
   SGB.screen_pal[pal].color[3] = unpack_cgb_color8(e, lo3, hi3);
   if (pal == 0) {
-    emulator_set_bw_palette(e, PALETTE_TYPE_OBP0, &SGB.screen_pal[0]);
-    emulator_set_bw_palette(e, PALETTE_TYPE_OBP1, &SGB.screen_pal[0]);
+    e->emulator_set_bw_palette(PALETTE_TYPE_OBP0, &SGB.screen_pal[0]);
+    e->emulator_set_bw_palette(PALETTE_TYPE_OBP1, &SGB.screen_pal[0]);
   }
   update_bw_palette_rgba(e, PALETTE_TYPE_BGP);
 }
@@ -4103,7 +4103,7 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
   HDMA.blocks = 0xff;
 
   /* Set initial DMG/SGB palettes */
-  emulator_set_builtin_palette(e, init->builtin_palette);
+  e->emulator_set_builtin_palette(init->builtin_palette);
 
   /* Set up cgb color curve */
   e->cgb_color_curve = init->cgb_color_curve;
@@ -4177,16 +4177,16 @@ u32 audio_buffer_get_frames(AudioBuffer* audio_buffer) {
   return (audio_buffer->position - audio_buffer->data) / SOUND_OUTPUT_COUNT;
 }
 
-void emulator_set_bw_palette(Emulator* e, PaletteType type,
+void Emulator::emulator_set_bw_palette(PaletteType type,
                              const PaletteRGBA* palette) {
-  e->color_to_rgba[type] = *palette;
-  update_bw_palette_rgba(e, type);
+  color_to_rgba[type] = *palette;
+  update_bw_palette_rgba(this, type);
 }
 
-void emulator_set_all_bw_palettes(Emulator* e, const PaletteRGBA* palette) {
-  e->color_to_rgba[PALETTE_TYPE_BGP] = *palette;
-  e->color_to_rgba[PALETTE_TYPE_OBP0] = *palette;
-  e->color_to_rgba[PALETTE_TYPE_OBP1] = *palette;
+void Emulator::emulator_set_all_bw_palettes(const PaletteRGBA* palette) {
+  color_to_rgba[PALETTE_TYPE_BGP] = *palette;
+  color_to_rgba[PALETTE_TYPE_OBP0] = *palette;
+  color_to_rgba[PALETTE_TYPE_OBP1] = *palette;
 }
 
 static Result set_rom_file_data(Emulator* e, const FileData* file_data) {
@@ -4227,8 +4227,8 @@ Result emulator_read_state(Emulator* e, const FileData* file_data) {
   set_cart_info(e, e->state.cart_info_index);
 
   if (IS_SGB) {
-    emulator_set_bw_palette(e, PALETTE_TYPE_OBP0, &SGB.screen_pal[0]);
-    emulator_set_bw_palette(e, PALETTE_TYPE_OBP1, &SGB.screen_pal[0]);
+    e->emulator_set_bw_palette(PALETTE_TYPE_OBP0, &SGB.screen_pal[0]);
+    e->emulator_set_bw_palette(PALETTE_TYPE_OBP1, &SGB.screen_pal[0]);
   }
   update_bw_palette_rgba(e, PALETTE_TYPE_BGP);
   update_bw_palette_rgba(e, PALETTE_TYPE_OBP0);
@@ -4347,7 +4347,7 @@ void emulator_ticks_to_time(Ticks ticks, u32* day, u32* hr, u32* min, u32* sec,
   *day = secs / (60 * 60 * 24);
 }
 
-void emulator_set_builtin_palette(Emulator* e, u32 index) {
+void Emulator::emulator_set_builtin_palette(u32 index) {
   static const PaletteRGBA pals[][3] = {
 #define PAL(b0, b1, b2, b3, o00, o01, o02, o03, o10, o11, o12, o13) \
   {{{b0, b1, b2, b3}}, {{o00, o01, o02, o03}}, {{o10, o11, o12, o13}}},
@@ -4359,13 +4359,13 @@ void emulator_set_builtin_palette(Emulator* e, u32 index) {
   };
   size_t count = sizeof(pals) / sizeof(*pals);
   if (index >= count) { return; }
-  emulator_set_bw_palette(e, static_cast<PaletteType>(0), &pals[index][0]);
-  emulator_set_bw_palette(e, static_cast<PaletteType>(1), &pals[index][1]);
-  emulator_set_bw_palette(e, static_cast<PaletteType>(2), &pals[index][2]);
+  emulator_set_bw_palette(static_cast<PaletteType>(0), &pals[index][0]);
+  emulator_set_bw_palette(static_cast<PaletteType>(1), &pals[index][1]);
+  emulator_set_bw_palette(static_cast<PaletteType>(2), &pals[index][2]);
   for (int i = 0; i < 4; ++i) {
-    SGB.screen_pal[i] = pals[index][0];
+    THIS_SGB.screen_pal[i] = pals[index][0];
   }
-  update_bw_palette_rgba(e, PALETTE_TYPE_BGP);
+  update_bw_palette_rgba(this, PALETTE_TYPE_BGP);
 }
 
 ApuLog* emulator_get_apu_log(Emulator* e) {
