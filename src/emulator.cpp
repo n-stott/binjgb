@@ -3951,34 +3951,34 @@ static void emulator_step_internal(Emulator* e) {
   }
 }
 
-EmulatorEvent emulator_run_until(Emulator* e, Ticks until_ticks) {
-  AudioBuffer* ab = &e->audio_buffer;
-  if (e->state.event & EMULATOR_EVENT_AUDIO_BUFFER_FULL) {
+EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
+  AudioBuffer* ab = &audio_buffer;
+  if (state.event & EMULATOR_EVENT_AUDIO_BUFFER_FULL) {
     ab->position = ab->data;
   }
-  check_joyp_intr(e);
-  e->state.event = 0;
+  check_joyp_intr(this);
+  state.event = 0;
 
   u64 frames_left = ab->frames - audio_buffer_get_frames(ab);
   Ticks max_audio_ticks =
-      APU.sync_ticks +
+      THIS_APU.sync_ticks +
       (u32)DIV_CEIL(frames_left * CPU_TICKS_PER_SECOND, ab->frequency);
   Ticks check_ticks = MIN(until_ticks, max_audio_ticks);
-  while (e->state.event == 0 && TICKS < check_ticks) {
-    emulator_step_internal(e);
+  while (state.event == 0 && THIS_TICKS < check_ticks) {
+    emulator_step_internal(this);
   }
-  if (TICKS >= max_audio_ticks) {
-    e->state.event |= EMULATOR_EVENT_AUDIO_BUFFER_FULL;
+  if (THIS_TICKS >= max_audio_ticks) {
+    state.event |= EMULATOR_EVENT_AUDIO_BUFFER_FULL;
   }
-  if (TICKS >= until_ticks) {
-    e->state.event |= EMULATOR_EVENT_UNTIL_TICKS;
+  if (THIS_TICKS >= until_ticks) {
+    state.event |= EMULATOR_EVENT_UNTIL_TICKS;
   }
-  apu_synchronize(e);
-  return e->state.event;
+  apu_synchronize(this);
+  return state.event;
 }
 
-EmulatorEvent emulator_step(Emulator* e) {
-  return emulator_run_until(e, TICKS + 1);
+EmulatorEvent Emulator::emulator_step() {
+  return emulator_run_until(THIS_TICKS + 1);
 }
 
 static Result validate_header_checksum(CartInfo* cart_info) {

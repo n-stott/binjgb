@@ -478,7 +478,7 @@ int main(int argc, char** argv) {
   [[maybe_unused]] u32 next_input_frame_buttons = 0;
   f64 start_time = get_time_sec();
   while (true) {
-    EmulatorEvent event = emulator_run_until(e.get(), until_ticks);
+    EmulatorEvent event = e->emulator_run_until(until_ticks);
     if (event & EMULATOR_EVENT_NEW_FRAME) {
       if (s_output_ppm && s_animate) {
         char buffer[32];

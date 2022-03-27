@@ -91,12 +91,12 @@ void Debugger::RewindWindow::Tick() {
           d->e->emulator_write_state(&reverse_step_save_state);
           int count = 0;
           for (; d->e->emulator_get_ticks() < cur_cy; ++count) {
-            emulator_step(d->e);
+            d->e->emulator_step();
           }
 
           d->e->emulator_read_state(&reverse_step_save_state);
           for (int i = 0; i < count - 1; ++i) {
-            emulator_step(d->e);
+            d->e->emulator_step();
           }
         }
       }

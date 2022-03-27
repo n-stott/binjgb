@@ -930,6 +930,9 @@ struct Emulator {
   Result emulator_write_state_to_file(const char* filename);
   Result emulator_read_ext_ram_from_file(const char* filename);
   Result emulator_write_ext_ram_to_file(const char* filename);
+
+  EmulatorEvent emulator_step();
+  EmulatorEvent emulator_run_until(Ticks until_ticks);
 };
 
 extern const size_t s_emulator_state_size;
@@ -941,9 +944,6 @@ void emulator_ticks_to_time(Ticks, u32* day, u32* hr, u32* min, u32* sec,
 
 
 void emulator_init_state_file_data(FileData*);
-
-EmulatorEvent emulator_step(Emulator*);
-EmulatorEvent emulator_run_until(Emulator*, Ticks until_ticks);
 
 ApuLog* emulator_get_apu_log(Emulator*);
 void emulator_reset_apu_log(Emulator*);

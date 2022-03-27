@@ -361,7 +361,7 @@ static EmulatorEvent host_run_until_ticks(struct Host* host, Ticks ticks) {
   assert(e->emulator_get_ticks() <= ticks);
   EmulatorEvent event;
   do {
-    event = emulator_run_until(e, ticks);
+    event = e->emulator_run_until(ticks);
     host_handle_event(host, event);
   } while (!(event & (EMULATOR_EVENT_UNTIL_TICKS | EMULATOR_EVENT_BREAKPOINT |
                       EMULATOR_EVENT_INVALID_OPCODE)));
@@ -448,7 +448,7 @@ EmulatorEvent host_run_ms(struct Host* host, f64 delta_ms) {
 EmulatorEvent host_step(Host* host) {
   assert(!host->rewind_state.rewinding);
   Emulator* e = host_get_emulator(host);
-  EmulatorEvent event = emulator_step(e);
+  EmulatorEvent event = e->emulator_step();
   host_handle_event(host, event);
   host->last_ticks = e->emulator_get_ticks();
   return event;
