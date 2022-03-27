@@ -108,7 +108,6 @@ Debugger::Debugger()
       tiledata_window(this) {}
 
 Debugger::~Debugger() {
-  emulator_delete(e);
   host_delete(host);
 }
 
@@ -138,7 +137,8 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
   emulator_init.builtin_palette = builtin_palette;
   emulator_init.force_dmg = force_dmg ? true : false;
   emulator_init.cgb_color_curve = cgb_color_curve;
-  e = emulator_new(&emulator_init);
+  emulator = try_create_emulator(&emulator_init);
+  e = emulator.get();
   if (e == nullptr) {
     return false;
   }

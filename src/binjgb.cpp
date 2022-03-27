@@ -14,6 +14,8 @@
 #include "host.h"
 #include "options.h"
 
+#include <memory>
+
 #define SAVE_EXTENSION ".sav"
 #define SAVE_STATE_EXTENSION ".state"
 
@@ -43,7 +45,7 @@ typedef struct StatusText {
   u32 timeout;
 } StatusText;
 
-static struct Emulator* e;
+static Emulator* e;
 static struct Host* host;
 
 static const char* s_rom_filename;
@@ -487,9 +489,6 @@ int main(int argc, char** argv) {
     if (host) {
       host_delete(host);
     }
-    if (e) {
-      emulator_delete(e);
-    }
     return result;
   };
 
@@ -509,7 +508,8 @@ int main(int argc, char** argv) {
   emulator_init.builtin_palette = s_builtin_palette;
   emulator_init.force_dmg = s_force_dmg;
   emulator_init.cgb_color_curve = static_cast<CgbColorCurve>(s_cgb_color_curve);
-  e = emulator_new(&emulator_init);
+  std::unique_ptr<Emulator> emulator = try_create_emulator(&emulator_init);
+  e = emulator.get();
   if(!(e != NULL)) return onError();
 
   HostInit host_init;
@@ -566,9 +566,6 @@ int main(int argc, char** argv) {
   result = 0;
   if (host) {
     host_delete(host);
-  }
-  if (e) {
-    emulator_delete(e);
   }
   return result;
 }

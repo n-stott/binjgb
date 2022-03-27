@@ -22,6 +22,8 @@
 #include "joypad.h"
 #include "options.h"
 
+#include <memory>
+
 #define AUDIO_FREQUENCY 44100
 /* This value is arbitrary. Why not 1/10th of a second? */
 #define AUDIO_FRAMES ((AUDIO_FREQUENCY / 10) * SOUND_OUTPUT_COUNT)
@@ -428,15 +430,11 @@ void print_profile(Emulator* e) {
 
 int main(int argc, char** argv) {
   int result = 1;
-  Emulator* e = NULL;
   JoypadBuffer* joypad_buffer = NULL;
 
   auto onError = [&]() {
     if (joypad_buffer) {
       joypad_delete(joypad_buffer);
-    }
-    if (e) {
-      emulator_delete(e);
     }
     return result;
   };
@@ -454,7 +452,7 @@ int main(int argc, char** argv) {
   emulator_init.random_seed = s_random_seed;
   emulator_init.builtin_palette = s_builtin_palette;
   emulator_init.force_dmg = s_force_dmg;
-  e = emulator_new(&emulator_init);
+  std::unique_ptr<Emulator> e = try_create_emulator(&emulator_init);
   if(!(e != NULL)) return onError();
 
   JoypadPlayback joypad_playback;
@@ -463,7 +461,7 @@ int main(int argc, char** argv) {
     if(!(SUCCESS(file_read(s_joypad_filename, &file_data)))) return onError();
     if(!(SUCCESS(joypad_read(&file_data, &joypad_buffer)))) return onError();
     file_data_delete(&file_data);
-    emulator_set_joypad_playback_callback(e, joypad_buffer, &joypad_playback);
+    emulator_set_joypad_playback_callback(e.get(), joypad_buffer, &joypad_playback);
   }
 
 #ifdef TESTER_DEBUGGER
@@ -472,7 +470,7 @@ int main(int argc, char** argv) {
 #endif
 
   u32 total_ticks = (u32)(s_frames * PPU_FRAME_TICKS);
-  u32 until_ticks = emulator_get_ticks(e) + total_ticks;
+  u32 until_ticks = emulator_get_ticks(e.get()) + total_ticks;
   printf("frames = %u total_ticks = %u\n", s_frames, total_ticks);
   bool finish_at_next_frame = false;
   u32 animation_frame = 0; /* Will likely differ from PPU frame. */
@@ -480,13 +478,13 @@ int main(int argc, char** argv) {
   [[maybe_unused]] u32 next_input_frame_buttons = 0;
   f64 start_time = get_time_sec();
   while (true) {
-    EmulatorEvent event = emulator_run_until(e, until_ticks);
+    EmulatorEvent event = emulator_run_until(e.get(), until_ticks);
     if (event & EMULATOR_EVENT_NEW_FRAME) {
       if (s_output_ppm && s_animate) {
         char buffer[32];
         snprintf(buffer, sizeof(buffer), ".%08d.ppm", animation_frame++);
         const char* result = replace_extension(s_output_ppm, buffer);
-        if(!(SUCCESS(write_frame_ppm(e, result)))) return onError();
+        if(!(SUCCESS(write_frame_ppm(e.get(), result)))) return onError();
         xfree((char*)result);
       }
 
@@ -501,7 +499,7 @@ int main(int argc, char** argv) {
     if (event & EMULATOR_EVENT_INVALID_OPCODE) {
       printf("!! hit invalid opcode, pc=");
 #ifdef TESTER_DEBUGGER
-      printf("%04x\n", emulator_get_registers(e).PC);
+      printf("%04x\n", emulator_get_registers(e.get()).PC);
 #else
       printf("???\n");
 #endif
@@ -509,13 +507,13 @@ int main(int argc, char** argv) {
     }
   }
   f64 host_time = get_time_sec() - start_time;
-  Ticks real_total_ticks = emulator_get_ticks(e);
+  Ticks real_total_ticks = emulator_get_ticks(e.get());
   f64 gb_time = (f64)real_total_ticks / CPU_TICKS_PER_SECOND;
   printf("time: gb=%.1fs host=%.1fs (%.1fx)\n", gb_time, host_time,
          gb_time / host_time);
 
   if (s_output_ppm && !s_animate) {
-    if(!(SUCCESS(write_frame_ppm(e, s_output_ppm)))) return onError();
+    if(!(SUCCESS(write_frame_ppm(e.get(), s_output_ppm)))) return onError();
   }
 
 #ifdef TESTER_DEBUGGER
@@ -524,16 +522,13 @@ int main(int argc, char** argv) {
   }
 
   if (s_profile) {
-    print_profile(e);
+    print_profile(e.get());
   }
 #endif
 
   result = 0;
   if (joypad_buffer) {
     joypad_delete(joypad_buffer);
-  }
-  if (e) {
-    emulator_delete(e);
   }
   return result;
 }

@@ -17,6 +17,8 @@
 #include "emulator-debug.h"
 #include "host.h"
 
+#include <memory>
+
 const ImVec2 kTileSize(8, 8);
 const ImVec2 k8x16OBJSize(8, 16);
 const ImVec2 kScreenSize(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -91,6 +93,7 @@ class Debugger {
 
   EmulatorInit emulator_init;
   HostInit host_init;
+  std::unique_ptr<Emulator> emulator;
   Emulator* e = nullptr;
   Host* host = nullptr;
   const char* save_filename = nullptr;
