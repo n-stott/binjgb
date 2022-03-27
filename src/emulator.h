@@ -933,6 +933,9 @@ struct Emulator {
 
   EmulatorEvent emulator_step();
   EmulatorEvent emulator_run_until(Ticks until_ticks);
+  void emulator_step_internal();
+  void execute_instruction();
+  void dispatch_interrupt();
 
   ApuLog* emulator_get_apu_log();
   void emulator_reset_apu_log();

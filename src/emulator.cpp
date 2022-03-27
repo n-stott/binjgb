@@ -3390,26 +3390,26 @@ static void set_af_reg(Emulator* e, u16 af) {
   REG.F.C = unpack(af, CPU_FLAG_C);
 }
 
-#define TICK tick(e)
-#define RA REG.A
-#define RSP REG.SP
-#define FZ REG.F.Z
-#define FC REG.F.C
-#define FH REG.F.H
-#define FN REG.F.N
+#define TICK tick(this)
+#define RA THIS_REG.A
+#define RSP THIS_REG.SP
+#define FZ THIS_REG.F.Z
+#define FC THIS_REG.F.C
+#define FH THIS_REG.F.H
+#define FN THIS_REG.F.N
 #define FZ_EQ0(X) FZ = (u8)(X) == 0
 #define SHIFT_FLAGS FZ_EQ0(u); FN = FH = 0
 #define MASK8(X) ((X) & 0xf)
 #define MASK16(X) ((X) & 0xfff)
-#define READ8(X) read_u8_tick(e, X)
-#define READ16(X) read_u16_tick(e, X)
-#define WRITE8(X, V) write_u8_tick(e, X, V)
-#define WRITE16(X, V) write_u16_tick(e, X, V)
-#define READ_N (new_pc += 1, READ8(REG.PC))
-#define READ_NN (new_pc += 2, READ16(REG.PC))
-#define READMR(MR) READ8(REG.MR)
-#define WRITEMR(MR, V) WRITE8(REG.MR, V)
-#define BASIC_OP_R(R, OP) u = REG.R; OP; REG.R = u
+#define READ8(X) read_u8_tick(this, X)
+#define READ16(X) read_u16_tick(this, X)
+#define WRITE8(X, V) write_u8_tick(this, X, V)
+#define WRITE16(X, V) write_u16_tick(this, X, V)
+#define READ_N (new_pc += 1, READ8(THIS_REG.PC))
+#define READ_NN (new_pc += 2, READ16(THIS_REG.PC))
+#define READMR(MR) READ8(THIS_REG.MR)
+#define WRITEMR(MR, V) WRITE8(THIS_REG.MR, V)
+#define BASIC_OP_R(R, OP) u = THIS_REG.R; OP; THIS_REG.R = u
 #define BASIC_OP_MR(MR, OP) u = READMR(MR); OP; WRITEMR(MR, u)
 #define FC_ADD(X, Y) FC = ((X) + (Y) > 0xff)
 #define FH_ADD(X, Y) FH = (MASK8(X) + MASK8(Y) > 0xf)
@@ -3420,31 +3420,31 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define ADD_FLAGS(X, Y) FZ_EQ0((X) + (Y)); FN = 0; FCH_ADD(X, Y)
 #define ADD_FLAGS16(X, Y) FN = 0; FCH_ADD16(X, Y)
 #define ADD_SP_FLAGS(Y) FZ = FN = 0; FCH_ADD((u8)RSP, (u8)(Y))
-#define ADD_R(R) ADD_FLAGS(RA, REG.R); RA += REG.R
+#define ADD_R(R) ADD_FLAGS(RA, THIS_REG.R); RA += THIS_REG.R
 #define ADD_MR(MR) u = READMR(MR); ADD_FLAGS(RA, u); RA += u
 #define ADD_N u = READ_N; ADD_FLAGS(RA, u); RA += u
-#define ADD_HL_RR(RR) TICK; ADD_FLAGS16(REG.HL, REG.RR); REG.HL += REG.RR
+#define ADD_HL_RR(RR) TICK; ADD_FLAGS16(THIS_REG.HL, THIS_REG.RR); THIS_REG.HL += THIS_REG.RR
 #define ADD_SP_N s = (s8)READ_N; ADD_SP_FLAGS(s); RSP += s; TICK; TICK
 #define FC_ADC(X, Y, C) FC = ((X) + (Y) + (C) > 0xff)
 #define FH_ADC(X, Y, C) FH = (MASK8(X) + MASK8(Y) + C > 0xf)
 #define FCH_ADC(X, Y, C) FC_ADC(X, Y, C); FH_ADC(X, Y, C)
 #define ADC_FLAGS(X, Y, C) FZ_EQ0((X) + (Y) + (C)); FN = 0; FCH_ADC(X, Y, C)
-#define ADC_R(R) u = REG.R; c = FC; ADC_FLAGS(RA, u, c); RA += u + c
+#define ADC_R(R) u = THIS_REG.R; c = FC; ADC_FLAGS(RA, u, c); RA += u + c
 #define ADC_MR(MR) u = READMR(MR); c = FC; ADC_FLAGS(RA, u, c); RA += u + c
 #define ADC_N u = READ_N; c = FC; ADC_FLAGS(RA, u, c); RA += u + c
 #define AND_FLAGS FZ_EQ0(RA); FH = 1; FN = FC = 0
-#define AND_R(R) RA &= REG.R; AND_FLAGS
+#define AND_R(R) RA &= THIS_REG.R; AND_FLAGS
 #define AND_MR(MR) RA &= READMR(MR); AND_FLAGS
 #define AND_N RA &= READ_N; AND_FLAGS
 #define BIT_FLAGS(BIT, X) FZ_EQ0((X) & (1 << (BIT))); FN = 0; FH = 1
-#define BIT_R(BIT, R) u = REG.R; BIT_FLAGS(BIT, u)
+#define BIT_R(BIT, R) u = THIS_REG.R; BIT_FLAGS(BIT, u)
 #define BIT_MR(BIT, MR) u = READMR(MR); BIT_FLAGS(BIT, u)
 #define CALL(X) TICK; RSP -= 2; WRITE16(RSP, new_pc); new_pc = X
 #define CALL_NN u16 = READ_NN; CALL(u16)
 #define CALL_F_NN(COND) u16 = READ_NN; if (COND) { CALL(u16); }
 #define CCF FC ^= 1; FN = FH = 0
 #define CP_FLAGS(X, Y) FZ_EQ0((X) - (Y)); FN = 1; FCH_SUB(X, Y)
-#define CP_R(R) CP_FLAGS(RA, REG.R)
+#define CP_R(R) CP_FLAGS(RA, THIS_REG.R)
 #define CP_N u = READ_N; CP_FLAGS(RA, u)
 #define CP_MR(MR) u = READMR(MR); CP_FLAGS(RA, u)
 #define CPL RA = ~RA; FN = FH = 1
@@ -3465,58 +3465,58 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define DEC u--
 #define DEC_FLAGS FZ_EQ0(u); FN = 1; FH = MASK8(u) == 0xf
 #define DEC_R(R) BASIC_OP_R(R, DEC); DEC_FLAGS
-#define DEC_RR(RR) REG.RR--; TICK
+#define DEC_RR(RR) THIS_REG.RR--; TICK
 #define DEC_MR(MR) BASIC_OP_MR(MR, DEC); DEC_FLAGS
-#define DI INTR.state = CPU_STATE_NORMAL; INTR.ime = false;
-#define EI INTR.state = CPU_STATE_ENABLE_IME;
+#define DI THIS_INTR.state = CPU_STATE_NORMAL; THIS_INTR.ime = false;
+#define EI THIS_INTR.state = CPU_STATE_ENABLE_IME;
 #define HALT                                   \
-  if (INTR.ime) {                              \
-    INTR.state = CPU_STATE_HALT;               \
-  } else if (INTR.ie & INTR.new_if & IF_ALL) { \
-    INTR.state = CPU_STATE_HALT_BUG;           \
+  if (THIS_INTR.ime) {                              \
+    THIS_INTR.state = CPU_STATE_HALT;               \
+  } else if (THIS_INTR.ie & THIS_INTR.new_if & IF_ALL) { \
+    THIS_INTR.state = CPU_STATE_HALT_BUG;           \
   } else {                                     \
-    INTR.state = CPU_STATE_HALT_DI;            \
+    THIS_INTR.state = CPU_STATE_HALT_DI;            \
   }
 #define INC u++
 #define INC_FLAGS FZ_EQ0(u); FN = 0; FH = MASK8(u) == 0
 #define INC_R(R) BASIC_OP_R(R, INC); INC_FLAGS
-#define INC_RR(RR) REG.RR++; TICK
+#define INC_RR(RR) THIS_REG.RR++; TICK
 #define INC_MR(MR) BASIC_OP_MR(MR, INC); INC_FLAGS
 #define JP_F_NN(COND) u16 = READ_NN; if (COND) { new_pc = u16; TICK; }
-#define JP_RR(RR) new_pc = REG.RR
+#define JP_RR(RR) new_pc = THIS_REG.RR
 #define JP_NN new_pc = READ_NN; TICK
 #define JR new_pc += s; TICK
 #define JR_F_N(COND) s = READ_N; if (COND) { JR; }
 #define JR_N s = READ_N; JR
-#define LD_R_R(RD, RS) REG.RD = REG.RS
-#define LD_R_N(R) REG.R = READ_N
-#define LD_RR_RR(RRD, RRS) REG.RRD = REG.RRS; TICK
-#define LD_RR_NN(RR) REG.RR = READ_NN
-#define LD_R_MR(R, MR) REG.R = READMR(MR)
-#define LD_R_MN(R) REG.R = READ8(READ_NN)
-#define LD_MR_R(MR, R) WRITEMR(MR, REG.R)
+#define LD_R_R(RD, RS) THIS_REG.RD = THIS_REG.RS
+#define LD_R_N(R) THIS_REG.R = READ_N
+#define LD_RR_RR(RRD, RRS) THIS_REG.RRD = THIS_REG.RRS; TICK
+#define LD_RR_NN(RR) THIS_REG.RR = READ_NN
+#define LD_R_MR(R, MR) THIS_REG.R = READMR(MR)
+#define LD_R_MN(R) THIS_REG.R = READ8(READ_NN)
+#define LD_MR_R(MR, R) WRITEMR(MR, THIS_REG.R)
 #define LD_MR_N(MR) WRITEMR(MR, READ_N)
-#define LD_MN_R(R) WRITE8(READ_NN, REG.R)
+#define LD_MN_R(R) WRITE8(READ_NN, THIS_REG.R)
 #define LD_MFF00_N_R(R) WRITE8(0xFF00 + READ_N, RA)
-#define LD_MFF00_R_R(R1, R2) WRITE8(0xFF00 + REG.R1, REG.R2)
-#define LD_R_MFF00_N(R) REG.R = READ8(0xFF00 + READ_N)
-#define LD_R_MFF00_R(R1, R2) REG.R1 = READ8(0xFF00 + REG.R2)
+#define LD_MFF00_R_R(R1, R2) WRITE8(0xFF00 + THIS_REG.R1, THIS_REG.R2)
+#define LD_R_MFF00_N(R) THIS_REG.R = READ8(0xFF00 + READ_N)
+#define LD_R_MFF00_R(R1, R2) THIS_REG.R1 = READ8(0xFF00 + THIS_REG.R2)
 #define LD_MNN_SP u16 = READ_NN; WRITE16(u16, RSP)
-#define LD_HL_SP_N s = (s8)READ_N; ADD_SP_FLAGS(s); REG.HL = RSP + s; TICK
+#define LD_HL_SP_N s = (s8)READ_N; ADD_SP_FLAGS(s); THIS_REG.HL = RSP + s; TICK
 #define OR_FLAGS FZ_EQ0(RA); FN = FH = FC = 0
-#define OR_R(R) RA |= REG.R; OR_FLAGS
+#define OR_R(R) RA |= THIS_REG.R; OR_FLAGS
 #define OR_MR(MR) RA |= READMR(MR); OR_FLAGS
 #define OR_N RA |= READ_N; OR_FLAGS
-#define POP_RR(RR) REG.RR = READ16(RSP); RSP += 2
-#define POP_AF set_af_reg(e, READ16(RSP)); RSP += 2
-#define PUSH_RR(RR) TICK; RSP -= 2; WRITE16(RSP, REG.RR)
-#define PUSH_AF TICK; RSP -= 2; WRITE16(RSP, get_af_reg(e))
+#define POP_RR(RR) THIS_REG.RR = READ16(RSP); RSP += 2
+#define POP_AF set_af_reg(this, READ16(RSP)); RSP += 2
+#define PUSH_RR(RR) TICK; RSP -= 2; WRITE16(RSP, THIS_REG.RR)
+#define PUSH_AF TICK; RSP -= 2; WRITE16(RSP, get_af_reg(this))
 #define RES(BIT) u &= ~(1 << (BIT))
 #define RES_R(BIT, R) BASIC_OP_R(R, RES(BIT))
 #define RES_MR(BIT, MR) BASIC_OP_MR(MR, RES(BIT))
 #define RET new_pc = READ16(RSP); RSP += 2; TICK
 #define RET_F(COND) TICK; if (COND) { RET; }
-#define RETI INTR.state = CPU_STATE_NORMAL; INTR.ime = true; RET
+#define RETI THIS_INTR.state = CPU_STATE_NORMAL; THIS_INTR.ime = true; RET
 #define RL c = (u >> 7) & 1; u = (u << 1) | FC; FC = c
 #define RLA BASIC_OP_R(A, RL); FZ = FN = FH = 0
 #define RL_R(R) BASIC_OP_R(R, RL); SHIFT_FLAGS
@@ -3546,19 +3546,19 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define SRL FC = u & 1; u >>= 1
 #define SRL_R(R) BASIC_OP_R(R, SRL); SHIFT_FLAGS
 #define SRL_MR(MR) BASIC_OP_MR(MR, SRL); SHIFT_FLAGS
-#define STOP INTR.state = CPU_STATE_STOP;
+#define STOP THIS_INTR.state = CPU_STATE_STOP;
 #define FC_SUB(X, Y) FC = ((int)(X) - (int)(Y) < 0)
 #define FH_SUB(X, Y) FH = ((int)MASK8(X) - (int)MASK8(Y) < 0)
 #define FCH_SUB(X, Y) FC_SUB(X, Y); FH_SUB(X, Y)
 #define SUB_FLAGS(X, Y) FZ_EQ0((X) - (Y)); FN = 1; FCH_SUB(X, Y)
-#define SUB_R(R) SUB_FLAGS(RA, REG.R); RA -= REG.R
+#define SUB_R(R) SUB_FLAGS(RA, THIS_REG.R); RA -= THIS_REG.R
 #define SUB_MR(MR) u = READMR(MR); SUB_FLAGS(RA, u); RA -= u
 #define SUB_N u = READ_N; SUB_FLAGS(RA, u); RA -= u
 #define FC_SBC(X, Y, C) FC = ((int)(X) - (int)(Y) - (int)(C) < 0)
 #define FH_SBC(X, Y, C) FH = ((int)MASK8(X) - (int)MASK8(Y) - (int)C < 0)
 #define FCH_SBC(X, Y, C) FC_SBC(X, Y, C); FH_SBC(X, Y, C)
 #define SBC_FLAGS(X, Y, C) FZ_EQ0((X) - (Y) - (C)); FN = 1; FCH_SBC(X, Y, C)
-#define SBC_R(R) u = REG.R; c = FC; SBC_FLAGS(RA, u, c); RA -= u + c
+#define SBC_R(R) u = THIS_REG.R; c = FC; SBC_FLAGS(RA, u, c); RA -= u + c
 #define SBC_MR(MR) u = READMR(MR); c = FC; SBC_FLAGS(RA, u, c); RA -= u + c
 #define SBC_N u = READ_N; c = FC; SBC_FLAGS(RA, u, c); RA -= u + c
 #define SWAP u = (u << 4) | (u >> 4)
@@ -3566,31 +3566,32 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define SWAP_R(R) BASIC_OP_R(R, SWAP); SWAP_FLAGS
 #define SWAP_MR(MR) BASIC_OP_MR(MR, SWAP); SWAP_FLAGS
 #define XOR_FLAGS FZ_EQ0(RA); FN = FH = FC = 0
-#define XOR_R(R) RA ^= REG.R; XOR_FLAGS
+#define XOR_R(R) RA ^= THIS_REG.R; XOR_FLAGS
 #define XOR_MR(MR) RA ^= READMR(MR); XOR_FLAGS
 #define XOR_N RA ^= READ_N; XOR_FLAGS
 
-static void dispatch_interrupt(Emulator* e) {
-  bool was_halt = INTR.state >= CPU_STATE_HALT;
-  if (!(INTR.ime || was_halt)) {
+void Emulator::dispatch_interrupt() {
+  bool was_halt = THIS_INTR.state >= CPU_STATE_HALT;
+  if (!(THIS_INTR.ime || was_halt)) {
     return;
   }
+  [[maybe_unused]] Emulator* e = this;
 
-  INTR.ime = false;
-  INTR.state = CPU_STATE_NORMAL;
+  THIS_INTR.ime = false;
+  THIS_INTR.state = CPU_STATE_NORMAL;
 
   /* Write MSB of PC. */
-  RSP--; WRITE8(RSP, REG.PC >> 8);
+  RSP--; WRITE8(RSP, THIS_REG.PC >> 8);
 
   /* Now check which interrupt to raise, after having written the MSB of PC.
    * This behavior is needed to pass the ie_push mooneye-gb test. */
-  u8 interrupt = INTR.new_if & INTR.ie;
+  u8 interrupt = THIS_INTR.new_if & THIS_INTR.ie;
 
   bool delay = false;
   u8 mask = 0;
   Address vector = 0;
   if (interrupt & IF_VBLANK) {
-    HOOK(vblank_interrupt_i, PPU.frame);
+    HOOK(vblank_interrupt_i, THIS_PPU.frame);
     vector = 0x40;
     mask = IF_VBLANK;
   } else if (interrupt & IF_STAT) {
@@ -3618,103 +3619,105 @@ static void dispatch_interrupt(Emulator* e) {
     mask = 0;
   }
 
-  INTR.new_if &= ~mask;
+  THIS_INTR.new_if &= ~mask;
 
   /* Now write the LSB of PC. */
-  RSP--; WRITE8(RSP, REG.PC);
-  REG.PC = vector;
+  RSP--; WRITE8(RSP, THIS_REG.PC);
+  THIS_REG.PC = vector;
 
   if (delay) {
-    tick(e);
+    tick(this);
   }
-  tick(e);
-  tick(e);
+  tick(this);
+  tick(this);
 }
 
-static void execute_instruction(Emulator* e) {
+void Emulator::execute_instruction() {
   u8 opcode = 0;
   s8 s;
   u8 u, c;
   u16 u16;
   Address new_pc;
 
-  if (UNLIKELY(TICKS >= e->state.next_intr_ticks)) {
-    if (TICKS >= TIMER.next_intr_ticks) {
-      timer_synchronize(e);
+  [[maybe_unused]] Emulator* e = this;
+
+  if (UNLIKELY(THIS_TICKS >= state.next_intr_ticks)) {
+    if (THIS_TICKS >= THIS_TIMER.next_intr_ticks) {
+      timer_synchronize(this);
     }
-    if (TICKS >= SERIAL.next_intr_ticks) {
-      serial_synchronize(e);
+    if (THIS_TICKS >= THIS_SERIAL.next_intr_ticks) {
+      serial_synchronize(this);
     }
-    if (TICKS >= PPU.next_intr_ticks) {
-      ppu_synchronize(e);
+    if (THIS_TICKS >= THIS_PPU.next_intr_ticks) {
+      ppu_synchronize(this);
     }
   }
 
   bool should_dispatch = false;
 
-  if (LIKELY(INTR.state == CPU_STATE_NORMAL)) {
-    should_dispatch = INTR.ime && (INTR.new_if & INTR.ie) != 0;
-    opcode = read_u8_tick(e, REG.PC);
+  if (LIKELY(THIS_INTR.state == CPU_STATE_NORMAL)) {
+    should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
+    opcode = read_u8_tick(this, THIS_REG.PC);
   } else {
-    switch (INTR.state) {
+    switch (THIS_INTR.state) {
       case CPU_STATE_NORMAL:
         assert(0);
 
       case CPU_STATE_STOP:
-        should_dispatch = INTR.ime && (INTR.new_if & INTR.ie) != 0;
+        should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
         if (UNLIKELY(!should_dispatch)) {
           // TODO(binji): proper timing of speed switching.
-          if (CPU_SPEED.switching) {
-            intr_synchronize(e);
-            CPU_SPEED.switching = false;
-            CPU_SPEED.speed = static_cast<Speed>(static_cast<int>(CPU_SPEED.speed) ^ 1);
-            INTR.state = CPU_STATE_NORMAL;
-            if (CPU_SPEED.speed == SPEED_NORMAL) {
-              e->state.cpu_tick = CPU_TICK;
+          if (THIS_CPU_SPEED.switching) {
+            intr_synchronize(this);
+            THIS_CPU_SPEED.switching = false;
+            THIS_CPU_SPEED.speed = static_cast<Speed>(static_cast<int>(THIS_CPU_SPEED.speed) ^ 1);
+            THIS_INTR.state = CPU_STATE_NORMAL;
+            if (THIS_CPU_SPEED.speed == SPEED_NORMAL) {
+              state.cpu_tick = CPU_TICK;
               HOOK(speed_switch_i, 1);
             } else {
-              e->state.cpu_tick = CPU_2X_TICK;
+              state.cpu_tick = CPU_2X_TICK;
               HOOK(speed_switch_i, 2);
             }
           } else {
-            TICKS += CPU_TICK;
+            THIS_TICKS += CPU_TICK;
             return;
           }
         }
-        opcode = read_u8_tick(e, REG.PC);
+        opcode = read_u8_tick(this, THIS_REG.PC);
         break;
 
       case CPU_STATE_ENABLE_IME:
-        should_dispatch = INTR.ime && (INTR.new_if & INTR.ie) != 0;
-        INTR.ime = true;
-        INTR.state = CPU_STATE_NORMAL;
-        opcode = read_u8_tick(e, REG.PC);
+        should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
+        THIS_INTR.ime = true;
+        THIS_INTR.state = CPU_STATE_NORMAL;
+        opcode = read_u8_tick(this, THIS_REG.PC);
         break;
 
       case CPU_STATE_HALT_BUG:
         /* When interrupts are disabled during a HALT, the following byte will
          * be duplicated when decoding. */
-        should_dispatch = INTR.ime && (INTR.new_if & INTR.ie) != 0;
-        opcode = read_u8(e, REG.PC);
-        REG.PC--;
-        INTR.state = CPU_STATE_NORMAL;
+        should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
+        opcode = read_u8(this, THIS_REG.PC);
+        THIS_REG.PC--;
+        THIS_INTR.state = CPU_STATE_NORMAL;
         break;
 
       case CPU_STATE_HALT:
-        should_dispatch = (INTR.new_if & INTR.ie) != 0;
-        tick(e);
+        should_dispatch = (THIS_INTR.new_if & THIS_INTR.ie) != 0;
+        tick(this);
         if (UNLIKELY(should_dispatch)) {
-          intr_synchronize(e);
-          dispatch_interrupt(e);
+          intr_synchronize(this);
+          dispatch_interrupt();
         }
         return;
 
       case CPU_STATE_HALT_DI:
-        should_dispatch = (INTR.new_if & INTR.ie) != 0;
-        opcode = read_u8_tick(e, REG.PC);
+        should_dispatch = (THIS_INTR.new_if & THIS_INTR.ie) != 0;
+        opcode = read_u8_tick(this, THIS_REG.PC);
         if (UNLIKELY(should_dispatch)) {
           HOOK0(interrupt_during_halt_di_v);
-          INTR.state = CPU_STATE_NORMAL;
+          THIS_INTR.state = CPU_STATE_NORMAL;
           should_dispatch = false;
           break;
         }
@@ -3723,8 +3726,8 @@ static void execute_instruction(Emulator* e) {
   }
 
   if (UNLIKELY(should_dispatch)) {
-    intr_synchronize(e);
-    dispatch_interrupt(e);
+    intr_synchronize(this);
+    dispatch_interrupt();
     return;
   }
 
@@ -3748,8 +3751,8 @@ static void execute_instruction(Emulator* e) {
   case code + 7: name##_R(N, A); break;
 #define LD_R_OPS(code, R) REG_OPS_N(code, LD_R, R)
 
-  HOOK(exec_op_ai, REG.PC, opcode);
-  new_pc = ++REG.PC;
+  HOOK(exec_op_ai, THIS_REG.PC, opcode);
+  new_pc = ++THIS_REG.PC;
 
   switch (opcode) {
     case 0x00: break;
@@ -3786,7 +3789,7 @@ static void execute_instruction(Emulator* e) {
     case 0x1f: RRA; break;
     case 0x20: JR_F_N(!FZ); break;
     case 0x21: LD_RR_NN(HL); break;
-    case 0x22: LD_MR_R(HL, A); REG.HL++; break;
+    case 0x22: LD_MR_R(HL, A); THIS_REG.HL++; break;
     case 0x23: INC_RR(HL); break;
     case 0x24: INC_R(H); break;
     case 0x25: DEC_R(H); break;
@@ -3794,7 +3797,7 @@ static void execute_instruction(Emulator* e) {
     case 0x27: DAA; break;
     case 0x28: JR_F_N(FZ); break;
     case 0x29: ADD_HL_RR(HL); break;
-    case 0x2a: LD_R_MR(A, HL); REG.HL++; break;
+    case 0x2a: LD_R_MR(A, HL); THIS_REG.HL++; break;
     case 0x2b: DEC_RR(HL); break;
     case 0x2c: INC_R(L); break;
     case 0x2d: DEC_R(L); break;
@@ -3802,7 +3805,7 @@ static void execute_instruction(Emulator* e) {
     case 0x2f: CPL; break;
     case 0x30: JR_F_N(!FC); break;
     case 0x31: LD_RR_NN(SP); break;
-    case 0x32: LD_MR_R(HL, A); REG.HL--; break;
+    case 0x32: LD_MR_R(HL, A); THIS_REG.HL--; break;
     case 0x33: INC_RR(SP); break;
     case 0x34: INC_MR(HL); break;
     case 0x35: DEC_MR(HL); break;
@@ -3810,7 +3813,7 @@ static void execute_instruction(Emulator* e) {
     case 0x37: SCF; break;
     case 0x38: JR_F_N(FC); break;
     case 0x39: ADD_HL_RR(SP); break;
-    case 0x3a: LD_R_MR(A, HL); REG.HL--; break;
+    case 0x3a: LD_R_MR(A, HL); THIS_REG.HL--; break;
     case 0x3b: DEC_RR(SP); break;
     case 0x3c: INC_R(A); break;
     case 0x3d: DEC_R(A); break;
@@ -3852,7 +3855,7 @@ static void execute_instruction(Emulator* e) {
     case 0xca: JP_F_NN(FZ); break;
     case 0xcb: {
       new_pc += 1;
-      u8 cb = read_u8_tick(e, REG.PC);
+      u8 cb = read_u8_tick(this, THIS_REG.PC);
       HOOK(exec_cb_op_i, cb);
       switch (cb) {
         REG_OPS(0x00, RLC)
@@ -3932,22 +3935,23 @@ static void execute_instruction(Emulator* e) {
     case 0xfe: CP_N; break;
     case 0xff: CALL(0x38); break;
     default:
-      e->state.event |= EMULATOR_EVENT_INVALID_OPCODE;
+      state.event |= EMULATOR_EVENT_INVALID_OPCODE;
       break;
   }
-  REG.PC = new_pc;
+  THIS_REG.PC = new_pc;
 }
 
-static void emulator_step_internal(Emulator* e) {
-  if (HDMA.state == DMA_INACTIVE) {
+void Emulator::emulator_step_internal() {
+  [[maybe_unused]] Emulator* e = this;
+  if (THIS_HDMA.state == DMA_INACTIVE) {
     if (HOOK0_false(emulator_step)) {
       return;
     }
-    execute_instruction(e);
+    execute_instruction();
   } else {
-    tick(e);
-    hdma_copy_byte(e);
-    hdma_copy_byte(e);
+    tick(this);
+    hdma_copy_byte(this);
+    hdma_copy_byte(this);
   }
 }
 
@@ -3965,7 +3969,7 @@ EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
       (u32)DIV_CEIL(frames_left * CPU_TICKS_PER_SECOND, ab->frequency);
   Ticks check_ticks = MIN(until_ticks, max_audio_ticks);
   while (state.event == 0 && THIS_TICKS < check_ticks) {
-    emulator_step_internal(this);
+    emulator_step_internal();
   }
   if (THIS_TICKS >= max_audio_ticks) {
     state.event |= EMULATOR_EVENT_AUDIO_BUFFER_FULL;
