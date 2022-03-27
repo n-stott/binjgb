@@ -187,7 +187,7 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
 }
 
 void Debugger::Run() {
-  emulator_read_ext_ram_from_file(e, save_filename);
+  e->emulator_read_ext_ram_from_file(save_filename);
 
   f64 refresh_ms = host_get_monitor_refresh_ms(host);
   while (run_state != Exiting && host_poll_events(host)) {
@@ -291,7 +291,7 @@ void Debugger::Run() {
     host_end_video(host);
   }
 
-  emulator_write_ext_ram_to_file(e, save_filename);
+  e->emulator_write_ext_ram_to_file(save_filename);
 }
 
 void Debugger::OnAudioBufferFull() {
@@ -393,11 +393,11 @@ void Debugger::Exit() {
 }
 
 void Debugger::WriteStateToFile() {
-  emulator_write_state_to_file(e, save_state_filename);
+  e->emulator_write_state_to_file(save_state_filename);
 }
 
 void Debugger::ReadStateFromFile() {
-  emulator_read_state_from_file(e, save_state_filename);
+  e->emulator_read_state_from_file(save_state_filename);
 }
 
 void Debugger::SetAudioVolume(f32 volume) {

@@ -4266,29 +4266,29 @@ Result Emulator::emulator_write_ext_ram(FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-Result emulator_read_ext_ram_from_file(Emulator* e, const char* filename) {
-  if (EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
+Result Emulator::emulator_read_ext_ram_from_file(const char* filename) {
+  if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
   Result result = ERROR;
   FileData file_data;
   ZERO_MEMORY(file_data);
   CHECK(SUCCESS(file_read(filename, &file_data)));
-  CHECK(SUCCESS(e->emulator_read_ext_ram(&file_data)));
+  CHECK(SUCCESS(emulator_read_ext_ram(&file_data)));
   result = OK;
 error:
   file_data_delete(&file_data);
   return result;
 }
 
-Result emulator_write_ext_ram_to_file(Emulator* e, const char* filename) {
-  if (EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
+Result Emulator::emulator_write_ext_ram_to_file(const char* filename) {
+  if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
 
   Result result = ERROR;
   FileData file_data;
-  file_data.size = EXT_RAM.size;
+  file_data.size = THIS_EXT_RAM.size;
   file_data.data = reinterpret_cast<u8*>(xmalloc(file_data.size));
-  CHECK(SUCCESS(e->emulator_write_ext_ram(&file_data)));
+  CHECK(SUCCESS(emulator_write_ext_ram(&file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
 error:
@@ -4296,23 +4296,23 @@ error:
   return result;
 }
 
-Result emulator_read_state_from_file(Emulator* e, const char* filename) {
+Result Emulator::emulator_read_state_from_file(const char* filename) {
   Result result = ERROR;
   FileData file_data;
   ZERO_MEMORY(file_data);
   CHECK(SUCCESS(file_read(filename, &file_data)));
-  CHECK(SUCCESS(e->emulator_read_state(&file_data)));
+  CHECK(SUCCESS(emulator_read_state(&file_data)));
   result = OK;
 error:
   file_data_delete(&file_data);
   return result;
 }
 
-Result emulator_write_state_to_file(Emulator* e, const char* filename) {
+Result Emulator::emulator_write_state_to_file(const char* filename) {
   Result result = ERROR;
   FileData file_data;
   emulator_init_state_file_data(&file_data);
-  CHECK(SUCCESS(e->emulator_write_state(&file_data)));
+  CHECK(SUCCESS(emulator_write_state(&file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
 error:

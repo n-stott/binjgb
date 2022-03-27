@@ -212,7 +212,7 @@ static void toggle_fullscreen(void) {
 }
 
 static void save_state(void) {
-  if (SUCCESS(emulator_write_state_to_file(e, s_save_state_filename))) {
+  if (SUCCESS(e->emulator_write_state_to_file(s_save_state_filename))) {
     set_status_text("saved state");
   } else {
     set_status_text("unable to save state");
@@ -220,7 +220,7 @@ static void save_state(void) {
 }
 
 static void load_state(void) {
-  if (SUCCESS(emulator_read_state_from_file(e, s_save_state_filename))) {
+  if (SUCCESS(e->emulator_read_state_from_file(s_save_state_filename))) {
     set_status_text("loaded state");
   } else {
     set_status_text("unable to load state");
@@ -530,7 +530,7 @@ int main(int argc, char** argv) {
   const char* save_filename = replace_extension(s_rom_filename, SAVE_EXTENSION);
   s_save_state_filename =
       replace_extension(s_rom_filename, SAVE_STATE_EXTENSION);
-  emulator_read_ext_ram_from_file(e, save_filename);
+  e->emulator_read_ext_ram_from_file(save_filename);
 
   s_overlay.texture = host_create_texture(host, SCREEN_WIDTH, SCREEN_HEIGHT,
                                           HOST_TEXTURE_FORMAT_RGBA);
@@ -560,7 +560,7 @@ int main(int argc, char** argv) {
   if (s_write_joypad_filename) {
     host_write_joypad_to_file(host, s_write_joypad_filename);
   } else {
-    emulator_write_ext_ram_to_file(e, save_filename);
+    e->emulator_write_ext_ram_to_file(save_filename);
   }
 
   result = 0;
