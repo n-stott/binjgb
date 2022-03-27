@@ -897,6 +897,8 @@ struct Emulator {
   Emulator();
   ~Emulator();
 
+  static std::unique_ptr<Emulator> try_create(const EmulatorInit*);
+
   void emulator_set_joypad_buttons(JoypadButtons*);
   void emulator_set_joypad_callback(JoypadCallback, void* user_data);
   JoypadCallbackInfo emulator_get_joypad_callback();
@@ -905,8 +907,6 @@ struct Emulator {
 };
 
 extern const size_t s_emulator_state_size;
-
-std::unique_ptr<Emulator> try_create_emulator(const EmulatorInit*);
 
 FrameBuffer* emulator_get_frame_buffer(Emulator*);
 SgbFrameBuffer* emulator_get_sgb_frame_buffer(Emulator*);

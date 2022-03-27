@@ -4320,7 +4320,7 @@ error:
   return result;
 }
 
-std::unique_ptr<Emulator> try_create_emulator(const EmulatorInit* init) {
+std::unique_ptr<Emulator> Emulator::try_create(const EmulatorInit* init) {
   std::unique_ptr<Emulator> e = std::make_unique<Emulator>();
   CHECK(SUCCESS(set_rom_file_data(e.get(), &init->rom)));
   CHECK(SUCCESS(init_emulator(e.get(), init)));

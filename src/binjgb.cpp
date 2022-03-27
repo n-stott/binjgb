@@ -508,7 +508,7 @@ int main(int argc, char** argv) {
   emulator_init.builtin_palette = s_builtin_palette;
   emulator_init.force_dmg = s_force_dmg;
   emulator_init.cgb_color_curve = static_cast<CgbColorCurve>(s_cgb_color_curve);
-  std::unique_ptr<Emulator> emulator = try_create_emulator(&emulator_init);
+  std::unique_ptr<Emulator> emulator = Emulator::try_create(&emulator_init);
   e = emulator.get();
   if(!(e != NULL)) return onError();
 

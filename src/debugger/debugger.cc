@@ -137,7 +137,7 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
   emulator_init.builtin_palette = builtin_palette;
   emulator_init.force_dmg = force_dmg ? true : false;
   emulator_init.cgb_color_curve = cgb_color_curve;
-  emulator = try_create_emulator(&emulator_init);
+  emulator = Emulator::try_create(&emulator_init);
   e = emulator.get();
   if (e == nullptr) {
     return false;

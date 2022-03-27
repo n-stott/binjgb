@@ -452,7 +452,7 @@ int main(int argc, char** argv) {
   emulator_init.random_seed = s_random_seed;
   emulator_init.builtin_palette = s_builtin_palette;
   emulator_init.force_dmg = s_force_dmg;
-  std::unique_ptr<Emulator> e = try_create_emulator(&emulator_init);
+  std::unique_ptr<Emulator> e = Emulator::try_create(&emulator_init);
   if(!(e != NULL)) return onError();
 
   JoypadPlayback joypad_playback;
