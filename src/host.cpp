@@ -380,7 +380,7 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
   if(!(SUCCESS(rewind_to_ticks(host->rewind_buffer, ticks, result)))) return ERROR;
 
   Emulator* e = host_get_emulator(host);
-  if(!(SUCCESS(emulator_read_state(e, &result->file_data)))) return ERROR;
+  if(!(SUCCESS(e->emulator_read_state(&result->file_data)))) return ERROR;
   assert(e->emulator_get_ticks() == result->info->ticks);
 
   if (e->emulator_get_ticks() < ticks) {

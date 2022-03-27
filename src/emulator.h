@@ -915,6 +915,13 @@ struct Emulator {
   void emulator_set_builtin_palette(u32 index);
   void emulator_set_bw_palette(PaletteType, const PaletteRGBA*);
   void emulator_set_all_bw_palettes(const PaletteRGBA*);
+
+  bool emulator_was_ext_ram_updated();
+
+  void emulator_init_ext_ram_file_data(FileData*);
+
+  Result emulator_read_state(const FileData*);
+  Result emulator_write_state(FileData*);
 };
 
 extern const size_t s_emulator_state_size;
@@ -924,12 +931,8 @@ u32 audio_buffer_get_frames(AudioBuffer*);
 void emulator_ticks_to_time(Ticks, u32* day, u32* hr, u32* min, u32* sec,
                             u32* ms);
 
-bool emulator_was_ext_ram_updated(Emulator*);
 
 void emulator_init_state_file_data(FileData*);
-void emulator_init_ext_ram_file_data(Emulator*, FileData*);
-Result emulator_read_state(Emulator*, const FileData*);
-Result emulator_write_state(Emulator*, FileData*);
 Result emulator_read_ext_ram(Emulator*, const FileData*);
 Result emulator_write_ext_ram(Emulator*, FileData*);
 

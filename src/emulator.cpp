@@ -4199,9 +4199,9 @@ static Result set_rom_file_data(Emulator* e, const FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-bool emulator_was_ext_ram_updated(Emulator* e) {
-  bool result = e->state.ext_ram_updated;
-  e->state.ext_ram_updated = false;
+bool Emulator::emulator_was_ext_ram_updated() {
+  bool result = state.ext_ram_updated;
+  state.ext_ram_updated = false;
   return result;
 }
 
@@ -4210,12 +4210,12 @@ void emulator_init_state_file_data(FileData* file_data) {
   file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
-void emulator_init_ext_ram_file_data(Emulator* e, FileData* file_data) {
-  file_data->size = EXT_RAM.size;
+void Emulator::emulator_init_ext_ram_file_data(FileData* file_data) {
+  file_data->size = THIS_EXT_RAM.size;
   file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
-Result emulator_read_state(Emulator* e, const FileData* file_data) {
+Result Emulator::emulator_read_state(const FileData* file_data) {
   if(!(file_data->size == sizeof(EmulatorState))) return ERROR;
             // "save state file is wrong size: %ld, expected %ld.\n",
             // (long)file_data->size, (long)sizeof(EmulatorState));
@@ -4223,23 +4223,23 @@ Result emulator_read_state(Emulator* e, const FileData* file_data) {
   if(!(new_state->header == SAVE_STATE_HEADER)) return ERROR;
             // "header mismatch: %u, expected %u.\n", new_state->header,
             // SAVE_STATE_HEADER);
-  memcpy(&e->state, new_state, sizeof(EmulatorState));
-  set_cart_info(e, e->state.cart_info_index);
+  memcpy(&state, new_state, sizeof(EmulatorState));
+  set_cart_info(this, state.cart_info_index);
 
-  if (IS_SGB) {
-    e->emulator_set_bw_palette(PALETTE_TYPE_OBP0, &SGB.screen_pal[0]);
-    e->emulator_set_bw_palette(PALETTE_TYPE_OBP1, &SGB.screen_pal[0]);
+  if (THIS_IS_SGB) {
+    emulator_set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
+    emulator_set_bw_palette(PALETTE_TYPE_OBP1, &THIS_SGB.screen_pal[0]);
   }
-  update_bw_palette_rgba(e, PALETTE_TYPE_BGP);
-  update_bw_palette_rgba(e, PALETTE_TYPE_OBP0);
-  update_bw_palette_rgba(e, PALETTE_TYPE_OBP1);
+  update_bw_palette_rgba(this, PALETTE_TYPE_BGP);
+  update_bw_palette_rgba(this, PALETTE_TYPE_OBP0);
+  update_bw_palette_rgba(this, PALETTE_TYPE_OBP1);
   return OK;
 }
 
-Result emulator_write_state(Emulator* e, FileData* file_data) {
+Result Emulator::emulator_write_state(FileData* file_data) {
   CHECK(file_data->size >= sizeof(EmulatorState));
-  e->state.header = SAVE_STATE_HEADER;
-  memcpy(file_data->data, &e->state, file_data->size);
+  state.header = SAVE_STATE_HEADER;
+  memcpy(file_data->data, &state, file_data->size);
   return OK;
   ON_ERROR_RETURN;
 }
@@ -4301,7 +4301,7 @@ Result emulator_read_state_from_file(Emulator* e, const char* filename) {
   FileData file_data;
   ZERO_MEMORY(file_data);
   CHECK(SUCCESS(file_read(filename, &file_data)));
-  CHECK(SUCCESS(emulator_read_state(e, &file_data)));
+  CHECK(SUCCESS(e->emulator_read_state(&file_data)));
   result = OK;
 error:
   file_data_delete(&file_data);
@@ -4312,7 +4312,7 @@ Result emulator_write_state_to_file(Emulator* e, const char* filename) {
   Result result = ERROR;
   FileData file_data;
   emulator_init_state_file_data(&file_data);
-  CHECK(SUCCESS(emulator_write_state(e, &file_data)));
+  CHECK(SUCCESS(e->emulator_write_state(&file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
 error:
