@@ -4244,24 +4244,24 @@ Result Emulator::emulator_write_state(FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-Result emulator_read_ext_ram(Emulator* e, const FileData* file_data) {
-  if (EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
+Result Emulator::emulator_read_ext_ram(const FileData* file_data) {
+  if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
 
-  CHECK_MSG(file_data->size == EXT_RAM.size,
+  CHECK_MSG(file_data->size == THIS_EXT_RAM.size,
             "save file is wrong size: %ld, expected %ld.\n",
-            (long)file_data->size, (long)EXT_RAM.size);
-  memcpy(EXT_RAM.data, file_data->data, file_data->size);
+            (long)file_data->size, (long)THIS_EXT_RAM.size);
+  memcpy(THIS_EXT_RAM.data, file_data->data, file_data->size);
   return OK;
   ON_ERROR_RETURN;
 }
 
-Result emulator_write_ext_ram(Emulator* e, FileData* file_data) {
-  if (EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
+Result Emulator::emulator_write_ext_ram(FileData* file_data) {
+  if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
 
-  CHECK(file_data->size >= EXT_RAM.size);
-  memcpy(file_data->data, EXT_RAM.data, file_data->size);
+  CHECK(file_data->size >= THIS_EXT_RAM.size);
+  memcpy(file_data->data, THIS_EXT_RAM.data, file_data->size);
   return OK;
   ON_ERROR_RETURN;
 }
@@ -4273,7 +4273,7 @@ Result emulator_read_ext_ram_from_file(Emulator* e, const char* filename) {
   FileData file_data;
   ZERO_MEMORY(file_data);
   CHECK(SUCCESS(file_read(filename, &file_data)));
-  CHECK(SUCCESS(emulator_read_ext_ram(e, &file_data)));
+  CHECK(SUCCESS(e->emulator_read_ext_ram(&file_data)));
   result = OK;
 error:
   file_data_delete(&file_data);
@@ -4288,7 +4288,7 @@ Result emulator_write_ext_ram_to_file(Emulator* e, const char* filename) {
   FileData file_data;
   file_data.size = EXT_RAM.size;
   file_data.data = reinterpret_cast<u8*>(xmalloc(file_data.size));
-  CHECK(SUCCESS(emulator_write_ext_ram(e, &file_data)));
+  CHECK(SUCCESS(e->emulator_write_ext_ram(&file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
 error:
