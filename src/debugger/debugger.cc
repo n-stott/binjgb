@@ -365,7 +365,7 @@ void Debugger::StepFrame() {
   if (run_state == Running || run_state == Paused) {
     run_state = SteppingFrame;
   } else if (run_state == Rewinding) {
-    RewindTo(emulator_get_ticks(e) + PPU_FRAME_TICKS);
+    RewindTo(e->emulator_get_ticks() + PPU_FRAME_TICKS);
   }
 }
 
@@ -483,7 +483,7 @@ void Debugger::EndAutoRewind() {
 void Debugger::AutoRewind(f64 delta_ms) {
   assert(run_state == AutoRewinding);
   Ticks delta_ticks = (Ticks)(delta_ms * CPU_TICKS_PER_SECOND / 1000);
-  Ticks now = emulator_get_ticks(e);
+  Ticks now = e->emulator_get_ticks();
   Ticks then = now >= delta_ticks ? now - delta_ticks : 0;
   RewindTo(then);
 }

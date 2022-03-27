@@ -37,7 +37,7 @@ void Debugger::RewindWindow::Tick() {
     }
 
     if (rewinding) {
-      Ticks cur_cy = emulator_get_ticks(d->e);
+      Ticks cur_cy = d->e->emulator_get_ticks();
       Ticks oldest_cy = host_get_rewind_oldest_ticks(d->host);
       Ticks rel_cur_cy = cur_cy - oldest_cy;
       u32 range_fr = (host_newest_ticks(d->host) - oldest_cy) / PPU_FRAME_TICKS;
@@ -90,7 +90,7 @@ void Debugger::RewindWindow::Tick() {
         if (reverse_step) {
           emulator_write_state(d->e, &reverse_step_save_state);
           int count = 0;
-          for (; emulator_get_ticks(d->e) < cur_cy; ++count) {
+          for (; d->e->emulator_get_ticks() < cur_cy; ++count) {
             emulator_step(d->e);
           }
 

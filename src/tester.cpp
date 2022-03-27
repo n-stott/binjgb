@@ -470,7 +470,7 @@ int main(int argc, char** argv) {
 #endif
 
   u32 total_ticks = (u32)(s_frames * PPU_FRAME_TICKS);
-  u32 until_ticks = emulator_get_ticks(e.get()) + total_ticks;
+  u32 until_ticks = e->emulator_get_ticks() + total_ticks;
   printf("frames = %u total_ticks = %u\n", s_frames, total_ticks);
   bool finish_at_next_frame = false;
   u32 animation_frame = 0; /* Will likely differ from PPU frame. */
@@ -507,7 +507,7 @@ int main(int argc, char** argv) {
     }
   }
   f64 host_time = get_time_sec() - start_time;
-  Ticks real_total_ticks = emulator_get_ticks(e.get());
+  Ticks real_total_ticks = e->emulator_get_ticks();
   f64 gb_time = (f64)real_total_ticks / CPU_TICKS_PER_SECOND;
   printf("time: gb=%.1fs host=%.1fs (%.1fx)\n", gb_time, host_time,
          gb_time / host_time);

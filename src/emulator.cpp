@@ -4165,12 +4165,12 @@ AudioBuffer* Emulator::emulator_get_audio_buffer() {
   return &audio_buffer;
 }
 
-Ticks emulator_get_ticks(Emulator* e) {
-  return TICKS;
+Ticks Emulator::emulator_get_ticks() {
+  return THIS_TICKS;
 }
 
-u32 emulator_get_ppu_frame(Emulator* e) {
-  return PPU.frame;
+u32 Emulator::emulator_get_ppu_frame() {
+  return THIS_PPU.frame;
 }
 
 u32 audio_buffer_get_frames(AudioBuffer* audio_buffer) {

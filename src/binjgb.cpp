@@ -231,12 +231,12 @@ static void begin_rewind(void) {
   if (!s_rewinding) {
     host_begin_rewind(host);
     s_rewinding = true;
-    s_rewind_start = emulator_get_ticks(e);
+    s_rewind_start = e->emulator_get_ticks();
   }
 }
 
 static void rewind_by(Ticks delta) {
-  Ticks now = emulator_get_ticks(e);
+  Ticks now = e->emulator_get_ticks();
   Ticks then = now;
   if (now >= delta) {
     then = now - delta;

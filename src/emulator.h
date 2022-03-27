@@ -908,12 +908,13 @@ struct Emulator {
   FrameBuffer* emulator_get_frame_buffer();
   SgbFrameBuffer* emulator_get_sgb_frame_buffer();
   AudioBuffer* emulator_get_audio_buffer();
+
+  Ticks emulator_get_ticks();
+  u32 emulator_get_ppu_frame();
 };
 
 extern const size_t s_emulator_state_size;
 
-Ticks emulator_get_ticks(Emulator*);
-u32 emulator_get_ppu_frame(Emulator*);
 u32 audio_buffer_get_frames(AudioBuffer*);
 void emulator_set_builtin_palette(Emulator*, u32 index);
 void emulator_set_bw_palette(Emulator*, PaletteType, const PaletteRGBA*);

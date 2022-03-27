@@ -282,7 +282,7 @@ static void joypad_callback(JoypadButtons* joyp, void* user_data) {
 #undef GAMEPAD
   }
 
-  Ticks ticks = emulator_get_ticks(host_get_emulator(host));
+  Ticks ticks = host_get_emulator(host)->emulator_get_ticks();
   joypad_append_if_new(host->joypad_buffer, joyp, ticks);
 }
 
@@ -358,7 +358,7 @@ static void host_handle_event(Host* host, EmulatorEvent event) {
 
 static EmulatorEvent host_run_until_ticks(struct Host* host, Ticks ticks) {
   Emulator* e = host_get_emulator(host);
-  assert(emulator_get_ticks(e) <= ticks);
+  assert(e->emulator_get_ticks() <= ticks);
   EmulatorEvent event;
   do {
     event = emulator_run_until(e, ticks);
@@ -381,9 +381,9 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
 
   Emulator* e = host_get_emulator(host);
   if(!(SUCCESS(emulator_read_state(e, &result->file_data)))) return ERROR;
-  assert(emulator_get_ticks(e) == result->info->ticks);
+  assert(e->emulator_get_ticks() == result->info->ticks);
 
-  if (emulator_get_ticks(e) < ticks) {
+  if (e->emulator_get_ticks() < ticks) {
     /* Save old joypad callback. */
     JoypadCallbackInfo old_jci = e->emulator_get_joypad_callback();
     emulator_set_joypad_playback_callback(e, host->joypad_buffer,
@@ -397,7 +397,7 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
 }
 
 void host_end_rewind(Host* host) {
-  [[maybe_unused]] Ticks ticks = emulator_get_ticks(host_get_emulator(host));
+  [[maybe_unused]] Ticks ticks = host_get_emulator(host)->emulator_get_ticks();
   assert(host->rewind_state.rewinding);
 
   if (host->rewind_state.rewind_result.info) {
@@ -411,7 +411,7 @@ void host_end_rewind(Host* host) {
       JoypadButtons buttons;
       joypad_callback(&buttons, host);
     }
-    host->last_ticks = emulator_get_ticks(e);
+    host->last_ticks = e->emulator_get_ticks();
   }
 
   memset(&host->rewind_state, 0, sizeof(host->rewind_state));
@@ -430,7 +430,7 @@ Result host_init(Host* host, Emulator* e) {
   CHECK(SUCCESS(host_init_audio(host)));
   host_init_joypad(host, e);
   host->rewind_buffer = rewind_new(&host->init.rewind, e);
-  host->last_ticks = emulator_get_ticks(e);
+  host->last_ticks = e->emulator_get_ticks();
   return OK;
   ON_ERROR_RETURN;
 }
@@ -439,9 +439,9 @@ EmulatorEvent host_run_ms(struct Host* host, f64 delta_ms) {
   assert(!host->rewind_state.rewinding);
   Emulator* e = host_get_emulator(host);
   Ticks delta_ticks = (Ticks)(delta_ms * CPU_TICKS_PER_SECOND / 1000);
-  Ticks until_ticks = emulator_get_ticks(e) + delta_ticks;
+  Ticks until_ticks = e->emulator_get_ticks() + delta_ticks;
   EmulatorEvent event = host_run_until_ticks(host, until_ticks);
-  host->last_ticks = emulator_get_ticks(e);
+  host->last_ticks = e->emulator_get_ticks();
   return event;
 }
 
@@ -450,7 +450,7 @@ EmulatorEvent host_step(Host* host) {
   Emulator* e = host_get_emulator(host);
   EmulatorEvent event = emulator_step(e);
   host_handle_event(host, event);
-  host->last_ticks = emulator_get_ticks(e);
+  host->last_ticks = e->emulator_get_ticks();
   return event;
 }
 

@@ -24,7 +24,7 @@ void Debugger::DisassemblyWindow::Tick() {
   if (!is_open) return;
 
   if (ImGui::Begin(Debugger::s_disassembly_window_name, &is_open)) {
-    Ticks now = emulator_get_ticks(d->e);
+    Ticks now = d->e->emulator_get_ticks();
     u32 day, hr, min, sec, ms;
     emulator_ticks_to_time(now, &day, &hr, &min, &sec, &ms);
 
@@ -287,6 +287,6 @@ void Debugger::StepInstruction() {
   if (run_state == Running || run_state == Paused) {
     run_state = SteppingInstruction;
   } else if (run_state == Rewinding) {
-    RewindTo(emulator_get_ticks(e) + 1);
+    RewindTo(e->emulator_get_ticks() + 1);
   }
 }
