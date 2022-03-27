@@ -320,7 +320,7 @@ void Debugger::SetTrace(bool trace) {
 }
 
 void Debugger::OnKeyDown(HostKeycode code) {
-  EmulatorConfig emu_config = emulator_get_config(e);
+  EmulatorConfig emu_config = e->emulator_get_config();
   HostConfig host_config = host_get_config(host);
 
   switch (code) {
@@ -344,7 +344,7 @@ void Debugger::OnKeyDown(HostKeycode code) {
     default: return;
   }
 
-  emulator_set_config(e, &emu_config);
+  e->emulator_set_config(&emu_config);
   host_set_config(host, &host_config);
 }
 

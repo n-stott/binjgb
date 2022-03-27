@@ -4141,16 +4141,16 @@ void Emulator::emulator_set_joypad_callback(JoypadCallback callback, void* user_
   joypad_info.user_data = user_data;
 }
 
-JoypadCallbackInfo emulator_get_joypad_callback(Emulator* e) {
-  return e->joypad_info;
+JoypadCallbackInfo Emulator::emulator_get_joypad_callback() {
+  return joypad_info;
 }
 
-void emulator_set_config(Emulator* e, const EmulatorConfig* config) {
-  e->config = *config;
+void Emulator::emulator_set_config(const EmulatorConfig* config) {
+  this->config = *config;
 }
 
-EmulatorConfig emulator_get_config(Emulator* e) {
-  return e->config;
+EmulatorConfig Emulator::emulator_get_config() {
+  return config;
 }
 
 FrameBuffer* emulator_get_frame_buffer(Emulator* e) {

@@ -899,15 +899,15 @@ struct Emulator {
 
   void emulator_set_joypad_buttons(JoypadButtons*);
   void emulator_set_joypad_callback(JoypadCallback, void* user_data);
+  JoypadCallbackInfo emulator_get_joypad_callback();
+  void emulator_set_config(const EmulatorConfig*);
+  EmulatorConfig emulator_get_config();
 };
 
 extern const size_t s_emulator_state_size;
 
 std::unique_ptr<Emulator> try_create_emulator(const EmulatorInit*);
 
-JoypadCallbackInfo emulator_get_joypad_callback(Emulator*);
-void emulator_set_config(Emulator*, const EmulatorConfig*);
-EmulatorConfig emulator_get_config(Emulator*);
 FrameBuffer* emulator_get_frame_buffer(Emulator*);
 SgbFrameBuffer* emulator_get_sgb_frame_buffer(Emulator*);
 AudioBuffer* emulator_get_audio_buffer(Emulator*);

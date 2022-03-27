@@ -385,7 +385,7 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
 
   if (emulator_get_ticks(e) < ticks) {
     /* Save old joypad callback. */
-    JoypadCallbackInfo old_jci = emulator_get_joypad_callback(e);
+    JoypadCallbackInfo old_jci = e->emulator_get_joypad_callback();
     emulator_set_joypad_playback_callback(e, host->joypad_buffer,
                                           &host->rewind_state.joypad_playback);
     host_run_until_ticks(host, ticks);

@@ -169,9 +169,9 @@ static void inc_audio_volume(f32 delta) {
 }
 
 static void toggle_audio_channel(int channel) {
-  EmulatorConfig emu_config = emulator_get_config(e);
+  EmulatorConfig emu_config = e->emulator_get_config();
   emu_config.disable_sound[channel] ^= 1;
-  emulator_set_config(e, &emu_config);
+  e->emulator_set_config(&emu_config);
   set_status_text("Audio channels: %c%c%c%c",
                   emu_config.disable_sound[APU_CHANNEL1] ? '_' : '1',
                   emu_config.disable_sound[APU_CHANNEL2] ? '_' : '2',
@@ -187,13 +187,13 @@ static void inc_palette(int delta) {
 }
 
 static void toggle_layer(Layer layer) {
-  EmulatorConfig emu_config = emulator_get_config(e);
+  EmulatorConfig emu_config = e->emulator_get_config();
   switch (layer) {
     case LAYER_BG: emu_config.disable_bg ^= 1; break;
     case LAYER_WINDOW: emu_config.disable_window ^= 1; break;
     case LAYER_OBJ: emu_config.disable_obj ^= 1; break;
   }
-  emulator_set_config(e, &emu_config);
+  e->emulator_set_config(&emu_config);
   set_status_text("Layer: %s %s %s", emu_config.disable_bg ? "__" : "bg",
                   emu_config.disable_window ? "___" : "win",
                   emu_config.disable_obj ? "___" : "obj");
