@@ -939,6 +939,8 @@ struct Emulator {
 
   ApuLog* emulator_get_apu_log();
   void emulator_reset_apu_log();
+
+  void tick();
 };
 
 extern const size_t s_emulator_state_size;

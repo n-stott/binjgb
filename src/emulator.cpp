@@ -3351,13 +3351,13 @@ static void serial_synchronize(Emulator* e) {
   }
 }
 
-static void tick(Emulator* e) {
-  INTR.if_ = INTR.new_if;
-  TICKS += e->state.cpu_tick;
+void Emulator::tick() {
+  THIS_INTR.if_ = THIS_INTR.new_if;
+  THIS_TICKS += state.cpu_tick;
 }
 
 static u8 read_u8_tick(Emulator* e, Address addr) {
-  tick(e);
+  e->tick();
   return read_u8(e, addr);
 }
 
@@ -3368,7 +3368,7 @@ static u16 read_u16_tick(Emulator* e, Address addr) {
 }
 
 static void write_u8_tick(Emulator* e, Address addr, u8 value) {
-  tick(e);
+  e->tick();
   write_u8(e, addr, value);
 }
 
@@ -3390,7 +3390,7 @@ static void set_af_reg(Emulator* e, u16 af) {
   REG.F.C = unpack(af, CPU_FLAG_C);
 }
 
-#define TICK tick(this)
+#define TICK tick()
 #define RA THIS_REG.A
 #define RSP THIS_REG.SP
 #define FZ THIS_REG.F.Z
@@ -3626,10 +3626,10 @@ void Emulator::dispatch_interrupt() {
   THIS_REG.PC = vector;
 
   if (delay) {
-    tick(this);
+    tick();
   }
-  tick(this);
-  tick(this);
+  tick();
+  tick();
 }
 
 void Emulator::execute_instruction() {
@@ -3705,7 +3705,7 @@ void Emulator::execute_instruction() {
 
       case CPU_STATE_HALT:
         should_dispatch = (THIS_INTR.new_if & THIS_INTR.ie) != 0;
-        tick(this);
+        tick();
         if (UNLIKELY(should_dispatch)) {
           intr_synchronize(this);
           dispatch_interrupt();
@@ -3949,7 +3949,7 @@ void Emulator::emulator_step_internal() {
     }
     execute_instruction();
   } else {
-    tick(this);
+    tick();
     hdma_copy_byte(this);
     hdma_copy_byte(this);
   }
