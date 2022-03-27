@@ -941,6 +941,11 @@ struct Emulator {
   void emulator_reset_apu_log();
 
   void tick();
+
+  u8 read_u8_tick(Address addr);
+  u16 read_u16_tick(Address addr);
+  void write_u8_tick(Address addr, u8 value);
+  void write_u16_tick(Address addr, u16 value);
 };
 
 extern const size_t s_emulator_state_size;

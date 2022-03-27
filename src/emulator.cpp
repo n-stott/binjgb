@@ -3356,25 +3356,25 @@ void Emulator::tick() {
   THIS_TICKS += state.cpu_tick;
 }
 
-static u8 read_u8_tick(Emulator* e, Address addr) {
-  e->tick();
-  return read_u8(e, addr);
+u8 Emulator::read_u8_tick(Address addr) {
+  tick();
+  return read_u8(this, addr);
 }
 
-static u16 read_u16_tick(Emulator* e, Address addr) {
-  u8 lo = read_u8_tick(e, addr);
-  u8 hi = read_u8_tick(e, addr + 1);
+u16 Emulator::read_u16_tick(Address addr) {
+  u8 lo = read_u8_tick(addr);
+  u8 hi = read_u8_tick(addr + 1);
   return (hi << 8) | lo;
 }
 
-static void write_u8_tick(Emulator* e, Address addr, u8 value) {
-  e->tick();
-  write_u8(e, addr, value);
+void Emulator::write_u8_tick(Address addr, u8 value) {
+  tick();
+  write_u8(this, addr, value);
 }
 
-static void write_u16_tick(Emulator* e, Address addr, u16 value) {
-  write_u8_tick(e, addr + 1, value >> 8);
-  write_u8_tick(e, addr, (u8)value);
+void Emulator::write_u16_tick(Address addr, u16 value) {
+  write_u8_tick(addr + 1, value >> 8);
+  write_u8_tick(addr, (u8)value);
 }
 
 static u16 get_af_reg(Emulator* e) {
@@ -3401,10 +3401,10 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define SHIFT_FLAGS FZ_EQ0(u); FN = FH = 0
 #define MASK8(X) ((X) & 0xf)
 #define MASK16(X) ((X) & 0xfff)
-#define READ8(X) read_u8_tick(this, X)
-#define READ16(X) read_u16_tick(this, X)
-#define WRITE8(X, V) write_u8_tick(this, X, V)
-#define WRITE16(X, V) write_u16_tick(this, X, V)
+#define READ8(X) read_u8_tick(X)
+#define READ16(X) read_u16_tick(X)
+#define WRITE8(X, V) write_u8_tick(X, V)
+#define WRITE16(X, V) write_u16_tick(X, V)
 #define READ_N (new_pc += 1, READ8(THIS_REG.PC))
 #define READ_NN (new_pc += 2, READ16(THIS_REG.PC))
 #define READMR(MR) READ8(THIS_REG.MR)
@@ -3657,7 +3657,7 @@ void Emulator::execute_instruction() {
 
   if (LIKELY(THIS_INTR.state == CPU_STATE_NORMAL)) {
     should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
-    opcode = read_u8_tick(this, THIS_REG.PC);
+    opcode = read_u8_tick(THIS_REG.PC);
   } else {
     switch (THIS_INTR.state) {
       case CPU_STATE_NORMAL:
@@ -3684,14 +3684,14 @@ void Emulator::execute_instruction() {
             return;
           }
         }
-        opcode = read_u8_tick(this, THIS_REG.PC);
+        opcode = read_u8_tick(THIS_REG.PC);
         break;
 
       case CPU_STATE_ENABLE_IME:
         should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
         THIS_INTR.ime = true;
         THIS_INTR.state = CPU_STATE_NORMAL;
-        opcode = read_u8_tick(this, THIS_REG.PC);
+        opcode = read_u8_tick(THIS_REG.PC);
         break;
 
       case CPU_STATE_HALT_BUG:
@@ -3714,7 +3714,7 @@ void Emulator::execute_instruction() {
 
       case CPU_STATE_HALT_DI:
         should_dispatch = (THIS_INTR.new_if & THIS_INTR.ie) != 0;
-        opcode = read_u8_tick(this, THIS_REG.PC);
+        opcode = read_u8_tick(THIS_REG.PC);
         if (UNLIKELY(should_dispatch)) {
           HOOK0(interrupt_during_halt_di_v);
           THIS_INTR.state = CPU_STATE_NORMAL;
@@ -3855,7 +3855,7 @@ void Emulator::execute_instruction() {
     case 0xca: JP_F_NN(FZ); break;
     case 0xcb: {
       new_pc += 1;
-      u8 cb = read_u8_tick(this, THIS_REG.PC);
+      u8 cb = read_u8_tick(THIS_REG.PC);
       HOOK(exec_cb_op_i, cb);
       switch (cb) {
         REG_OPS(0x00, RLC)
