@@ -44,6 +44,38 @@
 #define WAVE (APU.wave)
 #define WRAM (e->state.wram)
 
+#define THIS_APU (state.apu)
+#define THIS_CHANNEL1 THIS_CHANNEL(1)
+#define THIS_CHANNEL2 THIS_CHANNEL(2)
+#define THIS_CHANNEL3 THIS_CHANNEL(3)
+#define THIS_CHANNEL4 THIS_CHANNEL(4)
+#define THIS_CHANNEL(i) (THIS_APU.channel[APU_CHANNEL##i])
+#define THIS_CPU_SPEED (state.cpu_speed)
+#define THIS_TICKS (state.ticks)
+#define THIS_DMA (state.dma)
+#define THIS_EXT_RAM (state.ext_ram)
+#define THIS_HRAM (state.hram)
+#define THIS_HDMA (state.hdma)
+#define THIS_INFRARED (state.infrared)
+#define THIS_INTR (state.interrupt)
+#define THIS_IS_CGB (state.is_cgb)
+#define THIS_IS_SGB (state.is_sgb)
+#define THIS_JOYP (state.joyp)
+#define THIS_SGB (state.sgb)
+#define THIS_LCDC (THIS_PPU.lcdc)
+#define THIS_MMAP_STATE (state.memory_map_state)
+#define THIS_NOISE (THIS_APU.noise)
+#define THIS_OAM (state.oam)
+#define THIS_PPU (state.ppu)
+#define THIS_REG (state.reg)
+#define THIS_SERIAL (state.serial)
+#define THIS_STAT (THIS_PPU.stat)
+#define THIS_SWEEP (THIS_APU.sweep)
+#define THIS_TIMER (state.timer)
+#define THIS_VRAM (state.vram)
+#define THIS_WAVE (THIS_APU.wave)
+#define THIS_WRAM (state.wram)
+
 
 #define DIV_CEIL(numer, denom) (((numer) + (denom) - 1) / (denom))
 #define VALUE_WRAPPED(X, MAX) \
@@ -4100,14 +4132,13 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
   return OK;
 }
 
-void emulator_set_joypad_buttons(Emulator* e, JoypadButtons* buttons) {
-  JOYP.buttons = *buttons;
+void Emulator::emulator_set_joypad_buttons(JoypadButtons* buttons) {
+  THIS_JOYP.buttons = *buttons;
 }
 
-void emulator_set_joypad_callback(Emulator* e, JoypadCallback callback,
-                                  void* user_data) {
-  e->joypad_info.callback = callback;
-  e->joypad_info.user_data = user_data;
+void Emulator::emulator_set_joypad_callback(JoypadCallback callback, void* user_data) {
+  joypad_info.callback = callback;
+  joypad_info.user_data = user_data;
 }
 
 JoypadCallbackInfo emulator_get_joypad_callback(Emulator* e) {

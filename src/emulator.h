@@ -896,14 +896,15 @@ struct Emulator {
 
   Emulator();
   ~Emulator();
+
+  void emulator_set_joypad_buttons(JoypadButtons*);
+  void emulator_set_joypad_callback(JoypadCallback, void* user_data);
 };
 
 extern const size_t s_emulator_state_size;
 
 std::unique_ptr<Emulator> try_create_emulator(const EmulatorInit*);
 
-void emulator_set_joypad_buttons(Emulator*, JoypadButtons*);
-void emulator_set_joypad_callback(Emulator*, JoypadCallback, void* user_data);
 JoypadCallbackInfo emulator_get_joypad_callback(Emulator*);
 void emulator_set_config(Emulator*, const EmulatorConfig*);
 EmulatorConfig emulator_get_config(Emulator*);

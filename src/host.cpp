@@ -295,7 +295,7 @@ static Result host_init_joypad(Host* host, Emulator* e) {
     emulator_set_joypad_playback_callback(
         host_get_emulator(host), host->joypad_buffer, &host->joypad_playback);
   } else {
-    emulator_set_joypad_callback(e, joypad_callback, host);
+    e->emulator_set_joypad_callback(joypad_callback, host);
     host->joypad_buffer = joypad_new();
   }
   return OK;
@@ -390,7 +390,7 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
                                           &host->rewind_state.joypad_playback);
     host_run_until_ticks(host, ticks);
     /* Restore old joypad callback. */
-    emulator_set_joypad_callback(e, old_jci.callback, old_jci.user_data);
+    e->emulator_set_joypad_callback(old_jci.callback, old_jci.user_data);
   }
 
   return OK;

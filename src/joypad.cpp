@@ -302,5 +302,5 @@ static void init_joypad_playback_state(JoypadPlayback* playback,
 void emulator_set_joypad_playback_callback(Emulator* e, JoypadBuffer* buffer,
                                            JoypadPlayback* playback) {
   init_joypad_playback_state(playback, buffer, e);
-  emulator_set_joypad_callback(e, joypad_playback_callback, playback);
+  e->emulator_set_joypad_callback(joypad_playback_callback, playback);
 }
