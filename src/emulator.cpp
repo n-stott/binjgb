@@ -869,35 +869,58 @@ struct Emulator {
 
 #define INVALID_READ_BYTE 0xff
 
-#define GET_LO(HI, LO) (LO)
-#define GET_BITMASK(HI, LO) ((1 << ((HI) - (LO) + 1)) - 1)
-#define UNPACK(X, BITS) (((X) >> BITS(GET_LO)) & BITS(GET_BITMASK))
-#define PACK(X, BITS) (((X) & BITS(GET_BITMASK)) << BITS(GET_LO))
-#define BITS(X, HI, LO) X(HI, LO)
-#define BIT(X, B) X(B, B)
+static auto get_lo = []([[maybe_unused]] auto hi, auto lo) {
+  return lo;
+};
 
-#define CPU_FLAG_Z(X) BIT(X, 7)
-#define CPU_FLAG_N(X) BIT(X, 6)
-#define CPU_FLAG_H(X) BIT(X, 5)
-#define CPU_FLAG_C(X) BIT(X, 4)
+static auto get_bitmask = [](auto hi, auto lo) {
+  return (1 << (hi-lo+1)) - 1;
+};
+
+template<typename Value, typename Functor>
+static auto unpack(Value&& v, Functor&& f) {
+  return (((v) >> f(get_lo)) & f(get_bitmask));
+}
+
+template<typename Value, typename Functor>
+static auto pack(Value&& v, Functor&& f) {
+  return (((v) & f(get_bitmask)) << f(get_lo));
+}
+
+template<typename Functor, typename Int>
+static auto bits(Functor&& f, Int hi, Int lo) {
+  return f(hi, lo);
+}
+
+template<typename Functor, typename Value>
+static auto bit(Functor&& f, Value&& v) {
+  return f(v, v);
+}
+
+#define CALL_PAT(P) [](auto f) { return P; };
+
+static auto CPU_FLAG_Z = CALL_PAT( bit(f, 7) );
+static auto CPU_FLAG_N = CALL_PAT( bit(f, 6) );
+static auto CPU_FLAG_H = CALL_PAT( bit(f, 5) );
+static auto CPU_FLAG_C = CALL_PAT( bit(f, 4) );
 
 #define JOYP_UNUSED 0xc0
 #define JOYP_RESULT_MASK 0x0f
-#define JOYP_JOYPAD_SELECT(X) BITS(X, 5, 4)
-#define JOYP_DPAD_DOWN(X) BIT(X, 3)
-#define JOYP_DPAD_UP(X) BIT(X, 2)
-#define JOYP_DPAD_LEFT(X) BIT(X, 1)
-#define JOYP_DPAD_RIGHT(X) BIT(X, 0)
-#define JOYP_BUTTON_START(X) BIT(X, 3)
-#define JOYP_BUTTON_SELECT(X) BIT(X, 2)
-#define JOYP_BUTTON_B(X) BIT(X, 1)
-#define JOYP_BUTTON_A(X) BIT(X, 0)
+static auto JOYP_JOYPAD_SELECT = CALL_PAT( bits(f, 5, 4) );
+static auto JOYP_DPAD_DOWN = CALL_PAT( bit(f, 3) );
+static auto JOYP_DPAD_UP = CALL_PAT( bit(f, 2) );
+static auto JOYP_DPAD_LEFT = CALL_PAT( bit(f, 1) );
+static auto JOYP_DPAD_RIGHT = CALL_PAT( bit(f, 0) );
+static auto JOYP_BUTTON_START = CALL_PAT( bit(f, 3) );
+static auto JOYP_BUTTON_SELECT = CALL_PAT( bit(f, 2) );
+static auto JOYP_BUTTON_B = CALL_PAT( bit(f, 1) );
+static auto JOYP_BUTTON_A = CALL_PAT( bit(f, 0) );
 #define SC_UNUSED 0x7e
-#define SC_TRANSFER_START(X) BIT(X, 7)
-#define SC_SHIFT_CLOCK(X) BIT(X, 0)
+static auto SC_TRANSFER_START = CALL_PAT( bit(f, 7) );
+static auto SC_SHIFT_CLOCK = CALL_PAT( bit(f, 0) );
 #define TAC_UNUSED 0xf8
-#define TAC_TIMER_ON(X) BIT(X, 2)
-#define TAC_CLOCK_SELECT(X) BITS(X, 1, 0)
+static auto TAC_TIMER_ON = CALL_PAT( bit(f, 2) );
+static auto TAC_CLOCK_SELECT = CALL_PAT( bits(f, 1, 0) );
 #define IF_UNUSED 0xe0
 #define IF_ALL 0x1f
 #define IF_JOYPAD 0x10
@@ -905,96 +928,96 @@ struct Emulator {
 #define IF_TIMER 0x04
 #define IF_STAT 0x02
 #define IF_VBLANK 0x01
-#define LCDC_DISPLAY(X) BIT(X, 7)
-#define LCDC_WINDOW_TILE_MAP_SELECT(X) BIT(X, 6)
-#define LCDC_WINDOW_DISPLAY(X) BIT(X, 5)
-#define LCDC_BG_TILE_DATA_SELECT(X) BIT(X, 4)
-#define LCDC_BG_TILE_MAP_SELECT(X) BIT(X, 3)
-#define LCDC_OBJ_SIZE(X) BIT(X, 2)
-#define LCDC_OBJ_DISPLAY(X) BIT(X, 1)
-#define LCDC_BG_DISPLAY(X) BIT(X, 0)
+static auto LCDC_DISPLAY = CALL_PAT( bit(f, 7) );
+static auto LCDC_WINDOW_TILE_MAP_SELECT = CALL_PAT( bit(f, 6) );
+static auto LCDC_WINDOW_DISPLAY = CALL_PAT( bit(f, 5) );
+static auto LCDC_BG_TILE_DATA_SELECT = CALL_PAT( bit(f, 4) );
+static auto LCDC_BG_TILE_MAP_SELECT = CALL_PAT( bit(f, 3) );
+static auto LCDC_OBJ_SIZE = CALL_PAT( bit(f, 2) );
+static auto LCDC_OBJ_DISPLAY = CALL_PAT( bit(f, 1) );
+static auto LCDC_BG_DISPLAY = CALL_PAT( bit(f, 0) );
 #define STAT_UNUSED 0x80
-#define STAT_YCOMPARE_INTR(X) BIT(X, 6)
-#define STAT_MODE2_INTR(X) BIT(X, 5)
-#define STAT_VBLANK_INTR(X) BIT(X, 4)
-#define STAT_HBLANK_INTR(X) BIT(X, 3)
-#define STAT_YCOMPARE(X) BIT(X, 2)
-#define STAT_MODE(X) BITS(X, 1, 0)
-#define PALETTE_COLOR3(X) BITS(X, 7, 6)
-#define PALETTE_COLOR2(X) BITS(X, 5, 4)
-#define PALETTE_COLOR1(X) BITS(X, 3, 2)
-#define PALETTE_COLOR0(X) BITS(X, 1, 0)
+static auto STAT_YCOMPARE_INTR = CALL_PAT( bit(f, 6) );
+static auto STAT_MODE2_INTR = CALL_PAT( bit(f, 5) );
+static auto STAT_VBLANK_INTR = CALL_PAT( bit(f, 4) );
+static auto STAT_HBLANK_INTR = CALL_PAT( bit(f, 3) );
+static auto STAT_YCOMPARE = CALL_PAT( bit(f, 2) );
+static auto STAT_MODE = CALL_PAT( bits(f, 1, 0) );
+static auto PALETTE_COLOR3 = CALL_PAT( bits(f, 7, 6) );
+static auto PALETTE_COLOR2 = CALL_PAT( bits(f, 5, 4) );
+static auto PALETTE_COLOR1 = CALL_PAT( bits(f, 3, 2) );
+static auto PALETTE_COLOR0 = CALL_PAT( bits(f, 1, 0) );
 #define NR10_UNUSED 0x80
-#define NR10_SWEEP_PERIOD(X) BITS(X, 6, 4)
-#define NR10_SWEEP_DIRECTION(X) BIT(X, 3)
-#define NR10_SWEEP_SHIFT(X) BITS(X, 2, 0)
+static auto NR10_SWEEP_PERIOD = CALL_PAT( bits(f, 6, 4) );
+static auto NR10_SWEEP_DIRECTION = CALL_PAT( bit(f, 3) );
+static auto NR10_SWEEP_SHIFT = CALL_PAT( bits(f, 2, 0) );
 #define NRX1_UNUSED 0x3f
-#define NRX1_WAVE_DUTY(X) BITS(X, 7, 6)
-#define NRX1_LENGTH(X) BITS(X, 5, 0)
-#define NRX2_INITIAL_VOLUME(X) BITS(X, 7, 4)
-#define NRX2_DAC_ENABLED(X) BITS(X, 7, 3)
-#define NRX2_ENVELOPE_DIRECTION(X) BIT(X, 3)
-#define NRX2_ENVELOPE_PERIOD(X) BITS(X, 2, 0)
+static auto NRX1_WAVE_DUTY = CALL_PAT( bits(f, 7, 6) );
+static auto NRX1_LENGTH = CALL_PAT( bits(f, 5, 0) );
+static auto NRX2_INITIAL_VOLUME = CALL_PAT( bits(f, 7, 4) );
+static auto NRX2_DAC_ENABLED = CALL_PAT( bits(f, 7, 3) );
+static auto NRX2_ENVELOPE_DIRECTION = CALL_PAT( bit(f, 3) );
+static auto NRX2_ENVELOPE_PERIOD = CALL_PAT( bits(f, 2, 0) );
 #define NRX4_UNUSED 0xbf
-#define NRX4_INITIAL(X) BIT(X, 7)
-#define NRX4_LENGTH_ENABLED(X) BIT(X, 6)
-#define NRX4_FREQUENCY_HI(X) BITS(X, 2, 0)
+static auto NRX4_INITIAL = CALL_PAT( bit(f, 7) );
+static auto NRX4_LENGTH_ENABLED = CALL_PAT( bit(f, 6) );
+static auto NRX4_FREQUENCY_HI = CALL_PAT( bits(f, 2, 0) );
 #define NR30_UNUSED 0x7f
-#define NR30_DAC_ENABLED(X) BIT(X, 7)
+static auto NR30_DAC_ENABLED = CALL_PAT( bit(f, 7) );
 #define NR32_UNUSED 0x9f
-#define NR32_SELECT_WAVE_VOLUME(X) BITS(X, 6, 5)
-#define NR43_CLOCK_SHIFT(X) BITS(X, 7, 4)
-#define NR43_LFSR_WIDTH(X) BIT(X, 3)
-#define NR43_DIVISOR(X) BITS(X, 2, 0)
-#define NR50_VIN_SO2(X) BIT(X, 7)
-#define NR50_SO2_VOLUME(X) BITS(X, 6, 4)
-#define NR50_VIN_SO1(X) BIT(X, 3)
-#define NR50_SO1_VOLUME(X) BITS(X, 2, 0)
-#define NR51_SOUND4_SO2(X) BIT(X, 7)
-#define NR51_SOUND3_SO2(X) BIT(X, 6)
-#define NR51_SOUND2_SO2(X) BIT(X, 5)
-#define NR51_SOUND1_SO2(X) BIT(X, 4)
-#define NR51_SOUND4_SO1(X) BIT(X, 3)
-#define NR51_SOUND3_SO1(X) BIT(X, 2)
-#define NR51_SOUND2_SO1(X) BIT(X, 1)
-#define NR51_SOUND1_SO1(X) BIT(X, 0)
+static auto NR32_SELECT_WAVE_VOLUME = CALL_PAT( bits(f, 6, 5) );
+static auto NR43_CLOCK_SHIFT = CALL_PAT( bits(f, 7, 4) );
+static auto NR43_LFSR_WIDTH = CALL_PAT( bit(f, 3) );
+static auto NR43_DIVISOR = CALL_PAT( bits(f, 2, 0) );
+static auto NR50_VIN_SO2 = CALL_PAT( bit(f, 7) );
+static auto NR50_SO2_VOLUME = CALL_PAT( bits(f, 6, 4) );
+static auto NR50_VIN_SO1 = CALL_PAT( bit(f, 3) );
+static auto NR50_SO1_VOLUME = CALL_PAT( bits(f, 2, 0) );
+static auto NR51_SOUND4_SO2 = CALL_PAT( bit(f, 7) );
+static auto NR51_SOUND3_SO2 = CALL_PAT( bit(f, 6) );
+static auto NR51_SOUND2_SO2 = CALL_PAT( bit(f, 5) );
+static auto NR51_SOUND1_SO2 = CALL_PAT( bit(f, 4) );
+static auto NR51_SOUND4_SO1 = CALL_PAT( bit(f, 3) );
+static auto NR51_SOUND3_SO1 = CALL_PAT( bit(f, 2) );
+static auto NR51_SOUND2_SO1 = CALL_PAT( bit(f, 1) );
+static auto NR51_SOUND1_SO1 = CALL_PAT( bit(f, 0) );
 #define NR52_UNUSED 0x70
-#define NR52_ALL_SOUND_ENABLED(X) BIT(X, 7)
-#define NR52_SOUND4_ON(X) BIT(X, 3)
-#define NR52_SOUND3_ON(X) BIT(X, 2)
-#define NR52_SOUND2_ON(X) BIT(X, 1)
-#define NR52_SOUND1_ON(X) BIT(X, 0)
+static auto NR52_ALL_SOUND_ENABLED = CALL_PAT( bit(f, 7) );
+static auto NR52_SOUND4_ON = CALL_PAT( bit(f, 3) );
+static auto NR52_SOUND3_ON = CALL_PAT( bit(f, 2) );
+static auto NR52_SOUND2_ON = CALL_PAT( bit(f, 1) );
+static auto NR52_SOUND1_ON = CALL_PAT( bit(f, 0) );
 
 #define KEY1_UNUSED 0x7e
-#define KEY1_CURRENT_SPEED(X) BIT(X, 7)
-#define KEY1_PREPARE_SPEED_SWITCH(X) BIT(X, 0)
+static auto KEY1_CURRENT_SPEED = CALL_PAT( bit(f, 7) );
+static auto KEY1_PREPARE_SPEED_SWITCH = CALL_PAT( bit(f, 0) );
 #define RP_UNUSED 0x3c
-#define RP_DATA_READ_ENABLE(X) BITS(X, 7, 6)
-#define RP_READ_DATA(X) BIT(X, 1)
-#define RP_WRITE_DATA(X) BIT(X, 0)
+static auto RP_DATA_READ_ENABLE = CALL_PAT( bits(f, 7, 6) );
+static auto RP_READ_DATA = CALL_PAT( bit(f, 1) );
+static auto RP_WRITE_DATA = CALL_PAT( bit(f, 0) );
 #define VBK_UNUSED 0xfe
-#define VBK_VRAM_BANK(X) BIT(X, 0)
-#define HDMA5_TRANSFER_MODE(X) BIT(X, 7)
-#define HDMA5_BLOCKS(X) BITS(X, 6, 0)
+static auto VBK_VRAM_BANK = CALL_PAT( bit(f, 0) );
+static auto HDMA5_TRANSFER_MODE = CALL_PAT( bit(f, 7) );
+static auto HDMA5_BLOCKS = CALL_PAT( bits(f, 6, 0) );
 #define XCPS_UNUSED 0x40
-#define XCPS_AUTO_INCREMENT(X) BIT(X, 7)
-#define XCPS_INDEX(X) BITS(X, 5, 0)
-#define XCPD_BLUE_INTENSITY(X) BITS(X, 14, 10)
-#define XCPD_GREEN_INTENSITY(X) BITS(X, 9, 5)
-#define XCPD_RED_INTENSITY(X) BITS(X, 4, 0)
+static auto XCPS_AUTO_INCREMENT = CALL_PAT( bit(f, 7) );
+static auto XCPS_INDEX = CALL_PAT( bits(f, 5, 0) );
+static auto XCPD_BLUE_INTENSITY = CALL_PAT( bits(f, 14, 10) );
+static auto XCPD_GREEN_INTENSITY = CALL_PAT( bits(f, 9, 5) );
+static auto XCPD_RED_INTENSITY = CALL_PAT( bits(f, 4, 0) );
 #define SVBK_UNUSED 0xf8
-#define SVBK_WRAM_BANK(X) BITS(X, 2, 0)
+static auto SVBK_WRAM_BANK = CALL_PAT( bits(f, 2, 0) );
 
-#define OBJ_PRIORITY(X) BIT(X, 7)
-#define OBJ_YFLIP(X) BIT(X, 6)
-#define OBJ_XFLIP(X) BIT(X, 5)
-#define OBJ_PALETTE(X) BIT(X, 4)
-#define OBJ_BANK(X) BIT(X, 3)
-#define OBJ_CGB_PALETTE(X) BITS(X, 2, 0)
+static auto OBJ_PRIORITY = CALL_PAT( bit(f, 7) );
+static auto OBJ_YFLIP = CALL_PAT( bit(f, 6) );
+static auto OBJ_XFLIP = CALL_PAT( bit(f, 5) );
+static auto OBJ_PALETTE = CALL_PAT( bit(f, 4) );
+static auto OBJ_BANK = CALL_PAT( bit(f, 3) );
+static auto OBJ_CGB_PALETTE = CALL_PAT( bits(f, 2, 0) );
 
-#define MBC3_RTC_DAY_CARRY(X) BIT(X, 7)
-#define MBC3_RTC_HALT(X) BIT(X, 6)
-#define MBC3_RTC_DAY_HI(X) BIT(X, 0)
+static auto mbc3_rtc_day_carry = CALL_PAT( bit(f, 7) );
+static auto mbc3_rtc_halt = CALL_PAT( bit(f, 6) );
+static auto mbc3_rtc_day_hi = CALL_PAT( bit(f, 0) );
 
 static u32 s_rom_bank_count[] = {
 #define V(name, code, bank_count) [code] = bank_count,
@@ -1416,9 +1439,9 @@ static u8 mbc3_read_ext_ram(Emulator* e, MaskedAddress addr) {
     case 10: result = mbc3->hour; break;
     case 11: result = mbc3->day; break;
     case 12:
-      result = PACK(mbc3->day_carry, MBC3_RTC_DAY_CARRY) |
-               PACK(mbc3->rtc_halt, MBC3_RTC_HALT) |
-               PACK((mbc3->day >> 8) & 1, MBC3_RTC_DAY_HI);
+      result = pack(mbc3->day_carry, mbc3_rtc_day_carry) |
+               pack(mbc3->rtc_halt, mbc3_rtc_halt) |
+               pack((mbc3->day >> 8) & 1, mbc3_rtc_day_hi);
       break;
   }
 
@@ -1453,10 +1476,10 @@ static void mbc3_write_ext_ram(Emulator* e, MaskedAddress addr, u8 value) {
     case 10: mbc3->hour = value & 31; break;
     case 11: mbc3->day = (mbc3->day & 0x100) | value; break;
     case 12: {
-      mbc3->day = (UNPACK(value, MBC3_RTC_DAY_HI) << 8) | (mbc3->day & 0xff);
-      mbc3->day_carry = UNPACK(value, MBC3_RTC_DAY_CARRY);
+      mbc3->day = (unpack(value, mbc3_rtc_day_hi) << 8) | (mbc3->day & 0xff);
+      mbc3->day_carry = unpack(value, mbc3_rtc_day_carry);
       bool old_rtc_halt = mbc3->rtc_halt;
-      mbc3->rtc_halt = UNPACK(value, MBC3_RTC_HALT);
+      mbc3->rtc_halt = unpack(value, mbc3_rtc_halt);
       if (mbc3->rtc_halt != old_rtc_halt) {
         // Update the tick timer; if the clock is halted, then store the
         // previous delta before the clock was stopped. If the clock is
@@ -1670,10 +1693,10 @@ static u8 read_joyp_p10_p13(Emulator* e) {
   u8 result = 0;
   if (JOYP.joypad_select == JOYPAD_SELECT_BUTTONS ||
       JOYP.joypad_select == JOYPAD_SELECT_BOTH) {
-    result |= PACK(JOYP.buttons.start, JOYP_BUTTON_START) |
-              PACK(JOYP.buttons.select, JOYP_BUTTON_SELECT) |
-              PACK(JOYP.buttons.B, JOYP_BUTTON_B) |
-              PACK(JOYP.buttons.A, JOYP_BUTTON_A);
+    result |= pack(JOYP.buttons.start, JOYP_BUTTON_START) |
+              pack(JOYP.buttons.select, JOYP_BUTTON_SELECT) |
+              pack(JOYP.buttons.B, JOYP_BUTTON_B) |
+              pack(JOYP.buttons.A, JOYP_BUTTON_A);
   }
 
   bool left = JOYP.buttons.left;
@@ -1690,8 +1713,8 @@ static u8 read_joyp_p10_p13(Emulator* e) {
 
   if (JOYP.joypad_select == JOYPAD_SELECT_DPAD ||
       JOYP.joypad_select == JOYPAD_SELECT_BOTH) {
-    result |= PACK(down, JOYP_DPAD_DOWN) | PACK(up, JOYP_DPAD_UP) |
-              PACK(left, JOYP_DPAD_LEFT) | PACK(right, JOYP_DPAD_RIGHT);
+    result |= pack(down, JOYP_DPAD_DOWN) | pack(up, JOYP_DPAD_UP) |
+              pack(left, JOYP_DPAD_LEFT) | pack(right, JOYP_DPAD_RIGHT);
   }
   /* The bits are low when the buttons are pressed. */
   return ~result;
@@ -1709,15 +1732,15 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
   switch (addr) {
     case IO_JOYP_ADDR:
       call_joyp_callback(e, false);
-      return JOYP_UNUSED | PACK(JOYP.joypad_select, JOYP_JOYPAD_SELECT) |
+      return JOYP_UNUSED | pack(JOYP.joypad_select, JOYP_JOYPAD_SELECT) |
              (read_joyp_p10_p13(e) & JOYP_RESULT_MASK);
     case IO_SB_ADDR:
       serial_synchronize(e);
       return SERIAL.sb;
     case IO_SC_ADDR:
       serial_synchronize(e);
-      return SC_UNUSED | PACK(SERIAL.transferring, SC_TRANSFER_START) |
-             PACK(SERIAL.clock, SC_SHIFT_CLOCK);
+      return SC_UNUSED | pack(SERIAL.transferring, SC_TRANSFER_START) |
+             pack(SERIAL.clock, SC_SHIFT_CLOCK);
     case IO_DIV_ADDR:
       timer_synchronize(e);
       return TIMER.div_counter >> 8;
@@ -1728,29 +1751,29 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
       timer_synchronize(e);
       return TIMER.tma;
     case IO_TAC_ADDR:
-      return TAC_UNUSED | PACK(TIMER.on, TAC_TIMER_ON) |
-             PACK(TIMER.clock_select, TAC_CLOCK_SELECT);
+      return TAC_UNUSED | pack(TIMER.on, TAC_TIMER_ON) |
+             pack(TIMER.clock_select, TAC_CLOCK_SELECT);
     case IO_IF_ADDR:
       intr_synchronize(e);
       return IF_UNUSED | INTR.if_;
     case IO_LCDC_ADDR:
-      return PACK(LCDC.display, LCDC_DISPLAY) |
-             PACK(LCDC.window_tile_map_select,
+      return pack(LCDC.display, LCDC_DISPLAY) |
+             pack(LCDC.window_tile_map_select,
                   LCDC_WINDOW_TILE_MAP_SELECT) |
-             PACK(LCDC.window_display, LCDC_WINDOW_DISPLAY) |
-             PACK(LCDC.bg_tile_data_select, LCDC_BG_TILE_DATA_SELECT) |
-             PACK(LCDC.bg_tile_map_select, LCDC_BG_TILE_MAP_SELECT) |
-             PACK(LCDC.obj_size, LCDC_OBJ_SIZE) |
-             PACK(LCDC.obj_display, LCDC_OBJ_DISPLAY) |
-             PACK(LCDC.bg_display, LCDC_BG_DISPLAY);
+             pack(LCDC.window_display, LCDC_WINDOW_DISPLAY) |
+             pack(LCDC.bg_tile_data_select, LCDC_BG_TILE_DATA_SELECT) |
+             pack(LCDC.bg_tile_map_select, LCDC_BG_TILE_MAP_SELECT) |
+             pack(LCDC.obj_size, LCDC_OBJ_SIZE) |
+             pack(LCDC.obj_display, LCDC_OBJ_DISPLAY) |
+             pack(LCDC.bg_display, LCDC_BG_DISPLAY);
     case IO_STAT_ADDR:
       ppu_synchronize(e);
-      return STAT_UNUSED | PACK(STAT.y_compare.irq, STAT_YCOMPARE_INTR) |
-             PACK(STAT.mode2.irq, STAT_MODE2_INTR) |
-             PACK(STAT.vblank.irq, STAT_VBLANK_INTR) |
-             PACK(STAT.hblank.irq, STAT_HBLANK_INTR) |
-             PACK(STAT.ly_eq_lyc, STAT_YCOMPARE) |
-             PACK(STAT.mode, STAT_MODE);
+      return STAT_UNUSED | pack(STAT.y_compare.irq, STAT_YCOMPARE_INTR) |
+             pack(STAT.mode2.irq, STAT_MODE2_INTR) |
+             pack(STAT.vblank.irq, STAT_VBLANK_INTR) |
+             pack(STAT.hblank.irq, STAT_HBLANK_INTR) |
+             pack(STAT.ly_eq_lyc, STAT_YCOMPARE) |
+             pack(STAT.mode, STAT_MODE);
     case IO_SCY_ADDR:
       return PPU.scy;
     case IO_SCX_ADDR:
@@ -1766,35 +1789,35 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
     case IO_OBP0_ADDR:
     case IO_OBP1_ADDR: {
       Palette* pal = &PPU.pal[addr - IO_BGP_ADDR];
-      return PACK(pal->color[3], PALETTE_COLOR3) |
-             PACK(pal->color[2], PALETTE_COLOR2) |
-             PACK(pal->color[1], PALETTE_COLOR1) |
-             PACK(pal->color[0], PALETTE_COLOR0);
+      return pack(pal->color[3], PALETTE_COLOR3) |
+             pack(pal->color[2], PALETTE_COLOR2) |
+             pack(pal->color[1], PALETTE_COLOR1) |
+             pack(pal->color[0], PALETTE_COLOR0);
     }
     case IO_WY_ADDR:
       return PPU.wy;
     case IO_WX_ADDR:
       return PPU.wx;
     case IO_KEY1_ADDR:
-      return IS_CGB ? (KEY1_UNUSED | PACK(CPU_SPEED.speed, KEY1_CURRENT_SPEED) |
-                       PACK(CPU_SPEED.switching, KEY1_PREPARE_SPEED_SWITCH))
+      return IS_CGB ? (KEY1_UNUSED | pack(CPU_SPEED.speed, KEY1_CURRENT_SPEED) |
+                       pack(CPU_SPEED.switching, KEY1_PREPARE_SPEED_SWITCH))
                     : INVALID_READ_BYTE;
     case IO_VBK_ADDR:
-      return IS_CGB ? (VBK_UNUSED | PACK(VRAM.bank, VBK_VRAM_BANK))
+      return IS_CGB ? (VBK_UNUSED | pack(VRAM.bank, VBK_VRAM_BANK))
                     : INVALID_READ_BYTE;
     case IO_HDMA5_ADDR:
       return IS_CGB ? HDMA.blocks : INVALID_READ_BYTE;
     case IO_RP_ADDR:
-      return IS_CGB ? (RP_UNUSED | PACK(INFRARED.enabled, RP_DATA_READ_ENABLE) |
-                       PACK(INFRARED.read, RP_READ_DATA) |
-                       PACK(INFRARED.write, RP_WRITE_DATA))
+      return IS_CGB ? (RP_UNUSED | pack(INFRARED.enabled, RP_DATA_READ_ENABLE) |
+                       pack(INFRARED.read, RP_READ_DATA) |
+                       pack(INFRARED.write, RP_WRITE_DATA))
                     : INVALID_READ_BYTE;
     case IO_BCPS_ADDR:
     case IO_OCPS_ADDR:
       if (IS_CGB) {
         ColorPalettes* cp = addr == IO_BCPS_ADDR ? &PPU.bgcp : &PPU.obcp;
-        return XCPS_UNUSED | PACK(cp->index, XCPS_INDEX) |
-               PACK(cp->auto_increment, XCPS_AUTO_INCREMENT);
+        return XCPS_UNUSED | pack(cp->index, XCPS_INDEX) |
+               pack(cp->auto_increment, XCPS_AUTO_INCREMENT);
       } else {
         return INVALID_READ_BYTE;
       }
@@ -1807,7 +1830,7 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
         return INVALID_READ_BYTE;
       }
     case IO_SVBK_ADDR:
-      return IS_CGB ? (SVBK_UNUSED | PACK(WRAM.bank, SVBK_WRAM_BANK))
+      return IS_CGB ? (SVBK_UNUSED | pack(WRAM.bank, SVBK_WRAM_BANK))
                     : INVALID_READ_BYTE;
     case IO_IE_ADDR:
       return INTR.ie;
@@ -1818,26 +1841,26 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
 }
 
 static u8 read_nrx1_reg(Channel* channel) {
-  return PACK(channel->square_wave.duty, NRX1_WAVE_DUTY);
+  return pack(channel->square_wave.duty, NRX1_WAVE_DUTY);
 }
 
 static u8 read_nrx2_reg(Channel* channel) {
-  return PACK(channel->envelope.initial_volume, NRX2_INITIAL_VOLUME) |
-         PACK(channel->envelope.direction, NRX2_ENVELOPE_DIRECTION) |
-         PACK(channel->envelope.period, NRX2_ENVELOPE_PERIOD);
+  return pack(channel->envelope.initial_volume, NRX2_INITIAL_VOLUME) |
+         pack(channel->envelope.direction, NRX2_ENVELOPE_DIRECTION) |
+         pack(channel->envelope.period, NRX2_ENVELOPE_PERIOD);
 }
 
 static u8 read_nrx4_reg(Channel* channel) {
-  return PACK(channel->length_enabled, NRX4_LENGTH_ENABLED);
+  return pack(channel->length_enabled, NRX4_LENGTH_ENABLED);
 }
 
 static u8 read_apu(Emulator* e, MaskedAddress addr) {
   apu_synchronize(e);
   switch (addr) {
     case APU_NR10_ADDR:
-      return NR10_UNUSED | PACK(SWEEP.period, NR10_SWEEP_PERIOD) |
-             PACK(SWEEP.direction, NR10_SWEEP_DIRECTION) |
-             PACK(SWEEP.shift, NR10_SWEEP_SHIFT);
+      return NR10_UNUSED | pack(SWEEP.period, NR10_SWEEP_PERIOD) |
+             pack(SWEEP.direction, NR10_SWEEP_DIRECTION) |
+             pack(SWEEP.shift, NR10_SWEEP_SHIFT);
     case APU_NR11_ADDR:
       return NRX1_UNUSED | read_nrx1_reg(&CHANNEL1);
     case APU_NR12_ADDR:
@@ -1852,39 +1875,39 @@ static u8 read_apu(Emulator* e, MaskedAddress addr) {
       return NRX4_UNUSED | read_nrx4_reg(&CHANNEL2);
     case APU_NR30_ADDR:
       return NR30_UNUSED |
-             PACK(CHANNEL3.dac_enabled, NR30_DAC_ENABLED);
+             pack(CHANNEL3.dac_enabled, NR30_DAC_ENABLED);
     case APU_NR32_ADDR:
-      return NR32_UNUSED | PACK(WAVE.volume, NR32_SELECT_WAVE_VOLUME);
+      return NR32_UNUSED | pack(WAVE.volume, NR32_SELECT_WAVE_VOLUME);
     case APU_NR34_ADDR:
       return NRX4_UNUSED | read_nrx4_reg(&CHANNEL3);
     case APU_NR42_ADDR:
       return read_nrx2_reg(&CHANNEL4);
     case APU_NR43_ADDR:
-      return PACK(NOISE.clock_shift, NR43_CLOCK_SHIFT) |
-             PACK(NOISE.lfsr_width, NR43_LFSR_WIDTH) |
-             PACK(NOISE.divisor, NR43_DIVISOR);
+      return pack(NOISE.clock_shift, NR43_CLOCK_SHIFT) |
+             pack(NOISE.lfsr_width, NR43_LFSR_WIDTH) |
+             pack(NOISE.divisor, NR43_DIVISOR);
     case APU_NR44_ADDR:
       return NRX4_UNUSED | read_nrx4_reg(&CHANNEL4);
     case APU_NR50_ADDR:
-      return PACK(APU.so_output[VIN][1], NR50_VIN_SO2) |
-             PACK(APU.so_volume[1], NR50_SO2_VOLUME) |
-             PACK(APU.so_output[VIN][0], NR50_VIN_SO1) |
-             PACK(APU.so_volume[0], NR50_SO1_VOLUME);
+      return pack(APU.so_output[VIN][1], NR50_VIN_SO2) |
+             pack(APU.so_volume[1], NR50_SO2_VOLUME) |
+             pack(APU.so_output[VIN][0], NR50_VIN_SO1) |
+             pack(APU.so_volume[0], NR50_SO1_VOLUME);
     case APU_NR51_ADDR:
-      return PACK(APU.so_output[SOUND4][1], NR51_SOUND4_SO2) |
-             PACK(APU.so_output[SOUND3][1], NR51_SOUND3_SO2) |
-             PACK(APU.so_output[SOUND2][1], NR51_SOUND2_SO2) |
-             PACK(APU.so_output[SOUND1][1], NR51_SOUND1_SO2) |
-             PACK(APU.so_output[SOUND4][0], NR51_SOUND4_SO1) |
-             PACK(APU.so_output[SOUND3][0], NR51_SOUND3_SO1) |
-             PACK(APU.so_output[SOUND2][0], NR51_SOUND2_SO1) |
-             PACK(APU.so_output[SOUND1][0], NR51_SOUND1_SO1);
+      return pack(APU.so_output[SOUND4][1], NR51_SOUND4_SO2) |
+             pack(APU.so_output[SOUND3][1], NR51_SOUND3_SO2) |
+             pack(APU.so_output[SOUND2][1], NR51_SOUND2_SO2) |
+             pack(APU.so_output[SOUND1][1], NR51_SOUND1_SO2) |
+             pack(APU.so_output[SOUND4][0], NR51_SOUND4_SO1) |
+             pack(APU.so_output[SOUND3][0], NR51_SOUND3_SO1) |
+             pack(APU.so_output[SOUND2][0], NR51_SOUND2_SO1) |
+             pack(APU.so_output[SOUND1][0], NR51_SOUND1_SO1);
     case APU_NR52_ADDR:
-      return NR52_UNUSED | PACK(APU.enabled, NR52_ALL_SOUND_ENABLED) |
-             PACK(CHANNEL4.status, NR52_SOUND4_ON) |
-             PACK(CHANNEL3.status, NR52_SOUND3_ON) |
-             PACK(CHANNEL2.status, NR52_SOUND2_ON) |
-             PACK(CHANNEL1.status, NR52_SOUND1_ON);
+      return NR52_UNUSED | pack(APU.enabled, NR52_ALL_SOUND_ENABLED) |
+             pack(CHANNEL4.status, NR52_SOUND4_ON) |
+             pack(CHANNEL3.status, NR52_SOUND3_ON) |
+             pack(CHANNEL2.status, NR52_SOUND2_ON) |
+             pack(CHANNEL1.status, NR52_SOUND1_ON);
     default:
       return INVALID_READ_BYTE;
   }
@@ -1997,12 +2020,12 @@ static void write_oam_no_mode_check(Emulator* e, MaskedAddress addr, u8 value) {
     case 2: obj->tile = value; break;
     case 3:
       obj->byte3 = value;
-      obj->priority = static_cast<ObjPriority>(UNPACK(value, OBJ_PRIORITY));
-      obj->yflip = UNPACK(value, OBJ_YFLIP);
-      obj->xflip = UNPACK(value, OBJ_XFLIP);
-      obj->palette = UNPACK(value, OBJ_PALETTE);
-      obj->bank = UNPACK(value, OBJ_BANK);
-      obj->cgb_palette = UNPACK(value, OBJ_CGB_PALETTE);
+      obj->priority = static_cast<ObjPriority>(unpack(value, OBJ_PRIORITY));
+      obj->yflip = unpack(value, OBJ_YFLIP);
+      obj->xflip = unpack(value, OBJ_XFLIP);
+      obj->palette = unpack(value, OBJ_PALETTE);
+      obj->bank = unpack(value, OBJ_BANK);
+      obj->cgb_palette = unpack(value, OBJ_CGB_PALETTE);
       break;
   }
 }
@@ -2187,9 +2210,9 @@ static void update_bw_palette_rgba(Emulator* e, PaletteType type) {
 }
 
 static RGBA unpack_cgb_color(Emulator* e, u16 color) {
-  u8 r = UNPACK(color, XCPD_RED_INTENSITY);
-  u8 g = UNPACK(color, XCPD_GREEN_INTENSITY);
-  u8 b = UNPACK(color, XCPD_BLUE_INTENSITY);
+  u8 r = unpack(color, XCPD_RED_INTENSITY);
+  u8 g = unpack(color, XCPD_GREEN_INTENSITY);
+  u8 b = unpack(color, XCPD_BLUE_INTENSITY);
 
   switch (e->cgb_color_curve) {
     default:
@@ -2569,7 +2592,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
   HOOK(write_io_asb, addr, get_io_reg_string(static_cast<IOReg>(addr)), value);
   switch (addr) {
     case IO_JOYP_ADDR:
-      JOYP.joypad_select = static_cast<JoypadSelect>(UNPACK(value, JOYP_JOYPAD_SELECT));
+      JOYP.joypad_select = static_cast<JoypadSelect>(unpack(value, JOYP_JOYPAD_SELECT));
       do_sgb(e);
       check_joyp_intr(e);
       break;
@@ -2579,8 +2602,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_SC_ADDR:
       serial_synchronize(e);
-      SERIAL.transferring = UNPACK(value, SC_TRANSFER_START);
-      SERIAL.clock = static_cast<SerialClock>(UNPACK(value, SC_SHIFT_CLOCK));
+      SERIAL.transferring = unpack(value, SC_TRANSFER_START);
+      SERIAL.clock = static_cast<SerialClock>(unpack(value, SC_SHIFT_CLOCK));
       if (SERIAL.transferring) {
         SERIAL.tick_count = 0;
         SERIAL.transferred_bits = 0;
@@ -2621,8 +2644,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       timer_synchronize(e);
       bool old_timer_on = TIMER.on;
       u16 old_tima_mask = s_tima_mask[TIMER.clock_select];
-      TIMER.clock_select = static_cast<TimerClock>(UNPACK(value, TAC_CLOCK_SELECT));
-      TIMER.on = UNPACK(value, TAC_TIMER_ON);
+      TIMER.clock_select = static_cast<TimerClock>(unpack(value, TAC_CLOCK_SELECT));
+      TIMER.on = unpack(value, TAC_TIMER_ON);
       /* tima is incremented when a specific bit of div_counter transitions
        * from 1 to 0. This can happen as a result of writing to DIV, or in this
        * case modifying which bit we're looking at. */
@@ -2650,14 +2673,14 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       ppu_synchronize(e);
       ppu_mode3_synchronize(e);
       bool was_enabled = LCDC.display;
-      LCDC.display = UNPACK(value, LCDC_DISPLAY);
-      LCDC.window_tile_map_select = static_cast<TileMapSelect>(UNPACK(value, LCDC_WINDOW_TILE_MAP_SELECT));
-      LCDC.window_display = UNPACK(value, LCDC_WINDOW_DISPLAY);
-      LCDC.bg_tile_data_select = static_cast<TileDataSelect>(UNPACK(value, LCDC_BG_TILE_DATA_SELECT));
-      LCDC.bg_tile_map_select = static_cast<TileMapSelect>(UNPACK(value, LCDC_BG_TILE_MAP_SELECT));
-      LCDC.obj_size = static_cast<ObjSize>(UNPACK(value, LCDC_OBJ_SIZE));
-      LCDC.obj_display = UNPACK(value, LCDC_OBJ_DISPLAY);
-      LCDC.bg_display = UNPACK(value, LCDC_BG_DISPLAY);
+      LCDC.display = unpack(value, LCDC_DISPLAY);
+      LCDC.window_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_WINDOW_TILE_MAP_SELECT));
+      LCDC.window_display = unpack(value, LCDC_WINDOW_DISPLAY);
+      LCDC.bg_tile_data_select = static_cast<TileDataSelect>(unpack(value, LCDC_BG_TILE_DATA_SELECT));
+      LCDC.bg_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_BG_TILE_MAP_SELECT));
+      LCDC.obj_size = static_cast<ObjSize>(unpack(value, LCDC_OBJ_SIZE));
+      LCDC.obj_display = unpack(value, LCDC_OBJ_DISPLAY);
+      LCDC.bg_display = unpack(value, LCDC_BG_DISPLAY);
       if (was_enabled ^ LCDC.display) {
         STAT.mode = PPU_MODE_HBLANK;
         PPU.ly = PPU.line_y = 0;
@@ -2686,8 +2709,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
     }
     case IO_STAT_ADDR: {
       ppu_synchronize(e);
-      bool new_vblank_irq = UNPACK(value, STAT_VBLANK_INTR);
-      bool new_hblank_irq = UNPACK(value, STAT_HBLANK_INTR);
+      bool new_vblank_irq = unpack(value, STAT_VBLANK_INTR);
+      bool new_hblank_irq = unpack(value, STAT_HBLANK_INTR);
       if (LCDC.display) {
         bool hblank = TRIGGER_MODE_IS(HBLANK) && !STAT.hblank.irq;
         bool vblank = TRIGGER_MODE_IS(VBLANK) && !STAT.vblank.irq;
@@ -2707,8 +2730,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
           STAT.if_ = true;
         }
       }
-      STAT.y_compare.irq = UNPACK(value, STAT_YCOMPARE_INTR);
-      STAT.mode2.irq = UNPACK(value, STAT_MODE2_INTR);
+      STAT.y_compare.irq = unpack(value, STAT_YCOMPARE_INTR);
+      STAT.mode2.irq = unpack(value, STAT_MODE2_INTR);
       STAT.vblank.irq = new_vblank_irq;
       STAT.hblank.irq = new_hblank_irq;
       calculate_next_ppu_intr(e);
@@ -2748,10 +2771,10 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       PaletteType type = static_cast<PaletteType>(addr - IO_BGP_ADDR);
       Palette* pal = &PPU.pal[type];
       ppu_mode3_synchronize(e);
-      pal->color[3] = static_cast<Color>(UNPACK(value, PALETTE_COLOR3));
-      pal->color[2] = static_cast<Color>(UNPACK(value, PALETTE_COLOR2));
-      pal->color[1] = static_cast<Color>(UNPACK(value, PALETTE_COLOR1));
-      pal->color[0] = static_cast<Color>(UNPACK(value, PALETTE_COLOR0));
+      pal->color[3] = static_cast<Color>(unpack(value, PALETTE_COLOR3));
+      pal->color[2] = static_cast<Color>(unpack(value, PALETTE_COLOR2));
+      pal->color[1] = static_cast<Color>(unpack(value, PALETTE_COLOR1));
+      pal->color[0] = static_cast<Color>(unpack(value, PALETTE_COLOR0));
       update_bw_palette_rgba(e, type);
       break;
     }
@@ -2766,12 +2789,12 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_KEY1_ADDR:
       if (IS_CGB) {
-        CPU_SPEED.switching = UNPACK(value, KEY1_PREPARE_SPEED_SWITCH);
+        CPU_SPEED.switching = unpack(value, KEY1_PREPARE_SPEED_SWITCH);
       }
       break;
     case IO_VBK_ADDR:
       if (IS_CGB) {
-        VRAM.bank = UNPACK(value, VBK_VRAM_BANK);
+        VRAM.bank = unpack(value, VBK_VRAM_BANK);
         VRAM.offset = VRAM.bank << 13;
       }
       break;
@@ -2797,8 +2820,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_HDMA5_ADDR:
       if (IS_CGB) {
-        HdmaTransferMode new_mode = static_cast<HdmaTransferMode>(UNPACK(value, HDMA5_TRANSFER_MODE));
-        u8 new_blocks = UNPACK(value, HDMA5_BLOCKS);
+        HdmaTransferMode new_mode = static_cast<HdmaTransferMode>(unpack(value, HDMA5_TRANSFER_MODE));
+        u8 new_blocks = unpack(value, HDMA5_BLOCKS);
         if (HDMA.mode == HDMA_TRANSFER_MODE_HDMA &&
             (HDMA.blocks & 0x80) == 0) { /* HDMA Active */
           if (new_mode == HDMA_TRANSFER_MODE_GDMA) {
@@ -2819,8 +2842,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_RP_ADDR:
       if (IS_CGB) {
-        INFRARED.write = UNPACK(value, RP_WRITE_DATA);
-        INFRARED.enabled = static_cast<DataReadEnable>(UNPACK(value, RP_DATA_READ_ENABLE));
+        INFRARED.write = unpack(value, RP_WRITE_DATA);
+        INFRARED.enabled = static_cast<DataReadEnable>(unpack(value, RP_DATA_READ_ENABLE));
       }
       break;
     case IO_BCPS_ADDR:
@@ -2828,8 +2851,8 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       if (IS_CGB) {
         ppu_mode3_synchronize(e);
         ColorPalettes* cp = addr == IO_BCPS_ADDR ? &PPU.bgcp : &PPU.obcp;
-        cp->index = UNPACK(value, XCPS_INDEX);
-        cp->auto_increment = UNPACK(value, XCPS_AUTO_INCREMENT);
+        cp->index = unpack(value, XCPS_INDEX);
+        cp->auto_increment = unpack(value, XCPS_AUTO_INCREMENT);
       }
       break;
     case IO_BCPD_ADDR:
@@ -2850,7 +2873,7 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     case IO_SVBK_ADDR:
       if (IS_CGB) {
-        WRAM.bank = UNPACK(value, SVBK_WRAM_BANK);
+        WRAM.bank = unpack(value, SVBK_WRAM_BANK);
         WRAM.offset = WRAM.bank == 0 ? 0x1000 : (WRAM.bank << 12);
       }
       break;
@@ -2866,16 +2889,16 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
 static void write_nrx1_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value) {
   if (APU.enabled) {
-    channel->square_wave.duty = static_cast<WaveDuty>(UNPACK(value, NRX1_WAVE_DUTY));
+    channel->square_wave.duty = static_cast<WaveDuty>(unpack(value, NRX1_WAVE_DUTY));
   }
-  channel->length = NRX1_MAX_LENGTH - UNPACK(value, NRX1_LENGTH);
+  channel->length = NRX1_MAX_LENGTH - unpack(value, NRX1_LENGTH);
   HOOK(write_nrx1_abi, addr, value, channel->length);
 }
 
 static void write_nrx2_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value) {
-  channel->envelope.initial_volume = UNPACK(value, NRX2_INITIAL_VOLUME);
-  channel->dac_enabled = UNPACK(value, NRX2_DAC_ENABLED) != 0;
+  channel->envelope.initial_volume = unpack(value, NRX2_INITIAL_VOLUME);
+  channel->dac_enabled = unpack(value, NRX2_DAC_ENABLED) != 0;
   if (!channel->dac_enabled) {
     channel->status = false;
     HOOK(write_nrx2_disable_dac_ab, addr, value);
@@ -2889,8 +2912,8 @@ static void write_nrx2_reg([[maybe_unused]] Emulator* e, Channel* channel, [[may
       channel->envelope.volume = new_volume;
     }
   }
-  channel->envelope.direction = static_cast<EnvelopeDirection>(UNPACK(value, NRX2_ENVELOPE_DIRECTION));
-  channel->envelope.period = UNPACK(value, NRX2_ENVELOPE_PERIOD);
+  channel->envelope.direction = static_cast<EnvelopeDirection>(unpack(value, NRX2_ENVELOPE_DIRECTION));
+  channel->envelope.period = unpack(value, NRX2_ENVELOPE_PERIOD);
   HOOK(write_nrx2_initial_volume_abi, addr, value,
        channel->envelope.initial_volume);
 }
@@ -2902,11 +2925,11 @@ static void write_nrx3_reg([[maybe_unused]] Emulator* e, Channel* channel, u8 va
 /* Returns true if this channel was triggered. */
 static bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
                            u8 value, u16 max_length) {
-  bool trigger = UNPACK(value, NRX4_INITIAL);
+  bool trigger = unpack(value, NRX4_INITIAL);
   bool was_length_enabled = channel->length_enabled;
-  channel->length_enabled = UNPACK(value, NRX4_LENGTH_ENABLED);
+  channel->length_enabled = unpack(value, NRX4_LENGTH_ENABLED);
   channel->frequency &= 0xff;
-  channel->frequency |= UNPACK(value, NRX4_FREQUENCY_HI) << 8;
+  channel->frequency |= unpack(value, NRX4_FREQUENCY_HI) << 8;
 
   /* Extra length clocking occurs on NRX4 writes if the next APU frame isn't a
    * length counter frame. This only occurs on transition from disabled to
@@ -3027,9 +3050,9 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
   switch (addr) {
     case APU_NR10_ADDR: {
       SweepDirection old_direction = SWEEP.direction;
-      SWEEP.period = UNPACK(value, NR10_SWEEP_PERIOD);
-      SWEEP.direction = static_cast<SweepDirection>(UNPACK(value, NR10_SWEEP_DIRECTION));
-      SWEEP.shift = UNPACK(value, NR10_SWEEP_SHIFT);
+      SWEEP.period = unpack(value, NR10_SWEEP_PERIOD);
+      SWEEP.direction = static_cast<SweepDirection>(unpack(value, NR10_SWEEP_DIRECTION));
+      SWEEP.shift = unpack(value, NR10_SWEEP_SHIFT);
       if (old_direction == SWEEP_DIRECTION_SUBTRACTION &&
           SWEEP.direction == SWEEP_DIRECTION_ADDITION &&
           SWEEP.calculated_subtract) {
@@ -3077,7 +3100,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     }
     case APU_NR30_ADDR:
-      CHANNEL3.dac_enabled = UNPACK(value, NR30_DAC_ENABLED);
+      CHANNEL3.dac_enabled = unpack(value, NR30_DAC_ENABLED);
       if (!CHANNEL3.dac_enabled) {
         CHANNEL3.status = false;
         WAVE.playing = false;
@@ -3087,7 +3110,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       CHANNEL3.length = NR31_MAX_LENGTH - value;
       break;
     case APU_NR32_ADDR:
-      WAVE.volume = static_cast<WaveVolume>(UNPACK(value, NR32_SELECT_WAVE_VOLUME));
+      WAVE.volume = static_cast<WaveVolume>(unpack(value, NR32_SELECT_WAVE_VOLUME));
       assert(WAVE.volume < WAVE_VOLUME_COUNT);
       WAVE.volume_shift = s_wave_volume_shift[WAVE.volume];
       break;
@@ -3133,9 +3156,9 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       write_nrx2_reg(e, &CHANNEL4, addr, value);
       break;
     case APU_NR43_ADDR: {
-      NOISE.clock_shift = UNPACK(value, NR43_CLOCK_SHIFT);
-      NOISE.lfsr_width = static_cast<LfsrWidth>(UNPACK(value, NR43_LFSR_WIDTH));
-      NOISE.divisor = UNPACK(value, NR43_DIVISOR);
+      NOISE.clock_shift = unpack(value, NR43_CLOCK_SHIFT);
+      NOISE.lfsr_width = static_cast<LfsrWidth>(unpack(value, NR43_LFSR_WIDTH));
+      NOISE.divisor = unpack(value, NR43_DIVISOR);
       write_noise_period(e);
       break;
     }
@@ -3151,24 +3174,24 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     }
     case APU_NR50_ADDR:
-      APU.so_output[VIN][1] = UNPACK(value, NR50_VIN_SO2);
-      APU.so_volume[1] = UNPACK(value, NR50_SO2_VOLUME);
-      APU.so_output[VIN][0] = UNPACK(value, NR50_VIN_SO1);
-      APU.so_volume[0] = UNPACK(value, NR50_SO1_VOLUME);
+      APU.so_output[VIN][1] = unpack(value, NR50_VIN_SO2);
+      APU.so_volume[1] = unpack(value, NR50_SO2_VOLUME);
+      APU.so_output[VIN][0] = unpack(value, NR50_VIN_SO1);
+      APU.so_volume[0] = unpack(value, NR50_SO1_VOLUME);
       break;
     case APU_NR51_ADDR:
-      APU.so_output[SOUND4][1] = UNPACK(value, NR51_SOUND4_SO2);
-      APU.so_output[SOUND3][1] = UNPACK(value, NR51_SOUND3_SO2);
-      APU.so_output[SOUND2][1] = UNPACK(value, NR51_SOUND2_SO2);
-      APU.so_output[SOUND1][1] = UNPACK(value, NR51_SOUND1_SO2);
-      APU.so_output[SOUND4][0] = UNPACK(value, NR51_SOUND4_SO1);
-      APU.so_output[SOUND3][0] = UNPACK(value, NR51_SOUND3_SO1);
-      APU.so_output[SOUND2][0] = UNPACK(value, NR51_SOUND2_SO1);
-      APU.so_output[SOUND1][0] = UNPACK(value, NR51_SOUND1_SO1);
+      APU.so_output[SOUND4][1] = unpack(value, NR51_SOUND4_SO2);
+      APU.so_output[SOUND3][1] = unpack(value, NR51_SOUND3_SO2);
+      APU.so_output[SOUND2][1] = unpack(value, NR51_SOUND2_SO2);
+      APU.so_output[SOUND1][1] = unpack(value, NR51_SOUND1_SO2);
+      APU.so_output[SOUND4][0] = unpack(value, NR51_SOUND4_SO1);
+      APU.so_output[SOUND3][0] = unpack(value, NR51_SOUND3_SO1);
+      APU.so_output[SOUND2][0] = unpack(value, NR51_SOUND2_SO1);
+      APU.so_output[SOUND1][0] = unpack(value, NR51_SOUND1_SO1);
       break;
     case APU_NR52_ADDR: {
       bool was_enabled = APU.enabled;
-      bool is_enabled = UNPACK(value, NR52_ALL_SOUND_ENABLED);
+      bool is_enabled = unpack(value, NR52_ALL_SOUND_ENABLED);
       if (was_enabled && !is_enabled) {
         HOOK0(apu_power_down_v);
         int i;
@@ -4027,16 +4050,16 @@ static void write_u16_tick(Emulator* e, Address addr, u16 value) {
 }
 
 static u16 get_af_reg(Emulator* e) {
-  return (REG.A << 8) | PACK(REG.F.Z, CPU_FLAG_Z) | PACK(REG.F.N, CPU_FLAG_N) |
-         PACK(REG.F.H, CPU_FLAG_H) | PACK(REG.F.C, CPU_FLAG_C);
+  return (REG.A << 8) | pack(REG.F.Z, CPU_FLAG_Z) | pack(REG.F.N, CPU_FLAG_N) |
+         pack(REG.F.H, CPU_FLAG_H) | pack(REG.F.C, CPU_FLAG_C);
 }
 
 static void set_af_reg(Emulator* e, u16 af) {
   REG.A = af >> 8;
-  REG.F.Z = UNPACK(af, CPU_FLAG_Z);
-  REG.F.N = UNPACK(af, CPU_FLAG_N);
-  REG.F.H = UNPACK(af, CPU_FLAG_H);
-  REG.F.C = UNPACK(af, CPU_FLAG_C);
+  REG.F.Z = unpack(af, CPU_FLAG_Z);
+  REG.F.N = unpack(af, CPU_FLAG_N);
+  REG.F.H = unpack(af, CPU_FLAG_H);
+  REG.F.C = unpack(af, CPU_FLAG_C);
 }
 
 #define TICK tick(e)
