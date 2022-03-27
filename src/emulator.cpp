@@ -887,40 +887,38 @@ static auto pack(Value&& v, Functor&& f) {
   return (((v) & f(get_bitmask)) << f(get_lo));
 }
 
-template<typename Functor, typename Int>
-static auto bits(Functor&& f, Int hi, Int lo) {
-  return f(hi, lo);
+template<typename Int>
+static auto bits(Int hi, Int lo) {
+  return [=](auto f) { return f(hi, lo); };
 }
 
-template<typename Functor, typename Value>
-static auto bit(Functor&& f, Value&& v) {
-  return f(v, v);
+template<typename Value>
+static auto bit(Value&& v) {
+  return [=](auto f) { return f(v, v); };
 }
 
-#define CALL_PAT(P) [](auto f) { return P; };
-
-static auto CPU_FLAG_Z = CALL_PAT( bit(f, 7) );
-static auto CPU_FLAG_N = CALL_PAT( bit(f, 6) );
-static auto CPU_FLAG_H = CALL_PAT( bit(f, 5) );
-static auto CPU_FLAG_C = CALL_PAT( bit(f, 4) );
+static auto CPU_FLAG_Z = bit(7);
+static auto CPU_FLAG_N = bit(6);
+static auto CPU_FLAG_H = bit(5);
+static auto CPU_FLAG_C = bit(4);
 
 #define JOYP_UNUSED 0xc0
 #define JOYP_RESULT_MASK 0x0f
-static auto JOYP_JOYPAD_SELECT = CALL_PAT( bits(f, 5, 4) );
-static auto JOYP_DPAD_DOWN = CALL_PAT( bit(f, 3) );
-static auto JOYP_DPAD_UP = CALL_PAT( bit(f, 2) );
-static auto JOYP_DPAD_LEFT = CALL_PAT( bit(f, 1) );
-static auto JOYP_DPAD_RIGHT = CALL_PAT( bit(f, 0) );
-static auto JOYP_BUTTON_START = CALL_PAT( bit(f, 3) );
-static auto JOYP_BUTTON_SELECT = CALL_PAT( bit(f, 2) );
-static auto JOYP_BUTTON_B = CALL_PAT( bit(f, 1) );
-static auto JOYP_BUTTON_A = CALL_PAT( bit(f, 0) );
+static auto JOYP_JOYPAD_SELECT = bits(5, 4);
+static auto JOYP_DPAD_DOWN = bit(3);
+static auto JOYP_DPAD_UP = bit(2);
+static auto JOYP_DPAD_LEFT = bit(1);
+static auto JOYP_DPAD_RIGHT = bit(0);
+static auto JOYP_BUTTON_START = bit(3);
+static auto JOYP_BUTTON_SELECT = bit(2);
+static auto JOYP_BUTTON_B = bit(1);
+static auto JOYP_BUTTON_A = bit(0);
 #define SC_UNUSED 0x7e
-static auto SC_TRANSFER_START = CALL_PAT( bit(f, 7) );
-static auto SC_SHIFT_CLOCK = CALL_PAT( bit(f, 0) );
+static auto SC_TRANSFER_START = bit(7);
+static auto SC_SHIFT_CLOCK = bit(0);
 #define TAC_UNUSED 0xf8
-static auto TAC_TIMER_ON = CALL_PAT( bit(f, 2) );
-static auto TAC_CLOCK_SELECT = CALL_PAT( bits(f, 1, 0) );
+static auto TAC_TIMER_ON = bit(2);
+static auto TAC_CLOCK_SELECT = bits(1, 0);
 #define IF_UNUSED 0xe0
 #define IF_ALL 0x1f
 #define IF_JOYPAD 0x10
@@ -928,96 +926,96 @@ static auto TAC_CLOCK_SELECT = CALL_PAT( bits(f, 1, 0) );
 #define IF_TIMER 0x04
 #define IF_STAT 0x02
 #define IF_VBLANK 0x01
-static auto LCDC_DISPLAY = CALL_PAT( bit(f, 7) );
-static auto LCDC_WINDOW_TILE_MAP_SELECT = CALL_PAT( bit(f, 6) );
-static auto LCDC_WINDOW_DISPLAY = CALL_PAT( bit(f, 5) );
-static auto LCDC_BG_TILE_DATA_SELECT = CALL_PAT( bit(f, 4) );
-static auto LCDC_BG_TILE_MAP_SELECT = CALL_PAT( bit(f, 3) );
-static auto LCDC_OBJ_SIZE = CALL_PAT( bit(f, 2) );
-static auto LCDC_OBJ_DISPLAY = CALL_PAT( bit(f, 1) );
-static auto LCDC_BG_DISPLAY = CALL_PAT( bit(f, 0) );
+static auto LCDC_DISPLAY = bit(7);
+static auto LCDC_WINDOW_TILE_MAP_SELECT = bit(6);
+static auto LCDC_WINDOW_DISPLAY = bit(5);
+static auto LCDC_BG_TILE_DATA_SELECT = bit(4);
+static auto LCDC_BG_TILE_MAP_SELECT = bit(3);
+static auto LCDC_OBJ_SIZE = bit(2);
+static auto LCDC_OBJ_DISPLAY = bit(1);
+static auto LCDC_BG_DISPLAY = bit(0);
 #define STAT_UNUSED 0x80
-static auto STAT_YCOMPARE_INTR = CALL_PAT( bit(f, 6) );
-static auto STAT_MODE2_INTR = CALL_PAT( bit(f, 5) );
-static auto STAT_VBLANK_INTR = CALL_PAT( bit(f, 4) );
-static auto STAT_HBLANK_INTR = CALL_PAT( bit(f, 3) );
-static auto STAT_YCOMPARE = CALL_PAT( bit(f, 2) );
-static auto STAT_MODE = CALL_PAT( bits(f, 1, 0) );
-static auto PALETTE_COLOR3 = CALL_PAT( bits(f, 7, 6) );
-static auto PALETTE_COLOR2 = CALL_PAT( bits(f, 5, 4) );
-static auto PALETTE_COLOR1 = CALL_PAT( bits(f, 3, 2) );
-static auto PALETTE_COLOR0 = CALL_PAT( bits(f, 1, 0) );
+static auto STAT_YCOMPARE_INTR = bit(6);
+static auto STAT_MODE2_INTR = bit(5);
+static auto STAT_VBLANK_INTR = bit(4);
+static auto STAT_HBLANK_INTR = bit(3);
+static auto STAT_YCOMPARE = bit(2);
+static auto STAT_MODE = bits(1, 0);
+static auto PALETTE_COLOR3 = bits(7, 6);
+static auto PALETTE_COLOR2 = bits(5, 4);
+static auto PALETTE_COLOR1 = bits(3, 2);
+static auto PALETTE_COLOR0 = bits(1, 0);
 #define NR10_UNUSED 0x80
-static auto NR10_SWEEP_PERIOD = CALL_PAT( bits(f, 6, 4) );
-static auto NR10_SWEEP_DIRECTION = CALL_PAT( bit(f, 3) );
-static auto NR10_SWEEP_SHIFT = CALL_PAT( bits(f, 2, 0) );
+static auto NR10_SWEEP_PERIOD = bits(6, 4);
+static auto NR10_SWEEP_DIRECTION = bit(3);
+static auto NR10_SWEEP_SHIFT = bits(2, 0);
 #define NRX1_UNUSED 0x3f
-static auto NRX1_WAVE_DUTY = CALL_PAT( bits(f, 7, 6) );
-static auto NRX1_LENGTH = CALL_PAT( bits(f, 5, 0) );
-static auto NRX2_INITIAL_VOLUME = CALL_PAT( bits(f, 7, 4) );
-static auto NRX2_DAC_ENABLED = CALL_PAT( bits(f, 7, 3) );
-static auto NRX2_ENVELOPE_DIRECTION = CALL_PAT( bit(f, 3) );
-static auto NRX2_ENVELOPE_PERIOD = CALL_PAT( bits(f, 2, 0) );
+static auto NRX1_WAVE_DUTY = bits(7, 6);
+static auto NRX1_LENGTH = bits(5, 0);
+static auto NRX2_INITIAL_VOLUME = bits(7, 4);
+static auto NRX2_DAC_ENABLED = bits(7, 3);
+static auto NRX2_ENVELOPE_DIRECTION = bit(3);
+static auto NRX2_ENVELOPE_PERIOD = bits(2, 0);
 #define NRX4_UNUSED 0xbf
-static auto NRX4_INITIAL = CALL_PAT( bit(f, 7) );
-static auto NRX4_LENGTH_ENABLED = CALL_PAT( bit(f, 6) );
-static auto NRX4_FREQUENCY_HI = CALL_PAT( bits(f, 2, 0) );
+static auto NRX4_INITIAL = bit(7);
+static auto NRX4_LENGTH_ENABLED = bit(6);
+static auto NRX4_FREQUENCY_HI = bits(2, 0);
 #define NR30_UNUSED 0x7f
-static auto NR30_DAC_ENABLED = CALL_PAT( bit(f, 7) );
+static auto NR30_DAC_ENABLED = bit(7);
 #define NR32_UNUSED 0x9f
-static auto NR32_SELECT_WAVE_VOLUME = CALL_PAT( bits(f, 6, 5) );
-static auto NR43_CLOCK_SHIFT = CALL_PAT( bits(f, 7, 4) );
-static auto NR43_LFSR_WIDTH = CALL_PAT( bit(f, 3) );
-static auto NR43_DIVISOR = CALL_PAT( bits(f, 2, 0) );
-static auto NR50_VIN_SO2 = CALL_PAT( bit(f, 7) );
-static auto NR50_SO2_VOLUME = CALL_PAT( bits(f, 6, 4) );
-static auto NR50_VIN_SO1 = CALL_PAT( bit(f, 3) );
-static auto NR50_SO1_VOLUME = CALL_PAT( bits(f, 2, 0) );
-static auto NR51_SOUND4_SO2 = CALL_PAT( bit(f, 7) );
-static auto NR51_SOUND3_SO2 = CALL_PAT( bit(f, 6) );
-static auto NR51_SOUND2_SO2 = CALL_PAT( bit(f, 5) );
-static auto NR51_SOUND1_SO2 = CALL_PAT( bit(f, 4) );
-static auto NR51_SOUND4_SO1 = CALL_PAT( bit(f, 3) );
-static auto NR51_SOUND3_SO1 = CALL_PAT( bit(f, 2) );
-static auto NR51_SOUND2_SO1 = CALL_PAT( bit(f, 1) );
-static auto NR51_SOUND1_SO1 = CALL_PAT( bit(f, 0) );
+static auto NR32_SELECT_WAVE_VOLUME = bits(6, 5);
+static auto NR43_CLOCK_SHIFT = bits(7, 4);
+static auto NR43_LFSR_WIDTH = bit(3);
+static auto NR43_DIVISOR = bits(2, 0);
+static auto NR50_VIN_SO2 = bit(7);
+static auto NR50_SO2_VOLUME = bits(6, 4);
+static auto NR50_VIN_SO1 = bit(3);
+static auto NR50_SO1_VOLUME = bits(2, 0);
+static auto NR51_SOUND4_SO2 = bit(7);
+static auto NR51_SOUND3_SO2 = bit(6);
+static auto NR51_SOUND2_SO2 = bit(5);
+static auto NR51_SOUND1_SO2 = bit(4);
+static auto NR51_SOUND4_SO1 = bit(3);
+static auto NR51_SOUND3_SO1 = bit(2);
+static auto NR51_SOUND2_SO1 = bit(1);
+static auto NR51_SOUND1_SO1 = bit(0);
 #define NR52_UNUSED 0x70
-static auto NR52_ALL_SOUND_ENABLED = CALL_PAT( bit(f, 7) );
-static auto NR52_SOUND4_ON = CALL_PAT( bit(f, 3) );
-static auto NR52_SOUND3_ON = CALL_PAT( bit(f, 2) );
-static auto NR52_SOUND2_ON = CALL_PAT( bit(f, 1) );
-static auto NR52_SOUND1_ON = CALL_PAT( bit(f, 0) );
+static auto NR52_ALL_SOUND_ENABLED = bit(7);
+static auto NR52_SOUND4_ON = bit(3);
+static auto NR52_SOUND3_ON = bit(2);
+static auto NR52_SOUND2_ON = bit(1);
+static auto NR52_SOUND1_ON = bit(0);
 
 #define KEY1_UNUSED 0x7e
-static auto KEY1_CURRENT_SPEED = CALL_PAT( bit(f, 7) );
-static auto KEY1_PREPARE_SPEED_SWITCH = CALL_PAT( bit(f, 0) );
+static auto KEY1_CURRENT_SPEED = bit(7);
+static auto KEY1_PREPARE_SPEED_SWITCH = bit(0);
 #define RP_UNUSED 0x3c
-static auto RP_DATA_READ_ENABLE = CALL_PAT( bits(f, 7, 6) );
-static auto RP_READ_DATA = CALL_PAT( bit(f, 1) );
-static auto RP_WRITE_DATA = CALL_PAT( bit(f, 0) );
+static auto RP_DATA_READ_ENABLE = bits(7, 6);
+static auto RP_READ_DATA = bit(1);
+static auto RP_WRITE_DATA = bit(0);
 #define VBK_UNUSED 0xfe
-static auto VBK_VRAM_BANK = CALL_PAT( bit(f, 0) );
-static auto HDMA5_TRANSFER_MODE = CALL_PAT( bit(f, 7) );
-static auto HDMA5_BLOCKS = CALL_PAT( bits(f, 6, 0) );
+static auto VBK_VRAM_BANK = bit(0);
+static auto HDMA5_TRANSFER_MODE = bit(7);
+static auto HDMA5_BLOCKS = bits(6, 0);
 #define XCPS_UNUSED 0x40
-static auto XCPS_AUTO_INCREMENT = CALL_PAT( bit(f, 7) );
-static auto XCPS_INDEX = CALL_PAT( bits(f, 5, 0) );
-static auto XCPD_BLUE_INTENSITY = CALL_PAT( bits(f, 14, 10) );
-static auto XCPD_GREEN_INTENSITY = CALL_PAT( bits(f, 9, 5) );
-static auto XCPD_RED_INTENSITY = CALL_PAT( bits(f, 4, 0) );
+static auto XCPS_AUTO_INCREMENT = bit(7);
+static auto XCPS_INDEX = bits(5, 0);
+static auto XCPD_BLUE_INTENSITY = bits(14, 10);
+static auto XCPD_GREEN_INTENSITY = bits(9, 5);
+static auto XCPD_RED_INTENSITY = bits(4, 0);
 #define SVBK_UNUSED 0xf8
-static auto SVBK_WRAM_BANK = CALL_PAT( bits(f, 2, 0) );
+static auto SVBK_WRAM_BANK = bits(2, 0);
 
-static auto OBJ_PRIORITY = CALL_PAT( bit(f, 7) );
-static auto OBJ_YFLIP = CALL_PAT( bit(f, 6) );
-static auto OBJ_XFLIP = CALL_PAT( bit(f, 5) );
-static auto OBJ_PALETTE = CALL_PAT( bit(f, 4) );
-static auto OBJ_BANK = CALL_PAT( bit(f, 3) );
-static auto OBJ_CGB_PALETTE = CALL_PAT( bits(f, 2, 0) );
+static auto OBJ_PRIORITY = bit(7);
+static auto OBJ_YFLIP = bit(6);
+static auto OBJ_XFLIP = bit(5);
+static auto OBJ_PALETTE = bit(4);
+static auto OBJ_BANK = bit(3);
+static auto OBJ_CGB_PALETTE = bits(2, 0);
 
-static auto mbc3_rtc_day_carry = CALL_PAT( bit(f, 7) );
-static auto mbc3_rtc_halt = CALL_PAT( bit(f, 6) );
-static auto mbc3_rtc_day_hi = CALL_PAT( bit(f, 0) );
+static auto MBC3_RTC_DAY_CARRY = bit(7);
+static auto MBC3_RTC_HALT = bit(6);
+static auto MBC3_RTC_DAY_HI = bit(0);
 
 static u32 s_rom_bank_count[] = {
 #define V(name, code, bank_count) [code] = bank_count,
@@ -1439,9 +1437,9 @@ static u8 mbc3_read_ext_ram(Emulator* e, MaskedAddress addr) {
     case 10: result = mbc3->hour; break;
     case 11: result = mbc3->day; break;
     case 12:
-      result = pack(mbc3->day_carry, mbc3_rtc_day_carry) |
-               pack(mbc3->rtc_halt, mbc3_rtc_halt) |
-               pack((mbc3->day >> 8) & 1, mbc3_rtc_day_hi);
+      result = pack(mbc3->day_carry, MBC3_RTC_DAY_CARRY) |
+               pack(mbc3->rtc_halt, MBC3_RTC_HALT) |
+               pack((mbc3->day >> 8) & 1, MBC3_RTC_DAY_HI);
       break;
   }
 
@@ -1476,10 +1474,10 @@ static void mbc3_write_ext_ram(Emulator* e, MaskedAddress addr, u8 value) {
     case 10: mbc3->hour = value & 31; break;
     case 11: mbc3->day = (mbc3->day & 0x100) | value; break;
     case 12: {
-      mbc3->day = (unpack(value, mbc3_rtc_day_hi) << 8) | (mbc3->day & 0xff);
-      mbc3->day_carry = unpack(value, mbc3_rtc_day_carry);
+      mbc3->day = (unpack(value, MBC3_RTC_DAY_HI) << 8) | (mbc3->day & 0xff);
+      mbc3->day_carry = unpack(value, MBC3_RTC_DAY_CARRY);
       bool old_rtc_halt = mbc3->rtc_halt;
-      mbc3->rtc_halt = unpack(value, mbc3_rtc_halt);
+      mbc3->rtc_halt = unpack(value, MBC3_RTC_HALT);
       if (mbc3->rtc_halt != old_rtc_halt) {
         // Update the tick timer; if the clock is halted, then store the
         // previous delta before the clock was stopped. If the clock is
