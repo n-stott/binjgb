@@ -83,10 +83,6 @@
   V(NR51, 0x15) /* Sound output select */                    \
   V(NR52, 0x16) /* Sound enabled */
 
-#define FOREACH_BOOL(V) \
-  V(false, 0)           \
-  V(true, 1)
-
 #define FOREACH_CGB_FLAG(V)   \
   V(CGB_FLAG_NONE, 0)         \
   V(CGB_FLAG_SUPPORTED, 0x80) \
