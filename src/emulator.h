@@ -933,6 +933,9 @@ struct Emulator {
 
   EmulatorEvent emulator_step();
   EmulatorEvent emulator_run_until(Ticks until_ticks);
+
+  ApuLog* emulator_get_apu_log();
+  void emulator_reset_apu_log();
 };
 
 extern const size_t s_emulator_state_size;
@@ -944,8 +947,5 @@ void emulator_ticks_to_time(Ticks, u32* day, u32* hr, u32* min, u32* sec,
 
 
 void emulator_init_state_file_data(FileData*);
-
-ApuLog* emulator_get_apu_log(Emulator*);
-void emulator_reset_apu_log(Emulator*);
 
 #endif /* BINJGB_EMULATOR_H_ */

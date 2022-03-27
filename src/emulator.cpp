@@ -4368,10 +4368,10 @@ void Emulator::emulator_set_builtin_palette(u32 index) {
   update_bw_palette_rgba(this, PALETTE_TYPE_BGP);
 }
 
-ApuLog* emulator_get_apu_log(Emulator* e) {
-  return &e->apu_log;
+ApuLog* Emulator::emulator_get_apu_log() {
+  return &apu_log;
 }
 
-void emulator_reset_apu_log(Emulator* e) {
-  e->apu_log.write_count = 0;
+void Emulator::emulator_reset_apu_log() {
+  apu_log.write_count = 0;
 }
