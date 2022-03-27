@@ -54,8 +54,8 @@ Result write_frame_ppm(Emulator* e, const char* filename) {
   if(!(fprintf(f, "P3\n%u %u\n255\n", width, height) >= 0)) if(f) fclose(f); return ERROR;
             // "fputs failed.\n");
   int x, y;
-  RGBA* data = *emulator_get_frame_buffer(e);
-  RGBA* sgb_data = *emulator_get_sgb_frame_buffer(e);
+  RGBA* data = *e->emulator_get_frame_buffer();
+  RGBA* sgb_data = *e->emulator_get_sgb_frame_buffer();
   if (s_use_sgb_border) {
     for (y = 0; y < height; ++y) {
       for (x = 0; x < width; ++x) {

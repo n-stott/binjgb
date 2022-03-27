@@ -904,13 +904,14 @@ struct Emulator {
   JoypadCallbackInfo emulator_get_joypad_callback();
   void emulator_set_config(const EmulatorConfig*);
   EmulatorConfig emulator_get_config();
+
+  FrameBuffer* emulator_get_frame_buffer();
+  SgbFrameBuffer* emulator_get_sgb_frame_buffer();
+  AudioBuffer* emulator_get_audio_buffer();
 };
 
 extern const size_t s_emulator_state_size;
 
-FrameBuffer* emulator_get_frame_buffer(Emulator*);
-SgbFrameBuffer* emulator_get_sgb_frame_buffer(Emulator*);
-AudioBuffer* emulator_get_audio_buffer(Emulator*);
 Ticks emulator_get_ticks(Emulator*);
 u32 emulator_get_ppu_frame(Emulator*);
 u32 audio_buffer_get_frames(AudioBuffer*);

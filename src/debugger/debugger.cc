@@ -295,7 +295,7 @@ void Debugger::Run() {
 }
 
 void Debugger::OnAudioBufferFull() {
-  AudioBuffer* audio_buffer = emulator_get_audio_buffer(e);
+  AudioBuffer* audio_buffer = e->emulator_get_audio_buffer();
   int size = audio_buffer->position - audio_buffer->data;
 
   for (int i = 0; i < AudioWindow::kAudioDataSamples; ++i) {

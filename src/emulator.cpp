@@ -4153,16 +4153,16 @@ EmulatorConfig Emulator::emulator_get_config() {
   return config;
 }
 
-FrameBuffer* emulator_get_frame_buffer(Emulator* e) {
-  return &e->frame_buffer;
+FrameBuffer* Emulator::emulator_get_frame_buffer() {
+  return &frame_buffer;
 }
 
-SgbFrameBuffer* emulator_get_sgb_frame_buffer(Emulator* e) {
-  return &e->sgb_frame_buffer;
+SgbFrameBuffer* Emulator::emulator_get_sgb_frame_buffer() {
+  return &sgb_frame_buffer;
 }
 
-AudioBuffer* emulator_get_audio_buffer(Emulator* e) {
-  return &e->audio_buffer;
+AudioBuffer* Emulator::emulator_get_audio_buffer() {
+  return &audio_buffer;
 }
 
 Ticks emulator_get_ticks(Emulator* e) {

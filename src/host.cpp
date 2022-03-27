@@ -219,7 +219,7 @@ void host_set_audio_volume(Host* host, f32 volume) {
 void host_render_audio(Host* host) {
   Emulator* e = host_get_emulator(host);
   Audio* audio = &host->audio;
-  AudioBuffer* audio_buffer = emulator_get_audio_buffer(e);
+  AudioBuffer* audio_buffer = e->emulator_get_audio_buffer();
 
   size_t src_frames = audio_buffer_get_frames(audio_buffer);
   size_t max_dst_frames = audio->spec.size / AUDIO_FRAME_SIZE;
@@ -342,10 +342,10 @@ static void host_handle_event(Host* host, EmulatorEvent event) {
   Emulator* e = host_get_emulator(host);
   if (event & EMULATOR_EVENT_NEW_FRAME) {
     host_upload_texture(host, host->fb_texture, SCREEN_WIDTH, SCREEN_HEIGHT,
-                        *emulator_get_frame_buffer(e));
+                        *e->emulator_get_frame_buffer());
     if (host->init.use_sgb_border) {
       host_upload_texture(host, host->sgb_fb_texture, SGB_SCREEN_WIDTH,
-                          SGB_SCREEN_HEIGHT, *emulator_get_sgb_frame_buffer(e));
+                          SGB_SCREEN_HEIGHT, *e->emulator_get_sgb_frame_buffer());
     }
 
     append_rewind_state(host);
