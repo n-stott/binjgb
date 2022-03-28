@@ -25,6 +25,10 @@ static int s_breakpoint_max_id;
 #define HOOK(name, ...) HOOK_##name(e, __func__, __VA_ARGS__)
 #define HOOK0_false(name) HOOK_##name(e, __func__)
 
+#define THIS_HOOK0(name) HOOK_##name(this, __func__)
+#define THIS_HOOK(name, ...) HOOK_##name(this, __func__, __VA_ARGS__)
+#define THIS_HOOK0_false(name) HOOK_##name(this, __func__)
+
 #define DECLARE_LOG_HOOK(system, level, name, format) \
   static void HOOK_##name(Emulator* e, const char* func_name, ...);
 

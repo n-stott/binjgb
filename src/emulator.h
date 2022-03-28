@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include <memory>
+#include <functional>
 
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 144
@@ -575,9 +576,9 @@ struct Mbc5 {
 };
 
 struct MemoryMap {
-  u8 (*read_ext_ram)(Emulator*, MaskedAddress);
-  void (*write_rom)(Emulator*, MaskedAddress, u8);
-  void (*write_ext_ram)(Emulator*, MaskedAddress, u8);
+  std::function<u8(MaskedAddress)> read_ext_ram;
+  std::function<void(MaskedAddress, u8)> write_rom;
+  std::function<void(MaskedAddress, u8)> write_ext_ram;
 };
 
 struct MemoryMapState {
@@ -948,10 +949,10 @@ struct Emulator {
   void write_u16_tick(Address addr, u16 value);
 
   // TODO
-  // void set_rom_bank(int index, u16 bank);
-  // void set_ext_ram_bank(u8 bank);
-  // u8 gb_read_ext_ram(MaskedAddress addr);
-  // void gb_write_ext_ram(MaskedAddress addr, u8 value);
+  void set_rom_bank(int index, u16 bank);
+  void set_ext_ram_bank(u8 bank);
+  u8 gb_read_ext_ram(MaskedAddress addr);
+  void gb_write_ext_ram(MaskedAddress addr, u8 value);
 
   // void mbc1_write_rom_shared(u16 bank_lo_mask, int bank_hi_shift,
   //                            MaskedAddress addr, u8 value);
