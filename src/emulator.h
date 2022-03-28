@@ -979,10 +979,10 @@ struct Emulator {
   // u8 read_apu(MaskedAddress addr);
   // u8 read_wave_ram(MaskedAddress addr);
   // bool is_dma_access_ok(Address addr);
-  // u8 read_u8_pair(MemoryTypeAddressPair pair, bool raw);
-  // u8 read_u8_raw(Address addr);
 
-  // u8 read_u8(Address addr);
+  u8 read_u8_pair(MemoryTypeAddressPair pair, bool raw);
+  u8 read_u8_raw(Address addr);
+  u8 read_u8(Address addr);
   // void write_vram(MaskedAddress addr, u8 value);
   // void write_oam_no_mode_check(MaskedAddress addr, u8 value);
   // void write_oam(MaskedAddress addr, u8 value);

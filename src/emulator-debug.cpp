@@ -344,8 +344,8 @@ int emulator_disassemble(Emulator* e, Address addr, char* buffer, size_t size) {
   char instr[120];
   [[maybe_unused]] char hex[][3] = {"  ", "  ", "  "};
 
-  u8 data[3] = {read_u8_raw(e, addr), read_u8_raw(e, addr + 1),
-                read_u8_raw(e, addr + 2)};
+  u8 data[3] = {e->read_u8_raw(addr), e->read_u8_raw(addr + 1),
+                e->read_u8_raw(addr + 2)};
   int num_bytes = disassemble_instr(data, instr, sizeof(instr));
 
   char bank[3] = "??";
@@ -496,7 +496,7 @@ int emulator_get_rom_bank(Emulator* e, Address addr) {
 }
 
 u8 emulator_read_u8_raw(Emulator* e, Address addr) {
-  return read_u8_raw(e, addr);
+  return e->read_u8_raw(addr);
 }
 
 void emulator_write_u8_raw(Emulator* e, Address addr, u8 value) {

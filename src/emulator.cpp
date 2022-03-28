@@ -1273,66 +1273,66 @@ static bool is_dma_access_ok(Emulator* e, Address addr) {
   return DMA.state != DMA_ACTIVE || (addr & 0xff00) != 0xfe00;
 }
 
-static u8 read_u8_pair(Emulator* e, MemoryTypeAddressPair pair, bool raw) {
+u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
   switch (pair.type) {
     /* Take advantage of the fact that MEMORY_MAP_ROM9 is 0, and ROM1 is 1 when
      * indexing into rom_base. */
     case MEMORY_MAP_ROM0:
     case MEMORY_MAP_ROM1: {
-      u32 rom_addr = MMAP_STATE.rom_base[pair.type] | pair.addr;
-      assert(rom_addr < e->cart_info->size);
-      u8 value = e->cart_info->data[rom_addr];
+      u32 rom_addr = THIS_MMAP_STATE.rom_base[pair.type] | pair.addr;
+      assert(rom_addr < cart_info->size);
+      u8 value = cart_info->data[rom_addr];
       if (!raw) {
-        HOOK(read_rom_ib, rom_addr, value);
+        THIS_HOOK(read_rom_ib, rom_addr, value);
       }
       return value;
     }
     case MEMORY_MAP_VRAM:
-      return read_vram(e, pair.addr);
+      return read_vram(this, pair.addr);
     case MEMORY_MAP_EXT_RAM:
-      return e->memory_map.read_ext_ram(pair.addr);
+      return memory_map.read_ext_ram(pair.addr);
     case MEMORY_MAP_WORK_RAM0:
-      return WRAM.data[pair.addr];
+      return THIS_WRAM.data[pair.addr];
     case MEMORY_MAP_WORK_RAM1:
-      return WRAM.data[WRAM.offset + pair.addr];
+      return THIS_WRAM.data[THIS_WRAM.offset + pair.addr];
     case MEMORY_MAP_OAM:
-      return read_oam(e, pair.addr);
+      return read_oam(this, pair.addr);
     case MEMORY_MAP_UNUSED:
       return INVALID_READ_BYTE;
     case MEMORY_MAP_IO: {
-      u8 value = read_io(e, pair.addr);
-      HOOK(read_io_asb, pair.addr, get_io_reg_string(static_cast<IOReg>(pair.addr)), value);
+      u8 value = read_io(this, pair.addr);
+      THIS_HOOK(read_io_asb, pair.addr, get_io_reg_string(static_cast<IOReg>(pair.addr)), value);
       return value;
     }
     case MEMORY_MAP_APU:
-      return read_apu(e, pair.addr);
+      return read_apu(this, pair.addr);
     case MEMORY_MAP_WAVE_RAM:
-      return read_wave_ram(e, pair.addr);
+      return read_wave_ram(this, pair.addr);
     case MEMORY_MAP_HIGH_RAM:
-      return HRAM[pair.addr];
+      return THIS_HRAM[pair.addr];
     default:
       UNREACHABLE("invalid address: %u 0x%04x.\n", pair.type, pair.addr);
   }
 }
 
-[[maybe_unused]] static u8 read_u8_raw(Emulator* e, Address addr) {
-  return read_u8_pair(e, map_address(addr), true);
+[[maybe_unused]] u8 Emulator::read_u8_raw(Address addr) {
+  return read_u8_pair(map_address(addr), true);
 }
 
-static u8 read_u8(Emulator* e, Address addr) {
-  dma_synchronize(e);
-  if (UNLIKELY(!is_dma_access_ok(e, addr))) {
-    HOOK(read_during_dma_a, addr);
+u8 Emulator::read_u8(Address addr) {
+  dma_synchronize(this);
+  if (UNLIKELY(!is_dma_access_ok(this, addr))) {
+    THIS_HOOK(read_during_dma_a, addr);
     return INVALID_READ_BYTE;
   }
   if (LIKELY(addr < 0x8000)) {
     u32 bank = addr >> ROM_BANK_SHIFT;
-    u32 rom_addr = MMAP_STATE.rom_base[bank] | (addr & ADDR_MASK_16K);
-    u8 value = e->cart_info->data[rom_addr];
-    HOOK(read_rom_ib, rom_addr, value);
+    u32 rom_addr = THIS_MMAP_STATE.rom_base[bank] | (addr & ADDR_MASK_16K);
+    u8 value = cart_info->data[rom_addr];
+    THIS_HOOK(read_rom_ib, rom_addr, value);
     return value;
   } else {
-    return read_u8_pair(e, map_address(addr), false);
+    return read_u8_pair(map_address(addr), false);
   }
 }
 
@@ -3276,7 +3276,7 @@ static void dma_synchronize(Emulator* e) {
         u8 addr_offset = (DMA.tick_count - DMA_DELAY_TICKS) >> 2;
         assert(addr_offset < OAM_TRANSFER_SIZE);
         u8 value =
-            read_u8_pair(e, map_address(DMA.source + addr_offset), false);
+            e->read_u8_pair(map_address(DMA.source + addr_offset), false);
         write_oam_no_mode_check(e, addr_offset, value);
         DMA.tick_count += CPU_TICK;
         if (VALUE_WRAPPED(DMA.tick_count, DMA_TICKS)) {
@@ -3296,7 +3296,7 @@ static void hdma_copy_byte(Emulator* e) {
      * then 0xff for the rest. */
     value = INVALID_READ_BYTE;
   } else {
-    value = read_u8_pair(e, source_pair, false);
+    value = e->read_u8_pair(source_pair, false);
   }
   write_vram(e, HDMA.dest++ & ADDR_MASK_8K, value);
   HDMA.block_bytes++;
@@ -3365,7 +3365,7 @@ void Emulator::tick() {
 
 u8 Emulator::read_u8_tick(Address addr) {
   tick();
-  return read_u8(this, addr);
+  return read_u8(addr);
 }
 
 u16 Emulator::read_u16_tick(Address addr) {
@@ -3705,7 +3705,7 @@ void Emulator::execute_instruction() {
         /* When interrupts are disabled during a HALT, the following byte will
          * be duplicated when decoding. */
         should_dispatch = THIS_INTR.ime && (THIS_INTR.new_if & THIS_INTR.ie) != 0;
-        opcode = read_u8(this, THIS_REG.PC);
+        opcode = read_u8(THIS_REG.PC);
         THIS_REG.PC--;
         THIS_INTR.state = CPU_STATE_NORMAL;
         break;
