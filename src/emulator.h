@@ -946,6 +946,109 @@ struct Emulator {
   u16 read_u16_tick(Address addr);
   void write_u8_tick(Address addr, u8 value);
   void write_u16_tick(Address addr, u16 value);
+
+  // TODO
+  // void set_rom_bank(int index, u16 bank);
+  // void set_ext_ram_bank(u8 bank);
+  // u8 gb_read_ext_ram(MaskedAddress addr);
+  // void gb_write_ext_ram(MaskedAddress addr, u8 value);
+
+  // void mbc1_write_rom_shared(u16 bank_lo_mask, int bank_hi_shift,
+  //                            MaskedAddress addr, u8 value);
+  // void mbc1_write_rom(MaskedAddress addr, u8 value);
+  // void mbc1m_write_rom(MaskedAddress addr, u8 value);
+  // void mbc2_write_rom(MaskedAddress addr, u8 value);
+  // u8 mbc2_read_ram(MaskedAddress addr);
+  // void mbc2_write_ram(MaskedAddress addr, u8 value);
+  // void mbc3_write_rom(MaskedAddress addr, u8 value);
+  // u8 mbc3_read_ext_ram(MaskedAddress addr);
+  // void mbc3_write_ext_ram(MaskedAddress addr, u8 value);
+  // void mbc5_write_rom(MaskedAddress addr, u8 value);
+  // void huc1_write_rom(MaskedAddress addr, u8 value);
+  // void mmm01_write_rom(MaskedAddress addr, u8 value);
+  // Result init_memory_map();
+  // bool is_almost_mode3();
+  // bool is_using_vram(bool write);
+  // bool is_using_oam(bool write);
+  // u8 read_vram(MaskedAddress addr);
+  // u8 read_oam(MaskedAddress addr);
+  // u8 read_joyp_p10_p13();
+  // void call_joyp_callback(bool wait);
+  // u8 read_io(MaskedAddress addr);
+  // u8 read_apu(MaskedAddress addr);
+  // u8 read_wave_ram(MaskedAddress addr);
+  // bool is_dma_access_ok(Address addr);
+  // u8 read_u8_pair(MemoryTypeAddressPair pair, bool raw);
+  // u8 read_u8_raw(Address addr);
+
+  // u8 read_u8(Address addr);
+  // void write_vram(MaskedAddress addr, u8 value);
+  // void write_oam_no_mode_check(MaskedAddress addr, u8 value);
+  // void write_oam(MaskedAddress addr, u8 value);
+
+  // void calculate_next_intr();
+  // bool is_div_falling_edge(u16 old_div_counter, u16 div_counter);
+  // void increment_tima();
+  // void timer_synchronize();
+  // void calculate_next_timer_intr();
+  // void do_timer_interrupt();
+  // void clear_div();
+  // void check_stat();
+  // void check_ly_eq_lyc(bool write);
+  // void check_joyp_intr();
+  // void update_bw_palette_rgba(PaletteType type);
+  // RGBA unpack_cgb_color(u16 color);
+  // RGBA unpack_cgb_color8(u8 lo, u8 hi);
+  // void set_sgb_palette(int pal, u8 lo0, u8 hi0, u8 lo1,
+  //                      u8 hi1, u8 lo2, u8 hi2, u8 lo3, u8 hi3);
+  // void unpack_sgb_palette_ram(int pal, u8 idx_lo, u8 idx_hi);
+  // void clear_frame_buffer(RGBA color);
+  // void update_sgb_mask();
+  // void set_sgb_attr(u8 byte);
+  // void set_sgb_attr_block(int x0, int y0, int x1, int y1, u8 pal);
+
+  // void do_sgb();
+  // void write_io(MaskedAddress addr, u8 value);
+
+  // void write_nrx1_reg(Channel* channel, Address addr, u8 value);
+  // void write_nrx2_reg(Channel* channel, Address addr, u8 value);
+  // void write_nrx3_reg(Channel* channel, u8 value);
+  // bool write_nrx4_reg(Channel* channel, Address addr, u8 value, u16 max_length);
+  // void trigger_nrx4_envelope(Envelope* envelope, Address addr);
+  // u16 calculate_sweep_frequency();
+  // void trigger_nr14_reg(Channel* channel);
+  // void write_wave_period(Channel* channel);
+  // void write_noise_period();
+  // void write_apu(MaskedAddress addr, u8 value);
+  // void write_wave_ram(MaskedAddress addr, u8 value);
+  // void write_u8_pair(MemoryTypeAddressPair pair, u8 value);
+  // void write_u8_raw(Address addr, u8 value);
+  // void write_u8(Address addr, u8 value);
+  // void do_ppu_mode2();
+  // u32 mode3_tick_count();
+  // void ppu_mode3_synchronize();
+  // void ppu_synchronize();
+  // void calculate_next_ppu_intr();
+  // void update_sweep();
+  // void update_lengths();
+  // void update_envelopes();
+  // void update_wave(u32 apu_ticks, u32 total_frames);
+  // void update_noise(u32 total_frames);
+
+  // u32 get_gb_frames_until_next_resampled_frame();
+  // void write_audio_frame(u32 gb_frames);
+  // void apu_update_channels(u32 total_frames);
+  // void apu_update(u32 total_ticks);
+  // void intr_synchronize();
+  // void apu_synchronize();
+  // void dma_synchronize();
+  // void hdma_copy_byte();
+  // void calculate_next_serial_intr();
+  // void serial_synchronize();
+  // u16 get_af_reg();
+  // void set_af_reg(u16 af);
+  // Result init_audio_buffer(u32 frequency, u32 frames);
+  // Result init_emulator(const EmulatorInit* init);
 };
 
 extern const size_t s_emulator_state_size;
