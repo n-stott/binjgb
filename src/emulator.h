@@ -983,9 +983,9 @@ struct Emulator {
   u8 read_u8_pair(MemoryTypeAddressPair pair, bool raw);
   u8 read_u8_raw(Address addr);
   u8 read_u8(Address addr);
-  // void write_vram(MaskedAddress addr, u8 value);
-  // void write_oam_no_mode_check(MaskedAddress addr, u8 value);
-  // void write_oam(MaskedAddress addr, u8 value);
+  void write_vram(MaskedAddress addr, u8 value);
+  void write_oam_no_mode_check(MaskedAddress addr, u8 value);
+  void write_oam(MaskedAddress addr, u8 value);
 
   // void calculate_next_intr();
   // bool is_div_falling_edge(u16 old_div_counter, u16 div_counter);

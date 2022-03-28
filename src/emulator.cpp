@@ -1336,19 +1336,19 @@ u8 Emulator::read_u8(Address addr) {
   }
 }
 
-static void write_vram(Emulator* e, MaskedAddress addr, u8 value) {
-  ppu_synchronize(e);
-  if (UNLIKELY(is_using_vram(e, true))) {
-    HOOK(write_vram_in_use_ab, addr, value);
+void Emulator::write_vram(MaskedAddress addr, u8 value) {
+  ppu_synchronize(this);
+  if (UNLIKELY(is_using_vram(this, true))) {
+    THIS_HOOK(write_vram_in_use_ab, addr, value);
     return;
   }
 
   assert(addr <= ADDR_MASK_8K);
-  VRAM.data[VRAM.offset + addr] = value;
+  THIS_VRAM.data[THIS_VRAM.offset + addr] = value;
 }
 
-static void write_oam_no_mode_check(Emulator* e, MaskedAddress addr, u8 value) {
-  Obj* obj = &OAM[addr >> 2];
+void Emulator::write_oam_no_mode_check(MaskedAddress addr, u8 value) {
+  Obj* obj = &THIS_OAM[addr >> 2];
   switch (addr & 3) {
     case 0: obj->y = value - OBJ_Y_OFFSET; break;
     case 1: obj->x = value - OBJ_X_OFFSET; break;
@@ -1365,14 +1365,14 @@ static void write_oam_no_mode_check(Emulator* e, MaskedAddress addr, u8 value) {
   }
 }
 
-static void write_oam(Emulator* e, MaskedAddress addr, u8 value) {
-  ppu_synchronize(e);
-  if (UNLIKELY(is_using_oam(e, true))) {
-    HOOK(write_oam_in_use_ab, addr, value);
+void Emulator::write_oam(MaskedAddress addr, u8 value) {
+  ppu_synchronize(this);
+  if (UNLIKELY(is_using_oam(this, true))) {
+    THIS_HOOK(write_oam_in_use_ab, addr, value);
     return;
   }
 
-  write_oam_no_mode_check(e, addr, value);
+  write_oam_no_mode_check(addr, value);
 }
 
 static void calculate_next_intr(Emulator* e) {
@@ -2570,7 +2570,7 @@ static void write_u8_pair(Emulator* e, MemoryTypeAddressPair pair, u8 value) {
       e->memory_map.write_rom(pair.addr + 0x4000, value);
       break;
     case MEMORY_MAP_VRAM:
-      write_vram(e, pair.addr, value);
+      e->write_vram(pair.addr, value);
       break;
     case MEMORY_MAP_EXT_RAM:
       e->memory_map.write_ext_ram(pair.addr, value);
@@ -2582,7 +2582,7 @@ static void write_u8_pair(Emulator* e, MemoryTypeAddressPair pair, u8 value) {
       WRAM.data[WRAM.offset + pair.addr] = value;
       break;
     case MEMORY_MAP_OAM:
-      write_oam(e, pair.addr, value);
+      e->write_oam(pair.addr, value);
       break;
     case MEMORY_MAP_UNUSED:
       break;
@@ -3277,7 +3277,7 @@ static void dma_synchronize(Emulator* e) {
         assert(addr_offset < OAM_TRANSFER_SIZE);
         u8 value =
             e->read_u8_pair(map_address(DMA.source + addr_offset), false);
-        write_oam_no_mode_check(e, addr_offset, value);
+        e->write_oam_no_mode_check(addr_offset, value);
         DMA.tick_count += CPU_TICK;
         if (VALUE_WRAPPED(DMA.tick_count, DMA_TICKS)) {
           DMA.state = DMA_INACTIVE;
@@ -3298,7 +3298,7 @@ static void hdma_copy_byte(Emulator* e) {
   } else {
     value = e->read_u8_pair(source_pair, false);
   }
-  write_vram(e, HDMA.dest++ & ADDR_MASK_8K, value);
+  e->write_vram(HDMA.dest++ & ADDR_MASK_8K, value);
   HDMA.block_bytes++;
   if (VALUE_WRAPPED(HDMA.block_bytes, 16)) {
     --HDMA.blocks;
