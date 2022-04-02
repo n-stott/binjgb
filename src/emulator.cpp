@@ -2328,284 +2328,284 @@ void Emulator::trigger_nr14_reg(Channel* channel) {
   }
 }
 
-static void write_wave_period(Emulator* e, Channel* channel) {
-  WAVE.period = ((SOUND_MAX_FREQUENCY + 1) - channel->frequency) * 2;
-  HOOK(write_wave_period_info_iii, channel->frequency, WAVE.ticks, WAVE.period);
+void Emulator::write_wave_period(Channel* channel) {
+  THIS_WAVE.period = ((SOUND_MAX_FREQUENCY + 1) - channel->frequency) * 2;
+  THIS_HOOK(write_wave_period_info_iii, channel->frequency, THIS_WAVE.ticks, THIS_WAVE.period);
 }
 
-static void write_square_wave_period([[maybe_unused]] Emulator* e, Channel* channel,
+void Emulator::write_square_wave_period(Channel* channel,
                                      SquareWave* square) {
   square->period = ((SOUND_MAX_FREQUENCY + 1) - channel->frequency) * 4;
-  HOOK(write_square_wave_period_info_iii, channel->frequency, square->ticks,
+  THIS_HOOK(write_square_wave_period_info_iii, channel->frequency, square->ticks,
        square->period);
 }
 
-static void write_noise_period(Emulator* e) {
+void Emulator::write_noise_period() {
   static const u8 s_divisors[NOISE_DIVISOR_COUNT] = {8,  16, 32, 48,
                                                      64, 80, 96, 112};
-  u8 divisor = s_divisors[NOISE.divisor];
-  assert(NOISE.divisor < NOISE_DIVISOR_COUNT);
-  NOISE.period = divisor << NOISE.clock_shift;
-  HOOK(write_noise_period_info_iii, divisor, NOISE.clock_shift, NOISE.period);
+  u8 divisor = s_divisors[THIS_NOISE.divisor];
+  assert(THIS_NOISE.divisor < NOISE_DIVISOR_COUNT);
+  THIS_NOISE.period = divisor << THIS_NOISE.clock_shift;
+  THIS_HOOK(write_noise_period_info_iii, divisor, THIS_NOISE.clock_shift, THIS_NOISE.period);
 }
 
-static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
-  if (e->config.log_apu_writes || !APU.initialized) {
-    if (e->apu_log.write_count < MAX_APU_LOG_FRAME_WRITES) {
-      ApuWrite* write = &e->apu_log.writes[e->apu_log.write_count++];
+void Emulator::write_apu(MaskedAddress addr, u8 value) {
+  if (config.log_apu_writes || !THIS_APU.initialized) {
+    if (apu_log.write_count < MAX_APU_LOG_FRAME_WRITES) {
+      ApuWrite* write = &apu_log.writes[apu_log.write_count++];
       write->addr = addr;
       write->value = value;
     }
   }
 
-  if (!APU.enabled) {
-    if (!IS_CGB && (addr == APU_NR11_ADDR || addr == APU_NR21_ADDR ||
+  if (!THIS_APU.enabled) {
+    if (!THIS_IS_CGB && (addr == APU_NR11_ADDR || addr == APU_NR21_ADDR ||
                     addr == APU_NR31_ADDR || addr == APU_NR41_ADDR)) {
       /* DMG allows writes to the length counters when power is disabled. */
     } else if (addr == APU_NR52_ADDR) {
       /* Always can write to NR52; it's necessary to re-enable power to APU. */
     } else {
       /* Ignore all other writes. */
-      HOOK(write_apu_disabled_asb, addr, get_apu_reg_string((APUReg)addr), value);
+      THIS_HOOK(write_apu_disabled_asb, addr, get_apu_reg_string((APUReg)addr), value);
       return;
     }
   }
 
-  if (APU.initialized) {
-    apu_synchronize(e);
+  if (THIS_APU.initialized) {
+    apu_synchronize(this);
   }
 
-  HOOK(write_apu_asb, addr, get_apu_reg_string((APUReg)addr), value);
+  THIS_HOOK(write_apu_asb, addr, get_apu_reg_string((APUReg)addr), value);
   switch (addr) {
     case APU_NR10_ADDR: {
-      SweepDirection old_direction = SWEEP.direction;
-      SWEEP.period = unpack(value, NR10_SWEEP_PERIOD);
-      SWEEP.direction = static_cast<SweepDirection>(unpack(value, NR10_SWEEP_DIRECTION));
-      SWEEP.shift = unpack(value, NR10_SWEEP_SHIFT);
+      SweepDirection old_direction = THIS_SWEEP.direction;
+      THIS_SWEEP.period = unpack(value, NR10_SWEEP_PERIOD);
+      THIS_SWEEP.direction = static_cast<SweepDirection>(unpack(value, NR10_SWEEP_DIRECTION));
+      THIS_SWEEP.shift = unpack(value, NR10_SWEEP_SHIFT);
       if (old_direction == SWEEP_DIRECTION_SUBTRACTION &&
-          SWEEP.direction == SWEEP_DIRECTION_ADDITION &&
-          SWEEP.calculated_subtract) {
-        CHANNEL1.status = false;
+          THIS_SWEEP.direction == SWEEP_DIRECTION_ADDITION &&
+          THIS_SWEEP.calculated_subtract) {
+        THIS_CHANNEL1.status = false;
       }
       break;
     }
     case APU_NR11_ADDR:
-      e->write_nrx1_reg(&CHANNEL1, addr, value);
+      write_nrx1_reg(&THIS_CHANNEL1, addr, value);
       break;
     case APU_NR12_ADDR:
-      e->write_nrx2_reg(&CHANNEL1, addr, value);
+      write_nrx2_reg(&THIS_CHANNEL1, addr, value);
       break;
     case APU_NR13_ADDR:
-      e->write_nrx3_reg(&CHANNEL1, value);
-      write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
+      write_nrx3_reg(&THIS_CHANNEL1, value);
+      write_square_wave_period(&THIS_CHANNEL1, &THIS_CHANNEL1.square_wave);
       break;
     case APU_NR14_ADDR: {
-      bool trigger = e->write_nrx4_reg(&CHANNEL1, addr, value, NRX1_MAX_LENGTH);
-      write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
+      bool trigger = write_nrx4_reg(&THIS_CHANNEL1, addr, value, NRX1_MAX_LENGTH);
+      write_square_wave_period(&THIS_CHANNEL1, &THIS_CHANNEL1.square_wave);
       if (trigger) {
-        e->trigger_nrx4_envelope(&CHANNEL1.envelope, addr);
-        e->trigger_nr14_reg(&CHANNEL1);
-        CHANNEL1.square_wave.ticks = CHANNEL1.square_wave.period;
+        trigger_nrx4_envelope(&THIS_CHANNEL1.envelope, addr);
+        trigger_nr14_reg(&THIS_CHANNEL1);
+        THIS_CHANNEL1.square_wave.ticks = THIS_CHANNEL1.square_wave.period;
       }
       break;
     }
     case APU_NR21_ADDR:
-      e->write_nrx1_reg(&CHANNEL2, addr, value);
+      write_nrx1_reg(&THIS_CHANNEL2, addr, value);
       break;
     case APU_NR22_ADDR:
-      e->write_nrx2_reg(&CHANNEL2, addr, value);
+      write_nrx2_reg(&THIS_CHANNEL2, addr, value);
       break;
     case APU_NR23_ADDR:
-      e->write_nrx3_reg(&CHANNEL2, value);
-      write_square_wave_period(e, &CHANNEL2, &CHANNEL2.square_wave);
+      write_nrx3_reg(&THIS_CHANNEL2, value);
+      write_square_wave_period(&THIS_CHANNEL2, &THIS_CHANNEL2.square_wave);
       break;
     case APU_NR24_ADDR: {
-      bool trigger = e->write_nrx4_reg(&CHANNEL2, addr, value, NRX1_MAX_LENGTH);
-      write_square_wave_period(e, &CHANNEL2, &CHANNEL2.square_wave);
+      bool trigger = write_nrx4_reg(&THIS_CHANNEL2, addr, value, NRX1_MAX_LENGTH);
+      write_square_wave_period(&THIS_CHANNEL2, &THIS_CHANNEL2.square_wave);
       if (trigger) {
-        e->trigger_nrx4_envelope(&CHANNEL2.envelope, addr);
-        CHANNEL2.square_wave.ticks = CHANNEL2.square_wave.period;
+        trigger_nrx4_envelope(&THIS_CHANNEL2.envelope, addr);
+        THIS_CHANNEL2.square_wave.ticks = THIS_CHANNEL2.square_wave.period;
       }
       break;
     }
     case APU_NR30_ADDR:
-      CHANNEL3.dac_enabled = unpack(value, NR30_DAC_ENABLED);
-      if (!CHANNEL3.dac_enabled) {
-        CHANNEL3.status = false;
-        WAVE.playing = false;
+      THIS_CHANNEL3.dac_enabled = unpack(value, NR30_DAC_ENABLED);
+      if (!THIS_CHANNEL3.dac_enabled) {
+        THIS_CHANNEL3.status = false;
+        THIS_WAVE.playing = false;
       }
       break;
     case APU_NR31_ADDR:
-      CHANNEL3.length = NR31_MAX_LENGTH - value;
+      THIS_CHANNEL3.length = NR31_MAX_LENGTH - value;
       break;
     case APU_NR32_ADDR:
-      WAVE.volume = static_cast<WaveVolume>(unpack(value, NR32_SELECT_WAVE_VOLUME));
-      assert(WAVE.volume < WAVE_VOLUME_COUNT);
-      WAVE.volume_shift = s_wave_volume_shift[WAVE.volume];
+      THIS_WAVE.volume = static_cast<WaveVolume>(unpack(value, NR32_SELECT_WAVE_VOLUME));
+      assert(THIS_WAVE.volume < WAVE_VOLUME_COUNT);
+      THIS_WAVE.volume_shift = s_wave_volume_shift[THIS_WAVE.volume];
       break;
     case APU_NR33_ADDR:
-      e->write_nrx3_reg(&CHANNEL3, value);
-      write_wave_period(e, &CHANNEL3);
+      write_nrx3_reg(&THIS_CHANNEL3, value);
+      write_wave_period(&THIS_CHANNEL3);
       break;
     case APU_NR34_ADDR: {
-      bool trigger = e->write_nrx4_reg(&CHANNEL3, addr, value, NR31_MAX_LENGTH);
-      write_wave_period(e, &CHANNEL3);
+      bool trigger = write_nrx4_reg(&THIS_CHANNEL3, addr, value, NR31_MAX_LENGTH);
+      write_wave_period(&THIS_CHANNEL3);
       if (trigger) {
-        if (!IS_CGB && WAVE.playing) {
+        if (!THIS_IS_CGB && THIS_WAVE.playing) {
           /* Triggering the wave channel while it is already playing will
            * corrupt the wave RAM on DMG. */
-          if (WAVE.ticks == WAVE_TRIGGER_CORRUPTION_OFFSET_TICKS) {
-            assert(WAVE.position < 32);
-            u8 position = (WAVE.position + 1) & 31;
-            u8 byte = WAVE.ram[position >> 1];
+          if (THIS_WAVE.ticks == WAVE_TRIGGER_CORRUPTION_OFFSET_TICKS) {
+            assert(THIS_WAVE.position < 32);
+            u8 position = (THIS_WAVE.position + 1) & 31;
+            u8 byte = THIS_WAVE.ram[position >> 1];
             switch (position >> 3) {
               case 0:
-                WAVE.ram[0] = byte;
+                THIS_WAVE.ram[0] = byte;
                 break;
               case 1:
               case 2:
               case 3:
-                memcpy(&WAVE.ram[0], &WAVE.ram[(position >> 1) & 12], 4);
+                memcpy(&THIS_WAVE.ram[0], &THIS_WAVE.ram[(position >> 1) & 12], 4);
                 break;
             }
-            HOOK(corrupt_wave_ram_i, position);
+            THIS_HOOK(corrupt_wave_ram_i, position);
           }
         }
 
-        WAVE.position = 0;
-        WAVE.ticks = WAVE.period + WAVE_TRIGGER_DELAY_TICKS;
-        WAVE.playing = true;
+        THIS_WAVE.position = 0;
+        THIS_WAVE.ticks = THIS_WAVE.period + WAVE_TRIGGER_DELAY_TICKS;
+        THIS_WAVE.playing = true;
       }
       break;
     }
     case APU_NR41_ADDR:
-      e->write_nrx1_reg(&CHANNEL4, addr, value);
+      write_nrx1_reg(&THIS_CHANNEL4, addr, value);
       break;
     case APU_NR42_ADDR:
-      e->write_nrx2_reg(&CHANNEL4, addr, value);
+      write_nrx2_reg(&THIS_CHANNEL4, addr, value);
       break;
     case APU_NR43_ADDR: {
-      NOISE.clock_shift = unpack(value, NR43_CLOCK_SHIFT);
-      NOISE.lfsr_width = static_cast<LfsrWidth>(unpack(value, NR43_LFSR_WIDTH));
-      NOISE.divisor = unpack(value, NR43_DIVISOR);
-      write_noise_period(e);
+      THIS_NOISE.clock_shift = unpack(value, NR43_CLOCK_SHIFT);
+      THIS_NOISE.lfsr_width = static_cast<LfsrWidth>(unpack(value, NR43_LFSR_WIDTH));
+      THIS_NOISE.divisor = unpack(value, NR43_DIVISOR);
+      write_noise_period();
       break;
     }
     case APU_NR44_ADDR: {
-      bool trigger = e->write_nrx4_reg(&CHANNEL4, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = write_nrx4_reg(&THIS_CHANNEL4, addr, value, NRX1_MAX_LENGTH);
       if (trigger) {
-        write_noise_period(e);
-        e->trigger_nrx4_envelope(&CHANNEL4.envelope, addr);
-        NOISE.lfsr = 0x7fff;
-        NOISE.sample = 1;
-        NOISE.ticks = NOISE.period;
+        write_noise_period();
+        trigger_nrx4_envelope(&THIS_CHANNEL4.envelope, addr);
+        THIS_NOISE.lfsr = 0x7fff;
+        THIS_NOISE.sample = 1;
+        THIS_NOISE.ticks = THIS_NOISE.period;
       }
       break;
     }
     case APU_NR50_ADDR:
-      APU.so_output[VIN][1] = unpack(value, NR50_VIN_SO2);
-      APU.so_volume[1] = unpack(value, NR50_SO2_VOLUME);
-      APU.so_output[VIN][0] = unpack(value, NR50_VIN_SO1);
-      APU.so_volume[0] = unpack(value, NR50_SO1_VOLUME);
+      THIS_APU.so_output[VIN][1] = unpack(value, NR50_VIN_SO2);
+      THIS_APU.so_volume[1] = unpack(value, NR50_SO2_VOLUME);
+      THIS_APU.so_output[VIN][0] = unpack(value, NR50_VIN_SO1);
+      THIS_APU.so_volume[0] = unpack(value, NR50_SO1_VOLUME);
       break;
     case APU_NR51_ADDR:
-      APU.so_output[SOUND4][1] = unpack(value, NR51_SOUND4_SO2);
-      APU.so_output[SOUND3][1] = unpack(value, NR51_SOUND3_SO2);
-      APU.so_output[SOUND2][1] = unpack(value, NR51_SOUND2_SO2);
-      APU.so_output[SOUND1][1] = unpack(value, NR51_SOUND1_SO2);
-      APU.so_output[SOUND4][0] = unpack(value, NR51_SOUND4_SO1);
-      APU.so_output[SOUND3][0] = unpack(value, NR51_SOUND3_SO1);
-      APU.so_output[SOUND2][0] = unpack(value, NR51_SOUND2_SO1);
-      APU.so_output[SOUND1][0] = unpack(value, NR51_SOUND1_SO1);
+      THIS_APU.so_output[SOUND4][1] = unpack(value, NR51_SOUND4_SO2);
+      THIS_APU.so_output[SOUND3][1] = unpack(value, NR51_SOUND3_SO2);
+      THIS_APU.so_output[SOUND2][1] = unpack(value, NR51_SOUND2_SO2);
+      THIS_APU.so_output[SOUND1][1] = unpack(value, NR51_SOUND1_SO2);
+      THIS_APU.so_output[SOUND4][0] = unpack(value, NR51_SOUND4_SO1);
+      THIS_APU.so_output[SOUND3][0] = unpack(value, NR51_SOUND3_SO1);
+      THIS_APU.so_output[SOUND2][0] = unpack(value, NR51_SOUND2_SO1);
+      THIS_APU.so_output[SOUND1][0] = unpack(value, NR51_SOUND1_SO1);
       break;
     case APU_NR52_ADDR: {
-      bool was_enabled = APU.enabled;
+      bool was_enabled = THIS_APU.enabled;
       bool is_enabled = unpack(value, NR52_ALL_SOUND_ENABLED);
       if (was_enabled && !is_enabled) {
-        HOOK0(apu_power_down_v);
+        THIS_HOOK0(apu_power_down_v);
         int i;
         for (i = 0; i < APU_REG_COUNT; ++i) {
           if (i != APU_NR52_ADDR) {
-            write_apu(e, i, 0);
+            write_apu(i, 0);
           }
         }
       } else if (!was_enabled && is_enabled) {
-        HOOK0(apu_power_up_v);
-        APU.frame = 7;
+        THIS_HOOK0(apu_power_up_v);
+        THIS_APU.frame = 7;
       }
-      APU.enabled = is_enabled;
+      THIS_APU.enabled = is_enabled;
       break;
     }
   }
 }
 
-static void write_wave_ram(Emulator* e, MaskedAddress addr, u8 value) {
-  apu_synchronize(e);
-  if (CHANNEL3.status) {
+void Emulator::write_wave_ram(MaskedAddress addr, u8 value) {
+  apu_synchronize(this);
+  if (THIS_CHANNEL3.status) {
     /* If the wave channel is playing, the byte is written to the sample
      * position. On DMG, this is only allowed if the write occurs exactly when
      * it is being accessed by the Wave channel. */
-    if (UNLIKELY(IS_CGB || TICKS == WAVE.sample_time)) {
-      WAVE.ram[WAVE.position >> 1] = value;
-      HOOK(write_wave_ram_while_playing_ab, addr, value);
+    if (UNLIKELY(THIS_IS_CGB || THIS_TICKS == THIS_WAVE.sample_time)) {
+      THIS_WAVE.ram[THIS_WAVE.position >> 1] = value;
+      THIS_HOOK(write_wave_ram_while_playing_ab, addr, value);
     }
   } else {
-    WAVE.ram[addr] = value;
-    HOOK(write_wave_ram_ab, addr, value);
+    THIS_WAVE.ram[addr] = value;
+    THIS_HOOK(write_wave_ram_ab, addr, value);
   }
 }
 
-static void write_u8_pair(Emulator* e, MemoryTypeAddressPair pair, u8 value) {
+void Emulator::write_u8_pair(MemoryTypeAddressPair pair, u8 value) {
   switch (pair.type) {
     case MEMORY_MAP_ROM0:
-      e->memory_map.write_rom(pair.addr, value);
+      memory_map.write_rom(pair.addr, value);
       break;
     case MEMORY_MAP_ROM1:
-      e->memory_map.write_rom(pair.addr + 0x4000, value);
+      memory_map.write_rom(pair.addr + 0x4000, value);
       break;
     case MEMORY_MAP_VRAM:
-      e->write_vram(pair.addr, value);
+      write_vram(pair.addr, value);
       break;
     case MEMORY_MAP_EXT_RAM:
-      e->memory_map.write_ext_ram(pair.addr, value);
+      memory_map.write_ext_ram(pair.addr, value);
       break;
     case MEMORY_MAP_WORK_RAM0:
-      WRAM.data[pair.addr] = value;
+      THIS_WRAM.data[pair.addr] = value;
       break;
     case MEMORY_MAP_WORK_RAM1:
-      WRAM.data[WRAM.offset + pair.addr] = value;
+      THIS_WRAM.data[THIS_WRAM.offset + pair.addr] = value;
       break;
     case MEMORY_MAP_OAM:
-      e->write_oam(pair.addr, value);
+      write_oam(pair.addr, value);
       break;
     case MEMORY_MAP_UNUSED:
       break;
     case MEMORY_MAP_IO:
-      e->write_io(pair.addr, value);
+      write_io(pair.addr, value);
       break;
     case MEMORY_MAP_APU:
-      write_apu(e, pair.addr, value);
+      write_apu(pair.addr, value);
       break;
     case MEMORY_MAP_WAVE_RAM:
-      write_wave_ram(e, pair.addr, value);
+      write_wave_ram(pair.addr, value);
       break;
     case MEMORY_MAP_HIGH_RAM:
-      HRAM[pair.addr] = value;
+      THIS_HRAM[pair.addr] = value;
       break;
   }
 }
 
-[[maybe_unused]] static void write_u8_raw(Emulator* e, Address addr, u8 value) {
-  write_u8_pair(e, map_address(addr), value);
+[[maybe_unused]] void Emulator::write_u8_raw(Address addr, u8 value) {
+  write_u8_pair(map_address(addr), value);
 }
 
-static void write_u8(Emulator* e, Address addr, u8 value) {
-  dma_synchronize(e);
-  if (UNLIKELY(!e->is_dma_access_ok(addr))) {
-    HOOK(write_during_dma_ab, addr, value);
+void Emulator::write_u8(Address addr, u8 value) {
+  dma_synchronize(this);
+  if (UNLIKELY(!is_dma_access_ok(addr))) {
+    THIS_HOOK(write_during_dma_ab, addr, value);
     return;
   }
-  write_u8_pair(e, map_address(addr), value);
+  write_u8_pair(map_address(addr), value);
 }
 
 static void do_ppu_mode2(Emulator* e) {
@@ -3028,7 +3028,7 @@ static void update_sweep(Emulator* e) {
         if (SWEEP.shift) {
           HOOK(sweep_update_frequency_i, new_frequency);
           SWEEP.frequency = CHANNEL1.frequency = new_frequency;
-          write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
+          e->write_square_wave_period(&CHANNEL1, &CHANNEL1.square_wave);
         }
 
         /* Perform another overflow check. */
@@ -3370,7 +3370,7 @@ u16 Emulator::read_u16_tick(Address addr) {
 
 void Emulator::write_u8_tick(Address addr, u8 value) {
   tick();
-  write_u8(this, addr, value);
+  write_u8(addr, value);
 }
 
 void Emulator::write_u16_tick(Address addr, u16 value) {
@@ -4084,12 +4084,12 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
       INVALID_TICKS;
   WRAM.offset = 0x1000;
   /* Enable apu first, so subsequent writes succeed. */
-  write_apu(e, APU_NR52_ADDR, 0xf1);
-  write_apu(e, APU_NR11_ADDR, 0x80);
-  write_apu(e, APU_NR12_ADDR, 0xf3);
-  write_apu(e, APU_NR14_ADDR, 0x80);
-  write_apu(e, APU_NR50_ADDR, 0x77);
-  write_apu(e, APU_NR51_ADDR, 0xf3);
+  e->write_apu(APU_NR52_ADDR, 0xf1);
+  e->write_apu(APU_NR11_ADDR, 0x80);
+  e->write_apu(APU_NR12_ADDR, 0xf3);
+  e->write_apu(APU_NR14_ADDR, 0x80);
+  e->write_apu(APU_NR50_ADDR, 0x77);
+  e->write_apu(APU_NR51_ADDR, 0xf3);
   APU.initialized = true;
   memcpy(&WAVE.ram, s_initial_wave_ram, WAVE_RAM_SIZE);
   /* Turn down the volume on channel1, it is playing by default (because of the

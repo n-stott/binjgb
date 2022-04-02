@@ -500,7 +500,7 @@ u8 emulator_read_u8_raw(Emulator* e, Address addr) {
 }
 
 void emulator_write_u8_raw(Emulator* e, Address addr, u8 value) {
-  write_u8_raw(e, addr, value);
+  e->write_u8_raw(addr, value);
 }
 
 // Store as 1-1 mapping of bytes, low 3 bits used only.
