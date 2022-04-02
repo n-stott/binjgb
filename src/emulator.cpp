@@ -3630,8 +3630,6 @@ void Emulator::execute_instruction() {
   u16 u16;
   Address new_pc;
 
-  [[maybe_unused]] Emulator* e = this;
-
   if (UNLIKELY(THIS_TICKS >= state.next_intr_ticks)) {
     if (THIS_TICKS >= THIS_TIMER.next_intr_ticks) {
       timer_synchronize();
@@ -3665,10 +3663,10 @@ void Emulator::execute_instruction() {
             THIS_INTR.state = CPU_STATE_NORMAL;
             if (THIS_CPU_SPEED.speed == SPEED_NORMAL) {
               state.cpu_tick = CPU_TICK;
-              HOOK(speed_switch_i, 1);
+              THIS_HOOK(speed_switch_i, 1);
             } else {
               state.cpu_tick = CPU_2X_TICK;
-              HOOK(speed_switch_i, 2);
+              THIS_HOOK(speed_switch_i, 2);
             }
           } else {
             THIS_TICKS += CPU_TICK;
@@ -3707,7 +3705,7 @@ void Emulator::execute_instruction() {
         should_dispatch = (THIS_INTR.new_if & THIS_INTR.ie) != 0;
         opcode = read_u8_tick(THIS_REG.PC);
         if (UNLIKELY(should_dispatch)) {
-          HOOK0(interrupt_during_halt_di_v);
+          THIS_HOOK0(interrupt_during_halt_di_v);
           THIS_INTR.state = CPU_STATE_NORMAL;
           should_dispatch = false;
           break;
@@ -3742,7 +3740,7 @@ void Emulator::execute_instruction() {
   case code + 7: name##_R(N, A); break;
 #define LD_R_OPS(code, R) REG_OPS_N(code, LD_R, R)
 
-  HOOK(exec_op_ai, THIS_REG.PC, opcode);
+  THIS_HOOK(exec_op_ai, THIS_REG.PC, opcode);
   new_pc = ++THIS_REG.PC;
 
   switch (opcode) {
@@ -3847,7 +3845,7 @@ void Emulator::execute_instruction() {
     case 0xcb: {
       new_pc += 1;
       u8 cb = read_u8_tick(THIS_REG.PC);
-      HOOK(exec_cb_op_i, cb);
+      THIS_HOOK(exec_cb_op_i, cb);
       switch (cb) {
         REG_OPS(0x00, RLC)
         REG_OPS(0x08, RRC)
@@ -3933,9 +3931,8 @@ void Emulator::execute_instruction() {
 }
 
 void Emulator::emulator_step_internal() {
-  [[maybe_unused]] Emulator* e = this;
   if (THIS_HDMA.state == DMA_INACTIVE) {
-    if (HOOK0_false(emulator_step)) {
+    if (THIS_HOOK0_false(emulator_step)) {
       return;
     }
     execute_instruction();
