@@ -1007,7 +1007,7 @@ struct Emulator {
   void set_sgb_attr(u8 byte);
   void set_sgb_attr_block(int x0, int y0, int x1, int y1, u8 pal);
 
-  // void do_sgb();
+  void do_sgb();
   void write_io(MaskedAddress addr, u8 value);
 
   void write_nrx1_reg(Channel* channel, Address addr, u8 value);
@@ -1036,20 +1036,20 @@ struct Emulator {
   void update_wave(u32 apu_ticks, u32 total_frames);
   void update_noise(u32 total_frames);
 
-  // u32 get_gb_frames_until_next_resampled_frame();
-  // void write_audio_frame(u32 gb_frames);
-  // void apu_update_channels(u32 total_frames);
-  // void apu_update(u32 total_ticks);
-  // void intr_synchronize();
-  // void apu_synchronize();
-  // void dma_synchronize();
-  // void hdma_copy_byte();
-  // void calculate_next_serial_intr();
-  // void serial_synchronize();
-  // u16 get_af_reg();
-  // void set_af_reg(u16 af);
-  // Result init_audio_buffer(u32 frequency, u32 frames);
-  // Result init_emulator(const EmulatorInit* init);
+  u32 get_gb_frames_until_next_resampled_frame();
+  void write_audio_frame(u32 gb_frames);
+  void apu_update_channels(u32 total_frames);
+  void apu_update(u32 total_ticks);
+  void intr_synchronize();
+  void apu_synchronize();
+  void dma_synchronize();
+  void hdma_copy_byte();
+  void calculate_next_serial_intr();
+  void serial_synchronize();
+  u16 get_af_reg();
+  void set_af_reg(u16 af);
+  Result init_audio_buffer(u32 frequency, u32 frames);
+  Result init_emulator(const EmulatorInit* init);
 };
 
 extern const size_t s_emulator_state_size;

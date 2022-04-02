@@ -379,12 +379,6 @@ static const u16 s_tima_mask[] = {1 << 9, 1 << 3, 1 << 5, 1 << 7};
 static u8 s_wave_volume_shift[WAVE_VOLUME_COUNT] = {4, 0, 1, 2};
 static u8 s_obj_size_to_height[] = {[OBJ_SIZE_8X8] = 8, [OBJ_SIZE_8X16] = 16};
 
-static void apu_synchronize(Emulator*);
-static void dma_synchronize(Emulator*);
-static void intr_synchronize(Emulator*);
-static void serial_synchronize(Emulator*);
-static void calculate_next_serial_intr(Emulator*);
-
 static MemoryTypeAddressPair make_pair(MemoryMapType type, Address addr) {
   MemoryTypeAddressPair result;
   result.type = type;
@@ -1065,10 +1059,10 @@ u8 Emulator::read_io(MaskedAddress addr) {
       return JOYP_UNUSED | pack(THIS_JOYP.joypad_select, JOYP_JOYPAD_SELECT) |
              (read_joyp_p10_p13() & JOYP_RESULT_MASK);
     case IO_SB_ADDR:
-      serial_synchronize(this);
+      serial_synchronize();
       return THIS_SERIAL.sb;
     case IO_SC_ADDR:
-      serial_synchronize(this);
+      serial_synchronize();
       return SC_UNUSED | pack(THIS_SERIAL.transferring, SC_TRANSFER_START) |
              pack(THIS_SERIAL.clock, SC_SHIFT_CLOCK);
     case IO_DIV_ADDR:
@@ -1084,7 +1078,7 @@ u8 Emulator::read_io(MaskedAddress addr) {
       return TAC_UNUSED | pack(THIS_TIMER.on, TAC_TIMER_ON) |
              pack(THIS_TIMER.clock_select, TAC_CLOCK_SELECT);
     case IO_IF_ADDR:
-      intr_synchronize(this);
+      intr_synchronize();
       return IF_UNUSED | THIS_INTR.if_;
     case IO_LCDC_ADDR:
       return pack(THIS_LCDC.display, LCDC_DISPLAY) |
@@ -1185,7 +1179,7 @@ static u8 read_nrx4_reg(Channel* channel) {
 }
 
 u8 Emulator::read_apu(MaskedAddress addr) {
-  apu_synchronize(this);
+  apu_synchronize();
   switch (addr) {
     case APU_NR10_ADDR:
       return NR10_UNUSED | pack(THIS_SWEEP.period, NR10_SWEEP_PERIOD) |
@@ -1244,7 +1238,7 @@ u8 Emulator::read_apu(MaskedAddress addr) {
 }
 
 u8 Emulator::read_wave_ram(MaskedAddress addr) {
-  apu_synchronize(this);
+  apu_synchronize();
   if (THIS_CHANNEL3.status) {
     /* If the wave channel is playing, the byte is read from the sample
      * position. On DMG, this is only allowed if the read occurs exactly when
@@ -1315,7 +1309,7 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
 }
 
 u8 Emulator::read_u8(Address addr) {
-  dma_synchronize(this);
+  dma_synchronize();
   if (UNLIKELY(!is_dma_access_ok(addr))) {
     THIS_HOOK(read_during_dma_a, addr);
     return INVALID_READ_BYTE;
@@ -1649,94 +1643,94 @@ static u16 map_select_to_address(TileMapSelect map_select) {
   return map_select == TILE_MAP_9800_9BFF ? 0x1800 : 0x1c00;
 }
 
-static void do_sgb(Emulator* e) {
-  if (!IS_SGB) { return; }
+void Emulator::do_sgb() {
+  if (!THIS_IS_SGB) { return; }
 
   bool do_command = false;
 
-  switch (SGB.state) {
+  switch (THIS_SGB.state) {
     case SGB_STATE_IDLE:
-      if (JOYP.joypad_select == JOYPAD_SGB_BOTH_LOW) {
-        SGB.bits_read = 0;
-        if (++SGB.current_packet >= SGB.packet_count) {
-          SGB.current_packet = 0;
-          SGB.packet_count = 0;
-          ZERO_MEMORY(SGB.data);
+      if (THIS_JOYP.joypad_select == JOYPAD_SGB_BOTH_LOW) {
+        THIS_SGB.bits_read = 0;
+        if (++THIS_SGB.current_packet >= THIS_SGB.packet_count) {
+          THIS_SGB.current_packet = 0;
+          THIS_SGB.packet_count = 0;
+          ZERO_MEMORY(THIS_SGB.data);
         }
-        SGB.state = SGB_STATE_WAIT_BIT;
+        THIS_SGB.state = SGB_STATE_WAIT_BIT;
       }
       break;
     case SGB_STATE_WAIT_BIT:
-      if (JOYP.joypad_select == JOYPAD_SGB_BOTH_HIGH) {
-        SGB.state =
-            SGB.bits_read >= 128 ? SGB_STATE_STOP_BIT : SGB_STATE_READ_BIT;
+      if (THIS_JOYP.joypad_select == JOYPAD_SGB_BOTH_HIGH) {
+        THIS_SGB.state =
+            THIS_SGB.bits_read >= 128 ? SGB_STATE_STOP_BIT : SGB_STATE_READ_BIT;
       } else {
-        SGB.state = SGB_STATE_IDLE;
+        THIS_SGB.state = SGB_STATE_IDLE;
       }
       break;
     case SGB_STATE_READ_BIT:
-      if (JOYP.joypad_select == JOYPAD_SGB_P15_LOW) {
-        int curbyte = (SGB.current_packet << 4) | (SGB.bits_read >> 3);
-        u8 curbit = SGB.bits_read & 7;
-        SGB.data[curbyte] |= 1 << curbit;
-        SGB.bits_read++;
-        SGB.state = SGB_STATE_WAIT_BIT;
-      } else if (JOYP.joypad_select == JOYPAD_SGB_P14_LOW) {
-        SGB.bits_read++;
-        SGB.state = SGB_STATE_WAIT_BIT;
+      if (THIS_JOYP.joypad_select == JOYPAD_SGB_P15_LOW) {
+        int curbyte = (THIS_SGB.current_packet << 4) | (THIS_SGB.bits_read >> 3);
+        u8 curbit = THIS_SGB.bits_read & 7;
+        THIS_SGB.data[curbyte] |= 1 << curbit;
+        THIS_SGB.bits_read++;
+        THIS_SGB.state = SGB_STATE_WAIT_BIT;
+      } else if (THIS_JOYP.joypad_select == JOYPAD_SGB_P14_LOW) {
+        THIS_SGB.bits_read++;
+        THIS_SGB.state = SGB_STATE_WAIT_BIT;
       }
       break;
     case SGB_STATE_STOP_BIT:
-      if (JOYP.joypad_select == JOYPAD_SGB_P14_LOW) {
-        SGB.state = SGB_STATE_STOP_WAIT;
+      if (THIS_JOYP.joypad_select == JOYPAD_SGB_P14_LOW) {
+        THIS_SGB.state = SGB_STATE_STOP_WAIT;
       } else {
-        SGB.state = SGB_STATE_IDLE;
+        THIS_SGB.state = SGB_STATE_IDLE;
       }
       break;
     case SGB_STATE_STOP_WAIT:
-      if (JOYP.joypad_select == JOYPAD_SGB_BOTH_HIGH) {
+      if (THIS_JOYP.joypad_select == JOYPAD_SGB_BOTH_HIGH) {
         do_command = true;
-        SGB.state = SGB_STATE_IDLE;
+        THIS_SGB.state = SGB_STATE_IDLE;
       }
       break;
   }
 
-  if ((JOYP.joypad_select == JOYPAD_SGB_BOTH_LOW ||
-       JOYP.joypad_select == JOYPAD_SGB_P15_LOW) &&
-      !SGB.player_incremented) {
-    SGB.player_incremented = true;
-  } else if (JOYP.joypad_select == JOYPAD_SGB_BOTH_HIGH) {
-    if (SGB.player_incremented) {
-      SGB.current_player = (SGB.current_player + 1) & SGB.player_mask;
+  if ((THIS_JOYP.joypad_select == JOYPAD_SGB_BOTH_LOW ||
+       THIS_JOYP.joypad_select == JOYPAD_SGB_P15_LOW) &&
+      !THIS_SGB.player_incremented) {
+    THIS_SGB.player_incremented = true;
+  } else if (THIS_JOYP.joypad_select == JOYPAD_SGB_BOTH_HIGH) {
+    if (THIS_SGB.player_incremented) {
+      THIS_SGB.current_player = (THIS_SGB.current_player + 1) & THIS_SGB.player_mask;
     }
-    SGB.player_incremented = false;
+    THIS_SGB.player_incremented = false;
   }
 
   if (do_command) {
-    if (SGB.current_packet == 0) {
-      SGB.packet_count = SGB.data[0] & 7;
+    if (THIS_SGB.current_packet == 0) {
+      THIS_SGB.packet_count = THIS_SGB.data[0] & 7;
     }
 
-    if (SGB.current_packet == SGB.packet_count - 1) {
+    if (THIS_SGB.current_packet == THIS_SGB.packet_count - 1) {
       // Assume we can just read the data directly from VRAM. Cheat by reading
       // the upper-left tile and assuming that the rest of the data is in
       // order.
-      int code = SGB.data[0] >> 3;
+      int code = THIS_SGB.data[0] >> 3;
       u8* xfer_src = NULL;
       if (code == 0x0b || code == 0x13 || code == 0x14 || code == 0x15) {
-        u16 map_base = map_select_to_address(LCDC.bg_tile_map_select);
-        u16 tile_index = VRAM.data[map_base];
-        if (LCDC.bg_tile_data_select == TILE_DATA_8800_97FF) {
+        u16 map_base = map_select_to_address(THIS_LCDC.bg_tile_map_select);
+        u16 tile_index = THIS_VRAM.data[map_base];
+        if (THIS_LCDC.bg_tile_data_select == TILE_DATA_8800_97FF) {
           // Copy the data into the temporary buffer so it can be used
           // contiguously.
           static u8 s_temp_xfer_buffer[4096];
           u16 start_offset = (256 + (s8)tile_index) * 16;
           u16 len = 0x1800 - start_offset;
-          memcpy(s_temp_xfer_buffer, VRAM.data + start_offset, len);
-          memcpy(s_temp_xfer_buffer + len, VRAM.data + 0x800, 0x1000 - len);
+          memcpy(s_temp_xfer_buffer, THIS_VRAM.data + start_offset, len);
+          memcpy(s_temp_xfer_buffer + len, THIS_VRAM.data + 0x800, 0x1000 - len);
           xfer_src = s_temp_xfer_buffer;
         } else {
-          xfer_src = VRAM.data + tile_index * 16;
+          xfer_src = THIS_VRAM.data + tile_index * 16;
         }
       }
 
@@ -1748,80 +1742,80 @@ static void do_sgb(Emulator* e) {
           static struct {
             int pal0, pal1;
           } s_pals[] = {{0, 1}, {2, 3}, {0, 3}, {1, 2}};
-          e->set_sgb_palette(s_pals[code].pal0, SGB.data[1], SGB.data[2],
-                          SGB.data[3], SGB.data[4], SGB.data[5], SGB.data[6],
-                          SGB.data[7], SGB.data[8]);
-          e->set_sgb_palette(s_pals[code].pal1, SGB.data[1], SGB.data[2],
-                          SGB.data[9], SGB.data[10], SGB.data[11], SGB.data[12],
-                          SGB.data[13], SGB.data[14]);
+          set_sgb_palette(s_pals[code].pal0, THIS_SGB.data[1], THIS_SGB.data[2],
+                          THIS_SGB.data[3], THIS_SGB.data[4], THIS_SGB.data[5], THIS_SGB.data[6],
+                          THIS_SGB.data[7], THIS_SGB.data[8]);
+          set_sgb_palette(s_pals[code].pal1, THIS_SGB.data[1], THIS_SGB.data[2],
+                          THIS_SGB.data[9], THIS_SGB.data[10], THIS_SGB.data[11], THIS_SGB.data[12],
+                          THIS_SGB.data[13], THIS_SGB.data[14]);
           break;
         }
         case 0x04: { // ATTR_BLK
-          int datasets = MIN(SGB.data[1], (SGB.packet_count * 16 - 2) / 6);
+          int datasets = MIN(THIS_SGB.data[1], (THIS_SGB.packet_count * 16 - 2) / 6);
           for (int i = 0; i < datasets; ++i) {
-            u8 info = SGB.data[2 + i * 6];
-            u8 pal = SGB.data[3 + i * 6];
+            u8 info = THIS_SGB.data[2 + i * 6];
+            u8 pal = THIS_SGB.data[3 + i * 6];
             u8 palin = pal & 3, palon = (pal >> 2) & 3, palout = (pal >> 4) & 3;
-            u8 l = SGB.data[4 + i * 6], t = SGB.data[5 + i * 6],
-               r = SGB.data[6 + i * 6], b = SGB.data[7 + i * 6];
+            u8 l = THIS_SGB.data[4 + i * 6], t = THIS_SGB.data[5 + i * 6],
+               r = THIS_SGB.data[6 + i * 6], b = THIS_SGB.data[7 + i * 6];
             if (info & 1) {  // colors inside region
-              e->set_sgb_attr_block(l, t, r, b, palin);
+              set_sgb_attr_block(l, t, r, b, palin);
             }
             if (info & 2) { // colors on region border
-              e->set_sgb_attr_block(l, t, r, t, palon);  // top
-              e->set_sgb_attr_block(l, t, l, b, palon);  // left
-              e->set_sgb_attr_block(l, b, r, b, palon);  // bottom
-              e->set_sgb_attr_block(r, t, r, b, palon);  // right
+              set_sgb_attr_block(l, t, r, t, palon);  // top
+              set_sgb_attr_block(l, t, l, b, palon);  // left
+              set_sgb_attr_block(l, b, r, b, palon);  // bottom
+              set_sgb_attr_block(r, t, r, b, palon);  // right
             }
             if (info & 4) { // colors outside region
-              e->set_sgb_attr_block(0, 0, 19, t - 1, palout);   // top
-              e->set_sgb_attr_block(0, t, l - 1, b, palout);    // left
-              e->set_sgb_attr_block(0, b + 1, 19, 17, palout);  // bottom
-              e->set_sgb_attr_block(r + 1, t, 19, b, palout);   // right
+              set_sgb_attr_block(0, 0, 19, t - 1, palout);   // top
+              set_sgb_attr_block(0, t, l - 1, b, palout);    // left
+              set_sgb_attr_block(0, b + 1, 19, 17, palout);  // bottom
+              set_sgb_attr_block(r + 1, t, 19, b, palout);   // right
             }
           }
           break;
         }
         case 0x05: { // ATTR_LIN
-          int datasets = MIN(SGB.data[1], SGB.packet_count * 16 - 2);
+          int datasets = MIN(THIS_SGB.data[1], THIS_SGB.packet_count * 16 - 2);
           for (int i = 0; i < datasets; ++i) {
-            u8 info = SGB.data[2 + i];
+            u8 info = THIS_SGB.data[2 + i];
             u8 line = info & 0x1f;
             u8 pal = (info >> 5) & 3;
             if (info & 0x80) {  // horizontal
-              e->set_sgb_attr_block(0, line, 19, line, pal);
+              set_sgb_attr_block(0, line, 19, line, pal);
             } else { // vertical
-              e->set_sgb_attr_block(line, 0, line, 17, pal);
+              set_sgb_attr_block(line, 0, line, 17, pal);
             }
           }
           break;
         }
         case 0x06: { // ATTR_DIV
-          u8 pal = SGB.data[1];
+          u8 pal = THIS_SGB.data[1];
           u8 pallo = pal & 3, palon = (pal >> 2) & 3, palhi = (pal >> 4) & 3;
-          u8 line = SGB.data[2];
+          u8 line = THIS_SGB.data[2];
           if (pal & 0x40) {  // above/below
-            e->set_sgb_attr_block(0, 0, 19, line - 1, palhi);   // top
-            e->set_sgb_attr_block(0, line, 19, line, palon);    // on
-            e->set_sgb_attr_block(0, line + 1, 19, 17, pallo);  // bottom
+            set_sgb_attr_block(0, 0, 19, line - 1, palhi);   // top
+            set_sgb_attr_block(0, line, 19, line, palon);    // on
+            set_sgb_attr_block(0, line + 1, 19, 17, pallo);  // bottom
           } else { // left/right
-            e->set_sgb_attr_block(0, 0, line - 1, 17, palhi);   // left
-            e->set_sgb_attr_block(line, 0, line, 17, palon);    // on
-            e->set_sgb_attr_block(line + 1, 0, 19, 17, pallo);  // right
+            set_sgb_attr_block(0, 0, line - 1, 17, palhi);   // left
+            set_sgb_attr_block(line, 0, line, 17, palon);    // on
+            set_sgb_attr_block(line + 1, 0, 19, 17, pallo);  // right
           }
           break;
         }
         case 0x07: { // ATTR_CHR
-          u8 x = SGB.data[1], y = SGB.data[2];
+          u8 x = THIS_SGB.data[1], y = THIS_SGB.data[2];
           u8 dx = 0, dy = 0;
-          if (SGB.data[5] == 0) { dx = 1; } else { dy = 1; }
-          int datasets = MIN(MIN((SGB.data[4] << 8) | SGB.data[3],
-                                 (SGB.packet_count * 16 - 6) * 4),
+          if (THIS_SGB.data[5] == 0) { dx = 1; } else { dy = 1; }
+          int datasets = MIN(MIN((THIS_SGB.data[4] << 8) | THIS_SGB.data[3],
+                                 (THIS_SGB.packet_count * 16 - 6) * 4),
                              360);
           for (int i = 0; i < datasets; i += 4) {
-            u8 byte = SGB.data[6 + (i >> 2)];
+            u8 byte = THIS_SGB.data[6 + (i >> 2)];
             for (int j = 0; j < MIN(datasets, 4); ++j) {
-              e->set_sgb_attr_block(x, y, x, y, byte >> ((3 - j) * 2));
+              set_sgb_attr_block(x, y, x, y, byte >> ((3 - j) * 2));
               x += dx;
               y += dy;
               if (x >= 20) { x = 0; y++; }
@@ -1831,40 +1825,40 @@ static void do_sgb(Emulator* e) {
           break;
         }
         case 0x0a: // PAL_SET
-          e->unpack_sgb_palette_ram(3, SGB.data[7], SGB.data[8]);
-          e->unpack_sgb_palette_ram(2, SGB.data[5], SGB.data[6]);
-          e->unpack_sgb_palette_ram(1, SGB.data[3], SGB.data[4]);
-          e->unpack_sgb_palette_ram(0, SGB.data[1], SGB.data[2]);
-          if (SGB.data[9] & 0x80) {  // Use attr file
-            e->set_sgb_attr(SGB.data[9] & 0x7f);
+          unpack_sgb_palette_ram(3, THIS_SGB.data[7], THIS_SGB.data[8]);
+          unpack_sgb_palette_ram(2, THIS_SGB.data[5], THIS_SGB.data[6]);
+          unpack_sgb_palette_ram(1, THIS_SGB.data[3], THIS_SGB.data[4]);
+          unpack_sgb_palette_ram(0, THIS_SGB.data[1], THIS_SGB.data[2]);
+          if (THIS_SGB.data[9] & 0x80) {  // Use attr file
+            set_sgb_attr(THIS_SGB.data[9] & 0x7f);
           }
           break;
         case 0x0b: // PAL_TRN
-          memcpy(SGB.pal_ram, xfer_src, sizeof(SGB.pal_ram));
+          memcpy(THIS_SGB.pal_ram, xfer_src, sizeof(THIS_SGB.pal_ram));
           break;
         case 0x11: // MLT_REQ
-          SGB.player_mask = SGB.data[1] & 3;
+          THIS_SGB.player_mask = THIS_SGB.data[1] & 3;
           break;
         case 0x13: // CHR_TRN
-          memcpy(SGB.chr_ram + ((SGB.data[1] & 1) << 12), xfer_src, 4096);
+          memcpy(THIS_SGB.chr_ram + ((THIS_SGB.data[1] & 1) << 12), xfer_src, 4096);
           break;
         case 0x14: { // PCT_TRN
           for (int pal = 0; pal < 4; ++pal) {
-            SGB.border_pal[pal][0] = 0;
+            THIS_SGB.border_pal[pal][0] = 0;
             for (int col = 1; col < 16; ++col) {
               int idx = 0x800 + (pal * 16 + col) * 2;
               u8 lo = xfer_src[idx], hi = xfer_src[idx + 1];
-              SGB.border_pal[pal][col] = e->unpack_cgb_color8(lo, hi);
+              THIS_SGB.border_pal[pal][col] = unpack_cgb_color8(lo, hi);
             }
           }
-          RGBA* dst = e->sgb_frame_buffer;
+          RGBA* dst = sgb_frame_buffer;
           for (int col = 0; col < 28; ++col) {
             for (int row = 0; row < 32; ++row) {
               int idx = (col * 32 + row) * 2;
               u8 tile = xfer_src[idx];
               u8 info = xfer_src[idx + 1];
               u8 pal = (info >> 2) & 3;
-              u8* src = SGB.chr_ram + tile * 32;
+              u8* src = THIS_SGB.chr_ram + tile * 32;
               int dsrc = 2;
               if (info & 0x80) {
                 dsrc = -2;
@@ -1882,7 +1876,7 @@ static void do_sgb(Emulator* e) {
                   int palidx = ((p3 & 1) << 3) | ((p2 & 1) << 2) |
                                ((p1 & 1) << 1) | (p0 & 1);
                   dst[(col * 8 + y) * SGB_SCREEN_WIDTH + (row * 8 + x)] =
-                      SGB.border_pal[pal][palidx];
+                      THIS_SGB.border_pal[pal][palidx];
                   p0 >>= 1;
                   p1 >>= 1;
                   p2 >>= 1;
@@ -1892,19 +1886,19 @@ static void do_sgb(Emulator* e) {
             }
           }
           // Update the mask in case we overwrote the center area.
-          e->update_sgb_mask();
+          update_sgb_mask();
           break;
         }
         case 0x15: // ATTR_TRN
-          memcpy(SGB.attr_ram, xfer_src, sizeof(SGB.attr_ram));
+          memcpy(THIS_SGB.attr_ram, xfer_src, sizeof(THIS_SGB.attr_ram));
           break;
         case 0x16: // ATTR_SET
-          e->set_sgb_attr(SGB.data[1]);
+          set_sgb_attr(THIS_SGB.data[1]);
           break;
         case 0x17: // MASK_EN
-          if (SGB.data[1] <= 3) {
-            SGB.mask = (SgbMask)(SGB.data[1]);
-            e->update_sgb_mask();
+          if (THIS_SGB.data[1] <= 3) {
+            THIS_SGB.mask = (SgbMask)(THIS_SGB.data[1]);
+            update_sgb_mask();
           }
           break;
         case 0x1e:
@@ -1920,22 +1914,22 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
   switch (addr) {
     case IO_JOYP_ADDR:
       THIS_JOYP.joypad_select = static_cast<JoypadSelect>(unpack(value, JOYP_JOYPAD_SELECT));
-      do_sgb(this);
+      do_sgb();
       check_joyp_intr();
       break;
     case IO_SB_ADDR:
-      serial_synchronize(this);
+      serial_synchronize();
       THIS_SERIAL.sb = value;
       break;
     case IO_SC_ADDR:
-      serial_synchronize(this);
+      serial_synchronize();
       THIS_SERIAL.transferring = unpack(value, SC_TRANSFER_START);
       THIS_SERIAL.clock = static_cast<SerialClock>(unpack(value, SC_SHIFT_CLOCK));
       if (THIS_SERIAL.transferring) {
         THIS_SERIAL.tick_count = 0;
         THIS_SERIAL.transferred_bits = 0;
       }
-      calculate_next_serial_intr(this);
+      calculate_next_serial_intr();
       break;
     case IO_DIV_ADDR:
       timer_synchronize();
@@ -1993,7 +1987,7 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
       break;
     }
     case IO_IF_ADDR:
-      intr_synchronize(this);
+      intr_synchronize();
       THIS_INTR.new_if = THIS_INTR.if_ = value & IF_ALL;
       break;
     case IO_LCDC_ADDR: {
@@ -2086,7 +2080,7 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
       break;
     case IO_DMA_ADDR:
       /* DMA can be restarted. */
-      dma_synchronize(this);
+      dma_synchronize();
       THIS_DMA.sync_ticks = THIS_TICKS;
       THIS_DMA.tick_count = 0;
       THIS_DMA.state = (THIS_DMA.state != DMA_INACTIVE ? THIS_DMA.state : DMA_TRIGGERED);
@@ -2369,7 +2363,7 @@ void Emulator::write_apu(MaskedAddress addr, u8 value) {
   }
 
   if (THIS_APU.initialized) {
-    apu_synchronize(this);
+    apu_synchronize();
   }
 
   THIS_HOOK(write_apu_asb, addr, get_apu_reg_string((APUReg)addr), value);
@@ -2537,7 +2531,7 @@ void Emulator::write_apu(MaskedAddress addr, u8 value) {
 }
 
 void Emulator::write_wave_ram(MaskedAddress addr, u8 value) {
-  apu_synchronize(this);
+  apu_synchronize();
   if (THIS_CHANNEL3.status) {
     /* If the wave channel is playing, the byte is written to the sample
      * position. On DMG, this is only allowed if the write occurs exactly when
@@ -2597,7 +2591,7 @@ void Emulator::write_u8_pair(MemoryTypeAddressPair pair, u8 value) {
 }
 
 void Emulator::write_u8(Address addr, u8 value) {
-  dma_synchronize(this);
+  dma_synchronize();
   if (UNLIKELY(!is_dma_access_ok(addr))) {
     THIS_HOOK(write_during_dma_ab, addr, value);
     return;
@@ -2606,7 +2600,7 @@ void Emulator::write_u8(Address addr, u8 value) {
 }
 
 void Emulator::do_ppu_mode2() {
-  dma_synchronize(this);
+  dma_synchronize();
   if (!THIS_LCDC.obj_display || config.disable_obj) {
     return;
   }
@@ -3159,119 +3153,119 @@ void Emulator::update_noise(u32 total_frames) {
   }
 }
 
-static u32 get_gb_frames_until_next_resampled_frame(Emulator* e) {
+u32 Emulator::get_gb_frames_until_next_resampled_frame() {
   u32 result = 0;
-  u32 counter = e->audio_buffer.freq_counter;
+  u32 counter = audio_buffer.freq_counter;
   while (!VALUE_WRAPPED(counter, APU_TICKS_PER_SECOND)) {
-    counter += e->audio_buffer.frequency;
+    counter += audio_buffer.frequency;
     result++;
   }
   return result;
 }
 
-static void write_audio_frame(Emulator* e, u32 gb_frames) {
+void Emulator::write_audio_frame(u32 gb_frames) {
   int i, j;
-  AudioBuffer* buffer = &e->audio_buffer;
+  AudioBuffer* buffer = &audio_buffer;
   buffer->divisor += gb_frames;
   buffer->freq_counter += buffer->frequency * gb_frames;
   if (VALUE_WRAPPED(buffer->freq_counter, APU_TICKS_PER_SECOND)) {
     for (i = 0; i < SOUND_OUTPUT_COUNT; ++i) {
       u32 accumulator = 0;
       for (j = 0; j < APU_CHANNEL_COUNT; ++j) {
-        if (!e->config.disable_sound[j]) {
-          accumulator += APU.channel[j].accumulator * APU.so_output[j][i];
+        if (!config.disable_sound[j]) {
+          accumulator += THIS_APU.channel[j].accumulator * THIS_APU.so_output[j][i];
         }
       }
-      accumulator *= (APU.so_volume[i] + 1) * 16; /* 4bit -> 8bit samples. */
+      accumulator *= (THIS_APU.so_volume[i] + 1) * 16; /* 4bit -> 8bit samples. */
       accumulator /= ((SOUND_OUTPUT_MAX_VOLUME + 1) * APU_CHANNEL_COUNT);
       *buffer->position++ = accumulator / buffer->divisor;
     }
     for (j = 0; j < APU_CHANNEL_COUNT; ++j) {
-      APU.channel[j].accumulator = 0;
+      THIS_APU.channel[j].accumulator = 0;
     }
     buffer->divisor = 0;
   }
   assert(buffer->position <= buffer->end);
 }
 
-static void apu_update_channels(Emulator* e, u32 total_frames) {
+void Emulator::apu_update_channels(u32 total_frames) {
   while (total_frames) {
-    u32 frames = get_gb_frames_until_next_resampled_frame(e);
+    u32 frames = get_gb_frames_until_next_resampled_frame();
     frames = MIN(frames, total_frames);
-    update_square_wave(&CHANNEL1, frames);
-    update_square_wave(&CHANNEL2, frames);
-    e->update_wave(APU.sync_ticks, frames);
-    e->update_noise(frames);
-    write_audio_frame(e, frames);
-    APU.sync_ticks += frames * APU_TICKS;
+    update_square_wave(&THIS_CHANNEL1, frames);
+    update_square_wave(&THIS_CHANNEL2, frames);
+    update_wave(THIS_APU.sync_ticks, frames);
+    update_noise(frames);
+    write_audio_frame(frames);
+    THIS_APU.sync_ticks += frames * APU_TICKS;
     total_frames -= frames;
   }
 }
 
-static void apu_update(Emulator* e, u32 total_ticks) {
+void Emulator::apu_update(u32 total_ticks) {
   while (total_ticks) {
-    Ticks next_seq_ticks = NEXT_MODULO(APU.sync_ticks, FRAME_SEQUENCER_TICKS);
+    Ticks next_seq_ticks = NEXT_MODULO(THIS_APU.sync_ticks, FRAME_SEQUENCER_TICKS);
     if (next_seq_ticks == FRAME_SEQUENCER_TICKS) {
-      APU.frame = (APU.frame + 1) % FRAME_SEQUENCER_COUNT;
-      switch (APU.frame) {
-        case 2: case 6: e->update_sweep(); /* Fallthrough. */
-        case 0: case 4: e->update_lengths(); break;
-        case 7: e->update_envelopes(); break;
+      THIS_APU.frame = (THIS_APU.frame + 1) % FRAME_SEQUENCER_COUNT;
+      switch (THIS_APU.frame) {
+        case 2: case 6: update_sweep(); /* Fallthrough. */
+        case 0: case 4: update_lengths(); break;
+        case 7: update_envelopes(); break;
       }
     }
     Ticks ticks = MIN(next_seq_ticks, total_ticks);
-    apu_update_channels(e, ticks / APU_TICKS);
+    apu_update_channels(ticks / APU_TICKS);
     total_ticks -= ticks;
   }
 }
 
-static void intr_synchronize(Emulator* e) {
-  dma_synchronize(e);
-  serial_synchronize(e);
-  e->ppu_synchronize();
-  e->timer_synchronize();
+void Emulator::intr_synchronize() {
+  dma_synchronize();
+  serial_synchronize();
+  ppu_synchronize();
+  timer_synchronize();
 }
 
-static void apu_synchronize(Emulator* e) {
-  if (TICKS > APU.sync_ticks) {
-    u32 ticks = TICKS - APU.sync_ticks;
-    if (APU.enabled) {
-      apu_update(e, ticks);
-      assert(APU.sync_ticks == TICKS);
+void Emulator::apu_synchronize() {
+  if (THIS_TICKS > THIS_APU.sync_ticks) {
+    u32 ticks = THIS_TICKS - THIS_APU.sync_ticks;
+    if (THIS_APU.enabled) {
+      apu_update(ticks);
+      assert(THIS_APU.sync_ticks == THIS_TICKS);
     } else {
       for (; ticks; ticks -= APU_TICKS) {
-        write_audio_frame(e, 1);
+        write_audio_frame(1);
       }
-      APU.sync_ticks = TICKS;
+      THIS_APU.sync_ticks = THIS_TICKS;
     }
   }
 }
 
-static void dma_synchronize(Emulator* e) {
-  if (UNLIKELY(DMA.state != DMA_INACTIVE)) {
-    if (TICKS > DMA.sync_ticks) {
-      Ticks delta_ticks = TICKS - DMA.sync_ticks;
-      DMA.sync_ticks = TICKS;
+void Emulator::dma_synchronize() {
+  if (UNLIKELY(THIS_DMA.state != DMA_INACTIVE)) {
+    if (THIS_TICKS > THIS_DMA.sync_ticks) {
+      Ticks delta_ticks = THIS_TICKS - THIS_DMA.sync_ticks;
+      THIS_DMA.sync_ticks = THIS_TICKS;
 
-      Ticks cpu_tick = e->state.cpu_tick;
+      Ticks cpu_tick = state.cpu_tick;
       for (; delta_ticks > 0; delta_ticks -= cpu_tick) {
-        if (DMA.tick_count < DMA_DELAY_TICKS) {
-          DMA.tick_count += CPU_TICK;
-          if (DMA.tick_count >= DMA_DELAY_TICKS) {
-            DMA.tick_count = DMA_DELAY_TICKS;
-            DMA.state = DMA_ACTIVE;
+        if (THIS_DMA.tick_count < DMA_DELAY_TICKS) {
+          THIS_DMA.tick_count += CPU_TICK;
+          if (THIS_DMA.tick_count >= DMA_DELAY_TICKS) {
+            THIS_DMA.tick_count = DMA_DELAY_TICKS;
+            THIS_DMA.state = DMA_ACTIVE;
           }
           continue;
         }
 
-        u8 addr_offset = (DMA.tick_count - DMA_DELAY_TICKS) >> 2;
+        u8 addr_offset = (THIS_DMA.tick_count - DMA_DELAY_TICKS) >> 2;
         assert(addr_offset < OAM_TRANSFER_SIZE);
         u8 value =
-            e->read_u8_pair(map_address(DMA.source + addr_offset), false);
-        e->write_oam_no_mode_check(addr_offset, value);
-        DMA.tick_count += CPU_TICK;
-        if (VALUE_WRAPPED(DMA.tick_count, DMA_TICKS)) {
-          DMA.state = DMA_INACTIVE;
+            read_u8_pair(map_address(THIS_DMA.source + addr_offset), false);
+        write_oam_no_mode_check(addr_offset, value);
+        THIS_DMA.tick_count += CPU_TICK;
+        if (VALUE_WRAPPED(THIS_DMA.tick_count, DMA_TICKS)) {
+          THIS_DMA.state = DMA_INACTIVE;
           break;
         }
       }
@@ -3279,73 +3273,73 @@ static void dma_synchronize(Emulator* e) {
   }
 }
 
-static void hdma_copy_byte(Emulator* e) {
-  MemoryTypeAddressPair source_pair = map_hdma_source_address(HDMA.source++);
+void Emulator::hdma_copy_byte() {
+  MemoryTypeAddressPair source_pair = map_hdma_source_address(THIS_HDMA.source++);
   u8 value;
   if (UNLIKELY(source_pair.type == MEMORY_MAP_VRAM)) {
     /* TODO(binji): According to TCAGBD this should read "two unknown bytes",
      * then 0xff for the rest. */
     value = INVALID_READ_BYTE;
   } else {
-    value = e->read_u8_pair(source_pair, false);
+    value = read_u8_pair(source_pair, false);
   }
-  e->write_vram(HDMA.dest++ & ADDR_MASK_8K, value);
-  HDMA.block_bytes++;
-  if (VALUE_WRAPPED(HDMA.block_bytes, 16)) {
-    --HDMA.blocks;
-    if (HDMA.mode == HDMA_TRANSFER_MODE_GDMA) {
-      if (HDMA.blocks == 0xff) {
-        HDMA.state = DMA_INACTIVE;
+  write_vram(THIS_HDMA.dest++ & ADDR_MASK_8K, value);
+  THIS_HDMA.block_bytes++;
+  if (VALUE_WRAPPED(THIS_HDMA.block_bytes, 16)) {
+    --THIS_HDMA.blocks;
+    if (THIS_HDMA.mode == HDMA_TRANSFER_MODE_GDMA) {
+      if (THIS_HDMA.blocks == 0xff) {
+        THIS_HDMA.state = DMA_INACTIVE;
       }
     } else {
-      HDMA.state = DMA_INACTIVE;
+      THIS_HDMA.state = DMA_INACTIVE;
     }
   }
 }
 
-static void calculate_next_serial_intr(Emulator* e) {
-  if (!SERIAL.transferring || SERIAL.clock != SERIAL_CLOCK_INTERNAL) {
-    SERIAL.next_intr_ticks = INVALID_TICKS;
-    e->calculate_next_intr();
+void Emulator::calculate_next_serial_intr() {
+  if (!THIS_SERIAL.transferring || THIS_SERIAL.clock != SERIAL_CLOCK_INTERNAL) {
+    THIS_SERIAL.next_intr_ticks = INVALID_TICKS;
+    calculate_next_intr();
     return;
   }
 
   /* Should only be called when receiving a new byte. */
-  assert(SERIAL.tick_count == 0);
-  assert(SERIAL.transferred_bits == 0);
-  SERIAL.next_intr_ticks =
-      SERIAL.sync_ticks +
-      SERIAL_TICKS * (CPU_SPEED.speed == SPEED_NORMAL ? 8 : 4);
-  e->calculate_next_intr();
+  assert(THIS_SERIAL.tick_count == 0);
+  assert(THIS_SERIAL.transferred_bits == 0);
+  THIS_SERIAL.next_intr_ticks =
+      THIS_SERIAL.sync_ticks +
+      SERIAL_TICKS * (THIS_CPU_SPEED.speed == SPEED_NORMAL ? 8 : 4);
+  calculate_next_intr();
 }
 
-static void serial_synchronize(Emulator* e) {
-  if (TICKS > SERIAL.sync_ticks) {
-    Ticks delta_ticks = TICKS - SERIAL.sync_ticks;
+void Emulator::serial_synchronize() {
+  if (THIS_TICKS > THIS_SERIAL.sync_ticks) {
+    Ticks delta_ticks = THIS_TICKS - THIS_SERIAL.sync_ticks;
 
-    if (UNLIKELY(SERIAL.transferring &&
-                 SERIAL.clock == SERIAL_CLOCK_INTERNAL)) {
-      Ticks cpu_tick = e->state.cpu_tick;
+    if (UNLIKELY(THIS_SERIAL.transferring &&
+                 THIS_SERIAL.clock == SERIAL_CLOCK_INTERNAL)) {
+      Ticks cpu_tick = state.cpu_tick;
       for (; delta_ticks > 0; delta_ticks -= cpu_tick) {
-        SERIAL.tick_count += cpu_tick;
-        if (VALUE_WRAPPED(SERIAL.tick_count, SERIAL_TICKS)) {
+        THIS_SERIAL.tick_count += cpu_tick;
+        if (VALUE_WRAPPED(THIS_SERIAL.tick_count, SERIAL_TICKS)) {
           /* Since we're never connected to another device, always shift in
            * 0xff. */
-          SERIAL.sb = (SERIAL.sb << 1) | 1;
-          SERIAL.transferred_bits++;
-          if (VALUE_WRAPPED(SERIAL.transferred_bits, 8)) {
-            SERIAL.transferring = 0;
-            INTR.new_if |= IF_SERIAL;
-            SERIAL.sync_ticks = TICKS - delta_ticks;
-            calculate_next_serial_intr(e);
+          THIS_SERIAL.sb = (THIS_SERIAL.sb << 1) | 1;
+          THIS_SERIAL.transferred_bits++;
+          if (VALUE_WRAPPED(THIS_SERIAL.transferred_bits, 8)) {
+            THIS_SERIAL.transferring = 0;
+            THIS_INTR.new_if |= IF_SERIAL;
+            THIS_SERIAL.sync_ticks = THIS_TICKS - delta_ticks;
+            calculate_next_serial_intr();
           }
-        } else if (UNLIKELY(SERIAL.tick_count == 0 &&
-                            SERIAL.transferred_bits == 0)) {
-          INTR.if_ |= (INTR.new_if & IF_SERIAL);
+        } else if (UNLIKELY(THIS_SERIAL.tick_count == 0 &&
+                            THIS_SERIAL.transferred_bits == 0)) {
+          THIS_INTR.if_ |= (THIS_INTR.new_if & IF_SERIAL);
         }
       }
     }
-    SERIAL.sync_ticks = TICKS;
+    THIS_SERIAL.sync_ticks = THIS_TICKS;
   }
 }
 
@@ -3375,17 +3369,17 @@ void Emulator::write_u16_tick(Address addr, u16 value) {
   write_u8_tick(addr, (u8)value);
 }
 
-static u16 get_af_reg(Emulator* e) {
-  return (REG.A << 8) | pack(REG.F.Z, CPU_FLAG_Z) | pack(REG.F.N, CPU_FLAG_N) |
-         pack(REG.F.H, CPU_FLAG_H) | pack(REG.F.C, CPU_FLAG_C);
+u16 Emulator::get_af_reg() {
+  return (THIS_REG.A << 8) | pack(THIS_REG.F.Z, CPU_FLAG_Z) | pack(THIS_REG.F.N, CPU_FLAG_N) |
+         pack(THIS_REG.F.H, CPU_FLAG_H) | pack(THIS_REG.F.C, CPU_FLAG_C);
 }
 
-static void set_af_reg(Emulator* e, u16 af) {
-  REG.A = af >> 8;
-  REG.F.Z = unpack(af, CPU_FLAG_Z);
-  REG.F.N = unpack(af, CPU_FLAG_N);
-  REG.F.H = unpack(af, CPU_FLAG_H);
-  REG.F.C = unpack(af, CPU_FLAG_C);
+void Emulator::set_af_reg(u16 af) {
+  THIS_REG.A = af >> 8;
+  THIS_REG.F.Z = unpack(af, CPU_FLAG_Z);
+  THIS_REG.F.N = unpack(af, CPU_FLAG_N);
+  THIS_REG.F.H = unpack(af, CPU_FLAG_H);
+  THIS_REG.F.C = unpack(af, CPU_FLAG_C);
 }
 
 #define TICK tick()
@@ -3506,9 +3500,9 @@ static void set_af_reg(Emulator* e, u16 af) {
 #define OR_MR(MR) RA |= READMR(MR); OR_FLAGS
 #define OR_N RA |= READ_N; OR_FLAGS
 #define POP_RR(RR) THIS_REG.RR = READ16(RSP); RSP += 2
-#define POP_AF set_af_reg(this, READ16(RSP)); RSP += 2
+#define POP_AF set_af_reg(READ16(RSP)); RSP += 2
 #define PUSH_RR(RR) TICK; RSP -= 2; WRITE16(RSP, THIS_REG.RR)
-#define PUSH_AF TICK; RSP -= 2; WRITE16(RSP, get_af_reg(this))
+#define PUSH_AF TICK; RSP -= 2; WRITE16(RSP, get_af_reg())
 #define RES(BIT) u &= ~(1 << (BIT))
 #define RES_R(BIT, R) BASIC_OP_R(R, RES(BIT))
 #define RES_MR(BIT, MR) BASIC_OP_MR(MR, RES(BIT))
@@ -3644,7 +3638,7 @@ void Emulator::execute_instruction() {
       timer_synchronize();
     }
     if (THIS_TICKS >= THIS_SERIAL.next_intr_ticks) {
-      serial_synchronize(this);
+      serial_synchronize();
     }
     if (THIS_TICKS >= THIS_PPU.next_intr_ticks) {
       ppu_synchronize();
@@ -3666,7 +3660,7 @@ void Emulator::execute_instruction() {
         if (UNLIKELY(!should_dispatch)) {
           // TODO(binji): proper timing of speed switching.
           if (THIS_CPU_SPEED.switching) {
-            intr_synchronize(this);
+            intr_synchronize();
             THIS_CPU_SPEED.switching = false;
             THIS_CPU_SPEED.speed = static_cast<Speed>(static_cast<int>(THIS_CPU_SPEED.speed) ^ 1);
             THIS_INTR.state = CPU_STATE_NORMAL;
@@ -3705,7 +3699,7 @@ void Emulator::execute_instruction() {
         should_dispatch = (THIS_INTR.new_if & THIS_INTR.ie) != 0;
         tick();
         if (UNLIKELY(should_dispatch)) {
-          intr_synchronize(this);
+          intr_synchronize();
           dispatch_interrupt();
         }
         return;
@@ -3724,7 +3718,7 @@ void Emulator::execute_instruction() {
   }
 
   if (UNLIKELY(should_dispatch)) {
-    intr_synchronize(this);
+    intr_synchronize();
     dispatch_interrupt();
     return;
   }
@@ -3948,8 +3942,8 @@ void Emulator::emulator_step_internal() {
     execute_instruction();
   } else {
     tick();
-    hdma_copy_byte(this);
-    hdma_copy_byte(this);
+    hdma_copy_byte();
+    hdma_copy_byte();
   }
 }
 
@@ -3975,7 +3969,7 @@ EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
   if (THIS_TICKS >= until_ticks) {
     state.event |= EMULATOR_EVENT_UNTIL_TICKS;
   }
-  apu_synchronize(this);
+  apu_synchronize();
   return state.event;
 }
 
@@ -4014,8 +4008,8 @@ static void log_cart_info(CartInfo* cart_info) {
          get_result_string(validate_header_checksum(cart_info)));
 }
 
-Result init_audio_buffer(Emulator* e, u32 frequency, u32 frames) {
-  AudioBuffer* audio_buffer = &e->audio_buffer;
+Result Emulator::init_audio_buffer(u32 frequency, u32 frames) {
+  AudioBuffer* audio_buffer = &this->audio_buffer;
   audio_buffer->frames = frames;
   size_t buffer_size =
       (frames + AUDIO_BUFFER_EXTRA_FRAMES) * SOUND_OUTPUT_COUNT;
@@ -4055,65 +4049,65 @@ static void randomize_buffer(u32* seed, u8* buffer, u32 size) {
   }
 }
 
-Result init_emulator(Emulator* e, const EmulatorInit* init) {
+Result Emulator::init_emulator(const EmulatorInit* init) {
   static u8 s_initial_wave_ram[WAVE_RAM_SIZE] = {
       0x60, 0x0d, 0xda, 0xdd, 0x50, 0x0f, 0xad, 0xed,
       0xc0, 0xde, 0xf0, 0x0d, 0xbe, 0xef, 0xfe, 0xed,
   };
-  if(!(SUCCESS(get_cart_infos(e)))) return ERROR;
-  log_cart_info(e->cart_info);
-  MMAP_STATE.rom_base[0] = 0;
-  MMAP_STATE.rom_base[1] = 1 << ROM_BANK_SHIFT;
-  IS_CGB = !init->force_dmg && (e->cart_info->cgb_flag == CGB_FLAG_SUPPORTED ||
-                                e->cart_info->cgb_flag == CGB_FLAG_REQUIRED);
-  IS_SGB = !init->force_dmg && !IS_CGB &&
-           e->cart_info->sgb_flag == SGB_FLAG_SUPPORTED;
-  set_af_reg(e, 0xb0);
-  REG.A = IS_CGB ? 0x11 : 0x01;
-  REG.BC = 0x0013;
-  REG.DE = 0x00d8;
-  REG.HL = 0x014d;
-  REG.SP = 0xfffe;
-  REG.PC = 0x0100;
-  INTR.ime = false;
-  TIMER.div_counter = 0xAC00;
-  TIMER.next_intr_ticks = SERIAL.next_intr_ticks = e->state.next_intr_ticks =
+  if(!(SUCCESS(get_cart_infos(this)))) return ERROR;
+  log_cart_info(cart_info);
+  THIS_MMAP_STATE.rom_base[0] = 0;
+  THIS_MMAP_STATE.rom_base[1] = 1 << ROM_BANK_SHIFT;
+  THIS_IS_CGB = !init->force_dmg && (cart_info->cgb_flag == CGB_FLAG_SUPPORTED ||
+                                cart_info->cgb_flag == CGB_FLAG_REQUIRED);
+  THIS_IS_SGB = !init->force_dmg && !THIS_IS_CGB &&
+           cart_info->sgb_flag == SGB_FLAG_SUPPORTED;
+  set_af_reg(0xb0);
+  THIS_REG.A = THIS_IS_CGB ? 0x11 : 0x01;
+  THIS_REG.BC = 0x0013;
+  THIS_REG.DE = 0x00d8;
+  THIS_REG.HL = 0x014d;
+  THIS_REG.SP = 0xfffe;
+  THIS_REG.PC = 0x0100;
+  THIS_INTR.ime = false;
+  THIS_TIMER.div_counter = 0xAC00;
+  THIS_TIMER.next_intr_ticks = THIS_SERIAL.next_intr_ticks = state.next_intr_ticks =
       INVALID_TICKS;
-  WRAM.offset = 0x1000;
+  THIS_WRAM.offset = 0x1000;
   /* Enable apu first, so subsequent writes succeed. */
-  e->write_apu(APU_NR52_ADDR, 0xf1);
-  e->write_apu(APU_NR11_ADDR, 0x80);
-  e->write_apu(APU_NR12_ADDR, 0xf3);
-  e->write_apu(APU_NR14_ADDR, 0x80);
-  e->write_apu(APU_NR50_ADDR, 0x77);
-  e->write_apu(APU_NR51_ADDR, 0xf3);
-  APU.initialized = true;
-  memcpy(&WAVE.ram, s_initial_wave_ram, WAVE_RAM_SIZE);
+  write_apu(APU_NR52_ADDR, 0xf1);
+  write_apu(APU_NR11_ADDR, 0x80);
+  write_apu(APU_NR12_ADDR, 0xf3);
+  write_apu(APU_NR14_ADDR, 0x80);
+  write_apu(APU_NR50_ADDR, 0x77);
+  write_apu(APU_NR51_ADDR, 0xf3);
+  THIS_APU.initialized = true;
+  memcpy(&THIS_WAVE.ram, s_initial_wave_ram, WAVE_RAM_SIZE);
   /* Turn down the volume on channel1, it is playing by default (because of the
    * GB startup sound), but we don't want to hear it when starting the
    * emulator. */
-  CHANNEL1.envelope.volume = 0;
-  e->write_io(IO_LCDC_ADDR, 0x91);
-  e->write_io(IO_SCY_ADDR, 0x00);
-  e->write_io(IO_SCX_ADDR, 0x00);
-  e->write_io(IO_LYC_ADDR, 0x00);
-  e->write_io(IO_BGP_ADDR, 0xfc);
-  e->write_io(IO_OBP0_ADDR, 0xff);
-  e->write_io(IO_OBP1_ADDR, 0xff);
-  e->write_io(IO_IF_ADDR, 0x1);
-  e->write_io(IO_IE_ADDR, 0x0);
-  HDMA.blocks = 0xff;
+  THIS_CHANNEL1.envelope.volume = 0;
+  write_io(IO_LCDC_ADDR, 0x91);
+  write_io(IO_SCY_ADDR, 0x00);
+  write_io(IO_SCX_ADDR, 0x00);
+  write_io(IO_LYC_ADDR, 0x00);
+  write_io(IO_BGP_ADDR, 0xfc);
+  write_io(IO_OBP0_ADDR, 0xff);
+  write_io(IO_OBP1_ADDR, 0xff);
+  write_io(IO_IF_ADDR, 0x1);
+  write_io(IO_IE_ADDR, 0x0);
+  THIS_HDMA.blocks = 0xff;
 
   /* Set initial DMG/SGB palettes */
-  e->emulator_set_builtin_palette(init->builtin_palette);
+  emulator_set_builtin_palette(init->builtin_palette);
 
   /* Set up cgb color curve */
-  e->cgb_color_curve = init->cgb_color_curve;
+  cgb_color_curve = init->cgb_color_curve;
 
   /* Set initial CGB palettes to white. */
   int pal_index;
   for (pal_index = 0; pal_index < 2; ++pal_index) {
-    ColorPalettes* palette = pal_index == 0 ? &PPU.bgcp : &PPU.obcp;
+    ColorPalettes* palette = pal_index == 0 ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
     int i;
     for (i = 0; i < 32; ++i) {
       palette->palettes[i >> 2].color[i & 3] = RGBA_WHITE;
@@ -4124,13 +4118,13 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
 
   /* Randomize RAM */
   u32 random_seed = init->random_seed;
-  e->state.random_seed = random_seed;
-  randomize_buffer(&random_seed, e->state.ext_ram.data, EXT_RAM_MAX_SIZE);
-  randomize_buffer(&random_seed, e->state.wram.data, WORK_RAM_SIZE);
-  randomize_buffer(&random_seed, e->state.hram, HIGH_RAM_SIZE);
+  state.random_seed = random_seed;
+  randomize_buffer(&random_seed, state.ext_ram.data, EXT_RAM_MAX_SIZE);
+  randomize_buffer(&random_seed, state.wram.data, WORK_RAM_SIZE);
+  randomize_buffer(&random_seed, state.hram, HIGH_RAM_SIZE);
 
-  e->state.cpu_tick = CPU_TICK;
-  e->calculate_next_ppu_intr();
+  state.cpu_tick = CPU_TICK;
+  calculate_next_ppu_intr();
   return OK;
 }
 
@@ -4325,9 +4319,9 @@ error:
 std::unique_ptr<Emulator> Emulator::try_create(const EmulatorInit* init) {
   std::unique_ptr<Emulator> e = std::make_unique<Emulator>();
   CHECK(SUCCESS(set_rom_file_data(e.get(), &init->rom)));
-  CHECK(SUCCESS(init_emulator(e.get(), init)));
+  CHECK(SUCCESS(e->init_emulator(init)));
   CHECK(
-      SUCCESS(init_audio_buffer(e.get(), init->audio_frequency, init->audio_frames)));
+      SUCCESS(e->init_audio_buffer(init->audio_frequency, init->audio_frames)));
   return e;
 error:
   return NULL;
