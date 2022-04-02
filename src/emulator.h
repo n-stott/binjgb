@@ -1025,16 +1025,16 @@ struct Emulator {
   void write_u8_pair(MemoryTypeAddressPair pair, u8 value);
   void write_u8_raw(Address addr, u8 value);
   void write_u8(Address addr, u8 value);
-  // void do_ppu_mode2();
-  // u32 mode3_tick_count();
-  // void ppu_mode3_synchronize();
-  // void ppu_synchronize();
-  // void calculate_next_ppu_intr();
-  // void update_sweep();
-  // void update_lengths();
-  // void update_envelopes();
-  // void update_wave(u32 apu_ticks, u32 total_frames);
-  // void update_noise(u32 total_frames);
+  void do_ppu_mode2();
+  u32 mode3_tick_count();
+  void ppu_mode3_synchronize();
+  void ppu_synchronize();
+  void calculate_next_ppu_intr();
+  void update_sweep();
+  void update_lengths();
+  void update_envelopes();
+  void update_wave(u32 apu_ticks, u32 total_frames);
+  void update_noise(u32 total_frames);
 
   // u32 get_gb_frames_until_next_resampled_frame();
   // void write_audio_frame(u32 gb_frames);

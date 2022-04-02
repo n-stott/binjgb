@@ -382,10 +382,7 @@ static u8 s_obj_size_to_height[] = {[OBJ_SIZE_8X8] = 8, [OBJ_SIZE_8X16] = 16};
 static void apu_synchronize(Emulator*);
 static void dma_synchronize(Emulator*);
 static void intr_synchronize(Emulator*);
-static void ppu_synchronize(Emulator*);
-static void ppu_mode3_synchronize(Emulator*);
 static void serial_synchronize(Emulator*);
-static void calculate_next_ppu_intr(Emulator*);
 static void calculate_next_serial_intr(Emulator*);
 
 static MemoryTypeAddressPair make_pair(MemoryMapType type, Address addr) {
@@ -989,7 +986,7 @@ bool Emulator::is_using_oam(bool write) {
 }
 
 u8 Emulator::read_vram(MaskedAddress addr) {
-  ppu_synchronize(this);
+  ppu_synchronize();
   if (is_using_vram(false)) {
     THIS_HOOK(read_vram_in_use_a, addr);
     return INVALID_READ_BYTE;
@@ -1000,7 +997,7 @@ u8 Emulator::read_vram(MaskedAddress addr) {
 }
 
 u8 Emulator::read_oam(MaskedAddress addr) {
-  ppu_synchronize(this);
+  ppu_synchronize();
   if (is_using_oam(false)) {
     THIS_HOOK(read_oam_in_use_a, addr);
     return INVALID_READ_BYTE;
@@ -1100,7 +1097,7 @@ u8 Emulator::read_io(MaskedAddress addr) {
              pack(THIS_LCDC.obj_display, LCDC_OBJ_DISPLAY) |
              pack(THIS_LCDC.bg_display, LCDC_BG_DISPLAY);
     case IO_STAT_ADDR:
-      ppu_synchronize(this);
+      ppu_synchronize();
       return STAT_UNUSED | pack(THIS_STAT.y_compare.irq, STAT_YCOMPARE_INTR) |
              pack(THIS_STAT.mode2.irq, STAT_MODE2_INTR) |
              pack(THIS_STAT.vblank.irq, STAT_VBLANK_INTR) |
@@ -1112,7 +1109,7 @@ u8 Emulator::read_io(MaskedAddress addr) {
     case IO_SCX_ADDR:
       return THIS_PPU.scx;
     case IO_LY_ADDR:
-      ppu_synchronize(this);
+      ppu_synchronize();
       return THIS_PPU.ly;
     case IO_LYC_ADDR:
       return THIS_PPU.lyc;
@@ -1335,7 +1332,7 @@ u8 Emulator::read_u8(Address addr) {
 }
 
 void Emulator::write_vram(MaskedAddress addr, u8 value) {
-  ppu_synchronize(this);
+  ppu_synchronize();
   if (UNLIKELY(is_using_vram(true))) {
     THIS_HOOK(write_vram_in_use_ab, addr, value);
     return;
@@ -1364,7 +1361,7 @@ void Emulator::write_oam_no_mode_check(MaskedAddress addr, u8 value) {
 }
 
 void Emulator::write_oam(MaskedAddress addr, u8 value) {
-  ppu_synchronize(this);
+  ppu_synchronize();
   if (UNLIKELY(is_using_oam(true))) {
     THIS_HOOK(write_oam_in_use_ab, addr, value);
     return;
@@ -2000,8 +1997,8 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
       THIS_INTR.new_if = THIS_INTR.if_ = value & IF_ALL;
       break;
     case IO_LCDC_ADDR: {
-      ppu_synchronize(this);
-      ppu_mode3_synchronize(this);
+      ppu_synchronize();
+      ppu_mode3_synchronize();
       bool was_enabled = THIS_LCDC.display;
       THIS_LCDC.display = unpack(value, LCDC_DISPLAY);
       THIS_LCDC.window_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_WINDOW_TILE_MAP_SELECT));
@@ -2033,12 +2030,12 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
           }
           state.event |= EMULATOR_EVENT_NEW_FRAME;
         }
-        calculate_next_ppu_intr(this);
+        calculate_next_ppu_intr();
       }
       break;
     }
     case IO_STAT_ADDR: {
-      ppu_synchronize(this);
+      ppu_synchronize();
       bool new_vblank_irq = unpack(value, STAT_VBLANK_INTR);
       bool new_hblank_irq = unpack(value, STAT_HBLANK_INTR);
       if (THIS_LCDC.display) {
@@ -2064,28 +2061,28 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
       THIS_STAT.mode2.irq = unpack(value, STAT_MODE2_INTR);
       THIS_STAT.vblank.irq = new_vblank_irq;
       THIS_STAT.hblank.irq = new_hblank_irq;
-      calculate_next_ppu_intr(this);
+      calculate_next_ppu_intr();
       break;
     }
     case IO_SCY_ADDR:
-      ppu_mode3_synchronize(this);
+      ppu_mode3_synchronize();
       THIS_PPU.scy = value;
       break;
     case IO_SCX_ADDR:
-      ppu_synchronize(this);
-      ppu_mode3_synchronize(this);
+      ppu_synchronize();
+      ppu_mode3_synchronize();
       THIS_PPU.scx = value;
       break;
     case IO_LY_ADDR:
       break;
     case IO_LYC_ADDR:
-      ppu_synchronize(this);
+      ppu_synchronize();
       THIS_PPU.lyc = value;
       if (THIS_LCDC.display) {
         check_ly_eq_lyc(true);
         check_stat();
       }
-      calculate_next_ppu_intr(this);
+      calculate_next_ppu_intr();
       break;
     case IO_DMA_ADDR:
       /* DMA can be restarted. */
@@ -2100,7 +2097,7 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
     case IO_OBP1_ADDR: {
       PaletteType type = static_cast<PaletteType>(addr - IO_BGP_ADDR);
       Palette* pal = &THIS_PPU.pal[type];
-      ppu_mode3_synchronize(this);
+      ppu_mode3_synchronize();
       pal->color[3] = static_cast<Color>(unpack(value, PALETTE_COLOR3));
       pal->color[2] = static_cast<Color>(unpack(value, PALETTE_COLOR2));
       pal->color[1] = static_cast<Color>(unpack(value, PALETTE_COLOR1));
@@ -2109,12 +2106,12 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
       break;
     }
     case IO_WY_ADDR:
-      ppu_synchronize(this);
-      ppu_mode3_synchronize(this);
+      ppu_synchronize();
+      ppu_mode3_synchronize();
       THIS_PPU.wy = value;
       break;
     case IO_WX_ADDR:
-      ppu_mode3_synchronize(this);
+      ppu_mode3_synchronize();
       THIS_PPU.wx = value;
       break;
     case IO_KEY1_ADDR:
@@ -2179,7 +2176,7 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
     case IO_BCPS_ADDR:
     case IO_OCPS_ADDR:
       if (THIS_IS_CGB) {
-        ppu_mode3_synchronize(this);
+        ppu_mode3_synchronize();
         ColorPalettes* cp = addr == IO_BCPS_ADDR ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
         cp->index = unpack(value, XCPS_INDEX);
         cp->auto_increment = unpack(value, XCPS_AUTO_INCREMENT);
@@ -2188,7 +2185,7 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
     case IO_BCPD_ADDR:
     case IO_OCPD_ADDR:
       if (THIS_IS_CGB) {
-        ppu_mode3_synchronize(this);
+        ppu_mode3_synchronize();
         ColorPalettes* cp = addr == IO_BCPD_ADDR ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
         cp->data[cp->index] = value;
         u8 palette_index = (cp->index >> 3) & 7;
@@ -2608,48 +2605,48 @@ void Emulator::write_u8(Address addr, u8 value) {
   write_u8_pair(map_address(addr), value);
 }
 
-static void do_ppu_mode2(Emulator* e) {
-  dma_synchronize(e);
-  if (!LCDC.obj_display || e->config.disable_obj) {
+void Emulator::do_ppu_mode2() {
+  dma_synchronize(this);
+  if (!THIS_LCDC.obj_display || config.disable_obj) {
     return;
   }
 
   int line_obj_count = 0;
   int i;
-  u8 obj_height = s_obj_size_to_height[LCDC.obj_size];
-  u8 y = PPU.line_y;
+  u8 obj_height = s_obj_size_to_height[THIS_LCDC.obj_size];
+  u8 y = THIS_PPU.line_y;
   for (i = 0; i < OBJ_COUNT; ++i) {
     /* Put the visible sprites into line_obj. Insert them so sprites with
      * smaller X-coordinates are earlier, but only on DMG. On CGB, they are
      * always ordered by obj index. */
-    Obj* o = &OAM[i];
+    Obj* o = &THIS_OAM[i];
     u8 rel_y = y - o->y;
     if (rel_y < obj_height) {
       int j = line_obj_count;
-      if (!IS_CGB) {
-        while (j > 0 && o->x < PPU.line_obj[j - 1].x) {
-          PPU.line_obj[j] = PPU.line_obj[j - 1];
+      if (!THIS_IS_CGB) {
+        while (j > 0 && o->x < THIS_PPU.line_obj[j - 1].x) {
+          THIS_PPU.line_obj[j] = THIS_PPU.line_obj[j - 1];
           j--;
         }
       }
-      PPU.line_obj[j] = *o;
+      THIS_PPU.line_obj[j] = *o;
       if (++line_obj_count == OBJ_PER_LINE_COUNT) {
         break;
       }
     }
   }
-  PPU.line_obj_count = line_obj_count;
+  THIS_PPU.line_obj_count = line_obj_count;
 }
 
-static u32 mode3_tick_count(Emulator* e) {
+u32 Emulator::mode3_tick_count() {
   s32 buckets[SCREEN_WIDTH / 8 + 2];
   ZERO_MEMORY(buckets);
-  u8 scx_fine = PPU.scx & 7;
+  u8 scx_fine = THIS_PPU.scx & 7;
   u32 ticks = PPU_MODE3_MIN_TICKS + scx_fine;
   bool has_zero = false;
   int i;
-  for (i = 0; i < PPU.line_obj_count; ++i) {
-    Obj* o = &PPU.line_obj[i];
+  for (i = 0; i < THIS_PPU.line_obj_count; ++i) {
+    Obj* o = &THIS_PPU.line_obj[i];
     u8 x = o->x + OBJ_X_OFFSET;
     if (x >= SCREEN_WIDTH + OBJ_X_OFFSET) {
       continue;
@@ -2669,31 +2666,31 @@ static u32 mode3_tick_count(Emulator* e) {
   return ticks;
 }
 
-static void ppu_mode3_synchronize(Emulator* e) {
-  u8 x = PPU.render_x;
-  const u8 y = PPU.line_y;
-  if (STAT.mode != PPU_MODE_MODE3 || x >= SCREEN_WIDTH) return;
+void Emulator::ppu_mode3_synchronize() {
+  u8 x = THIS_PPU.render_x;
+  const u8 y = THIS_PPU.line_y;
+  if (THIS_STAT.mode != PPU_MODE_MODE3 || x >= SCREEN_WIDTH) return;
 
-  bool display_bg = (IS_CGB || LCDC.bg_display) && !e->config.disable_bg;
-  const bool display_obj = LCDC.obj_display && !e->config.disable_obj;
-  bool rendering_window = PPU.rendering_window;
+  bool display_bg = (THIS_IS_CGB || THIS_LCDC.bg_display) && !config.disable_bg;
+  const bool display_obj = THIS_LCDC.obj_display && !config.disable_obj;
+  bool rendering_window = THIS_PPU.rendering_window;
   int window_counter = rendering_window ? 0 : 255;
-  if (!rendering_window && LCDC.window_display && !e->config.disable_window &&
-      PPU.wx <= WINDOW_MAX_X && y >= PPU.wy) {
-    window_counter = MAX(0, PPU.wx - (x + WINDOW_X_OFFSET));
+  if (!rendering_window && THIS_LCDC.window_display && !config.disable_window &&
+      THIS_PPU.wx <= WINDOW_MAX_X && y >= THIS_PPU.wy) {
+    window_counter = MAX(0, THIS_PPU.wx - (x + WINDOW_X_OFFSET));
   }
 
-  const TileDataSelect data_select = LCDC.bg_tile_data_select;
-  u8 mx = PPU.scx + x;
-  u8 my = PPU.scy + y;
-  u16 map_base = map_select_to_address(LCDC.bg_tile_map_select) |
+  const TileDataSelect data_select = THIS_LCDC.bg_tile_data_select;
+  u8 mx = THIS_PPU.scx + x;
+  u8 my = THIS_PPU.scy + y;
+  u16 map_base = map_select_to_address(THIS_LCDC.bg_tile_map_select) |
                  ((my >> 3) * TILE_MAP_WIDTH);
   RGBA* pixel;
-  if (SGB.mask != SGB_MASK_CANCEL) {
+  if (THIS_SGB.mask != SGB_MASK_CANCEL) {
     static RGBA s_dummy_frame_buffer_line[SCREEN_WIDTH];
     pixel = s_dummy_frame_buffer_line;
   } else {
-    pixel = &e->frame_buffer[y * SCREEN_WIDTH + x];
+    pixel = &frame_buffer[y * SCREEN_WIDTH + x];
   }
 
   /* Cache map_addr info. */
@@ -2703,17 +2700,17 @@ static void ppu_mode3_synchronize(Emulator* e) {
 
   bool priority = false;
   int i;
-  for (; PPU.mode3_render_ticks < TICKS && x < SCREEN_WIDTH;
-       PPU.mode3_render_ticks += CPU_TICK, pixel += 4, x += 4) {
+  for (; THIS_PPU.mode3_render_ticks < THIS_TICKS && x < SCREEN_WIDTH;
+       THIS_PPU.mode3_render_ticks += CPU_TICK, pixel += 4, x += 4) {
     bool bg_is_zero[4] = {true, true, true, true},
          bg_priority[4] = {false, false, false, false};
 
     for (i = 0; i < 4; ++i, ++mx) {
       if (UNLIKELY(window_counter-- == 0)) {
-        PPU.rendering_window = rendering_window = display_bg = true;
-        mx = x + i + WINDOW_X_OFFSET - PPU.wx;
-        my = PPU.win_y;
-        map_base = map_select_to_address(LCDC.window_tile_map_select) |
+        THIS_PPU.rendering_window = rendering_window = display_bg = true;
+        mx = x + i + WINDOW_X_OFFSET - THIS_PPU.wx;
+        my = THIS_PPU.win_y;
+        map_base = map_select_to_address(THIS_LCDC.window_tile_map_select) |
                    ((my >> 3) * TILE_MAP_WIDTH);
         map_addr = 0;
       }
@@ -2724,36 +2721,36 @@ static void ppu_mode3_synchronize(Emulator* e) {
           hi <<= 1;
         } else {
           map_addr = new_map_addr;
-          u16 tile_index = VRAM.data[map_addr];
+          u16 tile_index = THIS_VRAM.data[map_addr];
           u8 my7 = my & 7;
           if (data_select == TILE_DATA_8800_97FF) {
             tile_index = 256 + (s8)tile_index;
           }
-          if (IS_CGB) {
-            u8 attr = VRAM.data[0x2000 + map_addr];
-            pal = &PPU.bgcp.palettes[attr & 0x7];
+          if (THIS_IS_CGB) {
+            u8 attr = THIS_VRAM.data[0x2000 + map_addr];
+            pal = &THIS_PPU.bgcp.palettes[attr & 0x7];
             if (attr & 0x08) { tile_index += 0x200; }
             if (attr & 0x40) { my7 = 7 - my7; }
             priority = (attr & 0x80) != 0;
             u16 tile_addr = (tile_index * TILE_HEIGHT + my7) * TILE_ROW_BYTES;
-            lo = VRAM.data[tile_addr];
-            hi = VRAM.data[tile_addr + 1];
+            lo = THIS_VRAM.data[tile_addr];
+            hi = THIS_VRAM.data[tile_addr + 1];
             if (attr & 0x20) {
               lo = reverse_bits_u8(lo);
               hi = reverse_bits_u8(hi);
             }
           } else {
-            if (IS_SGB) {
+            if (THIS_IS_SGB) {
               int idx = (y >> 3) * (SCREEN_WIDTH >> 3) + (x >> 3);
-              u8 palidx = (SGB.attr_map[idx >> 2] >> (2 * (3 - (idx & 3)))) & 3;
-              pal = &e->sgb_pal[palidx];
+              u8 palidx = (THIS_SGB.attr_map[idx >> 2] >> (2 * (3 - (idx & 3)))) & 3;
+              pal = &sgb_pal[palidx];
             } else {
-              pal = &e->pal[PALETTE_TYPE_BGP];
+              pal = &pal[PALETTE_TYPE_BGP];
             }
             priority = false;
             u16 tile_addr = (tile_index * TILE_HEIGHT + my7) * TILE_ROW_BYTES;
-            lo = VRAM.data[tile_addr];
-            hi = VRAM.data[tile_addr + 1];
+            lo = THIS_VRAM.data[tile_addr];
+            hi = THIS_VRAM.data[tile_addr + 1];
           }
           u8 shift = mx & 7;
           lo <<= shift;
@@ -2764,28 +2761,28 @@ static void ppu_mode3_synchronize(Emulator* e) {
         bg_is_zero[i] = palette_index == 0;
         bg_priority[i] = priority;
       } else {
-        if (IS_CGB) {
-          pixel[i] = PPU.bgcp.palettes[0].color[0];
-        } else if (IS_SGB) {
-          pixel[i] = e->sgb_pal[0].color[0];
+        if (THIS_IS_CGB) {
+          pixel[i] = THIS_PPU.bgcp.palettes[0].color[0];
+        } else if (THIS_IS_SGB) {
+          pixel[i] = sgb_pal[0].color[0];
         } else {
-          pixel[i] = e->color_to_rgba[0].color[0];
+          pixel[i] = color_to_rgba[0].color[0];
         }
       }
     }
 
     /* LCDC bit 0 works differently on cgb; when it's cleared OBJ will always
      * have priority over bg and window. */
-    if (IS_CGB && !LCDC.bg_display) {
+    if (THIS_IS_CGB && !THIS_LCDC.bg_display) {
       memset(&bg_is_zero, true, sizeof(bg_is_zero));
       memset(&bg_priority, false, sizeof(bg_priority));
     }
 
     if (display_obj) {
-      u8 obj_height = s_obj_size_to_height[LCDC.obj_size];
+      u8 obj_height = s_obj_size_to_height[THIS_LCDC.obj_size];
       int n;
-      for (n = PPU.line_obj_count - 1; n >= 0; --n) {
-        Obj* o = &PPU.line_obj[n];
+      for (n = THIS_PPU.line_obj_count - 1; n >= 0; --n) {
+        Obj* o = &THIS_PPU.line_obj[n];
         /* Does [x, x + 4) intersect [o->x, o->x + 8)? Note that the sums must
          * wrap at 256 (i.e. arithmetic is 8-bit). */
         s8 ox_start = o->x - x;
@@ -2811,15 +2808,15 @@ static void ppu_mode3_synchronize(Emulator* e) {
           }
         }
         PaletteRGBA* pal = NULL;
-        if (IS_CGB) {
-          pal = &PPU.obcp.palettes[o->cgb_palette & 0x7];
+        if (THIS_IS_CGB) {
+          pal = &THIS_PPU.obcp.palettes[o->cgb_palette & 0x7];
           if (o->bank) { tile_index += 0x200; }
         } else {
-          pal = &e->pal[o->palette + 1];
+          pal = &pal[o->palette + 1];
         }
         u16 tile_addr = (tile_index * TILE_HEIGHT + (oy & 7)) * TILE_ROW_BYTES;
-        u8 lo = VRAM.data[tile_addr];
-        u8 hi = VRAM.data[tile_addr + 1];
+        u8 lo = THIS_VRAM.data[tile_addr];
+        u8 hi = THIS_VRAM.data[tile_addr + 1];
         if (!o->xflip) {
           lo = reverse_bits_u8(lo);
           hi = reverse_bits_u8(hi);
@@ -2844,147 +2841,147 @@ static void ppu_mode3_synchronize(Emulator* e) {
       }
     }
   }
-  PPU.render_x = x;
+  THIS_PPU.render_x = x;
 }
 
-static void ppu_synchronize(Emulator* e) {
-  assert(IS_ALIGNED(PPU.sync_ticks, CPU_TICK));
-  Ticks aligned_ticks = ALIGN_DOWN(TICKS, CPU_TICK);
-  if (aligned_ticks > PPU.sync_ticks) {
-    Ticks delta_ticks = aligned_ticks - PPU.sync_ticks;
+void Emulator::ppu_synchronize() {
+  assert(IS_ALIGNED(THIS_PPU.sync_ticks, CPU_TICK));
+  Ticks aligned_ticks = ALIGN_DOWN(THIS_TICKS, CPU_TICK);
+  if (aligned_ticks > THIS_PPU.sync_ticks) {
+    Ticks delta_ticks = aligned_ticks - THIS_PPU.sync_ticks;
 
-    if (LCDC.display) {
+    if (THIS_LCDC.display) {
       for (; delta_ticks > 0; delta_ticks -= CPU_TICK) {
-        INTR.if_ |= (INTR.new_if & (IF_VBLANK | IF_STAT));
-        STAT.mode2.trigger = false;
-        STAT.y_compare.trigger = false;
-        STAT.ly_eq_lyc = STAT.new_ly_eq_lyc;
-        PPU.last_ly = PPU.ly;
+        THIS_INTR.if_ |= (THIS_INTR.new_if & (IF_VBLANK | IF_STAT));
+        THIS_STAT.mode2.trigger = false;
+        THIS_STAT.y_compare.trigger = false;
+        THIS_STAT.ly_eq_lyc = THIS_STAT.new_ly_eq_lyc;
+        THIS_PPU.last_ly = THIS_PPU.ly;
 
-        PPU.state_ticks -= CPU_TICK;
-        if (LIKELY(PPU.state_ticks != 0)) {
+        THIS_PPU.state_ticks -= CPU_TICK;
+        if (LIKELY(THIS_PPU.state_ticks != 0)) {
           continue;
         }
 
         Ticks ticks = aligned_ticks - delta_ticks;
 
-        switch (PPU.state) {
+        switch (THIS_PPU.state) {
           case PPU_STATE_HBLANK:
           case PPU_STATE_VBLANK_PLUS_4:
-            PPU.line_y++;
-            PPU.ly++;
-            PPU.line_start_ticks = ticks;
-            e->check_ly_eq_lyc(false);
-            PPU.state_ticks = CPU_TICK;
+            THIS_PPU.line_y++;
+            THIS_PPU.ly++;
+            THIS_PPU.line_start_ticks = ticks;
+            check_ly_eq_lyc(false);
+            THIS_PPU.state_ticks = CPU_TICK;
 
-            if (PPU.state == PPU_STATE_HBLANK) {
-              STAT.mode2.trigger = true;
-              if (PPU.ly == SCREEN_HEIGHT) {
-                PPU.state = PPU_STATE_VBLANK;
-                STAT.trigger_mode = PPU_MODE_VBLANK;
-                PPU.frame++;
-                INTR.new_if |= IF_VBLANK;
-                if (LIKELY(PPU.display_delay_frames == 0)) {
-                  e->state.event |= EMULATOR_EVENT_NEW_FRAME;
+            if (THIS_PPU.state == PPU_STATE_HBLANK) {
+              THIS_STAT.mode2.trigger = true;
+              if (THIS_PPU.ly == SCREEN_HEIGHT) {
+                THIS_PPU.state = PPU_STATE_VBLANK;
+                THIS_STAT.trigger_mode = PPU_MODE_VBLANK;
+                THIS_PPU.frame++;
+                THIS_INTR.new_if |= IF_VBLANK;
+                if (LIKELY(THIS_PPU.display_delay_frames == 0)) {
+                  state.event |= EMULATOR_EVENT_NEW_FRAME;
                 } else {
-                  PPU.display_delay_frames--;
+                  THIS_PPU.display_delay_frames--;
                 }
               } else {
-                PPU.state = PPU_STATE_HBLANK_PLUS_4;
-                STAT.trigger_mode = PPU_MODE_MODE2;
-                if (PPU.rendering_window) {
-                  PPU.win_y++;
+                THIS_PPU.state = PPU_STATE_HBLANK_PLUS_4;
+                THIS_STAT.trigger_mode = PPU_MODE_MODE2;
+                if (THIS_PPU.rendering_window) {
+                  THIS_PPU.win_y++;
                 }
-                if (UNLIKELY(HDMA.mode == HDMA_TRANSFER_MODE_HDMA &&
-                             (HDMA.blocks & 0x80) == 0)) {
-                  HDMA.state = DMA_ACTIVE;
+                if (UNLIKELY(THIS_HDMA.mode == HDMA_TRANSFER_MODE_HDMA &&
+                             (THIS_HDMA.blocks & 0x80) == 0)) {
+                  THIS_HDMA.state = DMA_ACTIVE;
                 }
               }
             } else {
-              assert(PPU.state == PPU_STATE_VBLANK_PLUS_4);
-              if (PPU.ly == SCREEN_HEIGHT_WITH_VBLANK - 1) {
-                PPU.state = PPU_STATE_VBLANK_LY_0;
+              assert(THIS_PPU.state == PPU_STATE_VBLANK_PLUS_4);
+              if (THIS_PPU.ly == SCREEN_HEIGHT_WITH_VBLANK - 1) {
+                THIS_PPU.state = PPU_STATE_VBLANK_LY_0;
               } else {
-                PPU.state_ticks = PPU_LINE_TICKS;
+                THIS_PPU.state_ticks = PPU_LINE_TICKS;
               }
             }
-            e->check_stat();
+            check_stat();
             break;
 
           case PPU_STATE_HBLANK_PLUS_4:
-            PPU.state = PPU_STATE_MODE2;
-            PPU.state_ticks = PPU_MODE2_TICKS;
-            STAT.mode = PPU_MODE_MODE2;
-            do_ppu_mode2(e);
+            THIS_PPU.state = PPU_STATE_MODE2;
+            THIS_PPU.state_ticks = PPU_MODE2_TICKS;
+            THIS_STAT.mode = PPU_MODE_MODE2;
+            do_ppu_mode2();
             break;
 
           case PPU_STATE_VBLANK:
-            PPU.state = PPU_STATE_VBLANK_PLUS_4;
-            PPU.state_ticks = PPU_LINE_TICKS - CPU_TICK;
-            STAT.mode = PPU_MODE_VBLANK;
-            e->check_stat();
+            THIS_PPU.state = PPU_STATE_VBLANK_PLUS_4;
+            THIS_PPU.state_ticks = PPU_LINE_TICKS - CPU_TICK;
+            THIS_STAT.mode = PPU_MODE_VBLANK;
+            check_stat();
             break;
 
           case PPU_STATE_VBLANK_LY_0:
-            PPU.state = PPU_STATE_VBLANK_LY_0_PLUS_4;
-            PPU.state_ticks = CPU_TICK;
-            PPU.ly = 0;
+            THIS_PPU.state = PPU_STATE_VBLANK_LY_0_PLUS_4;
+            THIS_PPU.state_ticks = CPU_TICK;
+            THIS_PPU.ly = 0;
             break;
 
           case PPU_STATE_VBLANK_LY_0_PLUS_4:
-            PPU.state = PPU_STATE_VBLANK_LINE_Y_0;
-            PPU.state_ticks = PPU_LINE_TICKS - CPU_TICK - CPU_TICK;
-            e->check_ly_eq_lyc(false);
-            e->check_stat();
+            THIS_PPU.state = PPU_STATE_VBLANK_LINE_Y_0;
+            THIS_PPU.state_ticks = PPU_LINE_TICKS - CPU_TICK - CPU_TICK;
+            check_ly_eq_lyc(false);
+            check_stat();
             break;
 
           case PPU_STATE_VBLANK_LINE_Y_0:
-            PPU.state = PPU_STATE_HBLANK_PLUS_4;
-            PPU.state_ticks = CPU_TICK;
-            PPU.line_start_ticks = ticks;
-            PPU.line_y = 0;
-            PPU.win_y = 0;
-            STAT.mode2.trigger = true;
-            STAT.mode = PPU_MODE_HBLANK;
-            STAT.trigger_mode = PPU_MODE_MODE2;
-            e->check_stat();
+            THIS_PPU.state = PPU_STATE_HBLANK_PLUS_4;
+            THIS_PPU.state_ticks = CPU_TICK;
+            THIS_PPU.line_start_ticks = ticks;
+            THIS_PPU.line_y = 0;
+            THIS_PPU.win_y = 0;
+            THIS_STAT.mode2.trigger = true;
+            THIS_STAT.mode = PPU_MODE_HBLANK;
+            THIS_STAT.trigger_mode = PPU_MODE_MODE2;
+            check_stat();
             break;
 
           case PPU_STATE_LCD_ON_MODE2:
           case PPU_STATE_MODE2:
-            PPU.state_ticks = mode3_tick_count(e);
-            if (PPU.state == PPU_STATE_LCD_ON_MODE2 ||
-                (PPU.state_ticks & 3) != 0) {
-              PPU.state = PPU_STATE_MODE3;
+            THIS_PPU.state_ticks = mode3_tick_count();
+            if (THIS_PPU.state == PPU_STATE_LCD_ON_MODE2 ||
+                (THIS_PPU.state_ticks & 3) != 0) {
+              THIS_PPU.state = PPU_STATE_MODE3;
             } else {
-              PPU.state = PPU_STATE_MODE3_EARLY_TRIGGER;
-              PPU.state_ticks--;
+              THIS_PPU.state = PPU_STATE_MODE3_EARLY_TRIGGER;
+              THIS_PPU.state_ticks--;
             }
-            PPU.state_ticks &= ~3;
-            STAT.mode = STAT.trigger_mode = PPU_MODE_MODE3;
-            PPU.mode3_render_ticks = ticks;
-            PPU.render_x = 0;
-            PPU.rendering_window = false;
-            e->check_stat();
+            THIS_PPU.state_ticks &= ~3;
+            THIS_STAT.mode = THIS_STAT.trigger_mode = PPU_MODE_MODE3;
+            THIS_PPU.mode3_render_ticks = ticks;
+            THIS_PPU.render_x = 0;
+            THIS_PPU.rendering_window = false;
+            check_stat();
             break;
 
           case PPU_STATE_MODE3_EARLY_TRIGGER:
-            PPU.state = PPU_STATE_MODE3_COMMON;
-            PPU.state_ticks = CPU_TICK;
-            STAT.trigger_mode = PPU_MODE_HBLANK;
-            e->check_stat();
+            THIS_PPU.state = PPU_STATE_MODE3_COMMON;
+            THIS_PPU.state_ticks = CPU_TICK;
+            THIS_STAT.trigger_mode = PPU_MODE_HBLANK;
+            check_stat();
             break;
 
           case PPU_STATE_MODE3:
-            STAT.trigger_mode = PPU_MODE_HBLANK;
+            THIS_STAT.trigger_mode = PPU_MODE_HBLANK;
             /* fallthrough */
 
           case PPU_STATE_MODE3_COMMON:
-            ppu_mode3_synchronize(e);
-            PPU.state = PPU_STATE_HBLANK;
-            PPU.state_ticks = PPU_LINE_TICKS + PPU.line_start_ticks - ticks;
-            STAT.mode = PPU_MODE_HBLANK;
-            e->check_stat();
+            ppu_mode3_synchronize();
+            THIS_PPU.state = PPU_STATE_HBLANK;
+            THIS_PPU.state_ticks = PPU_LINE_TICKS + THIS_PPU.line_start_ticks - ticks;
+            THIS_STAT.mode = PPU_MODE_HBLANK;
+            check_stat();
             break;
 
           case PPU_STATE_COUNT:
@@ -2992,61 +2989,61 @@ static void ppu_synchronize(Emulator* e) {
             break;
         }
 
-        PPU.sync_ticks = ticks + CPU_TICK;
-        calculate_next_ppu_intr(e);
+        THIS_PPU.sync_ticks = ticks + CPU_TICK;
+        calculate_next_ppu_intr();
       }
     }
-    PPU.sync_ticks = aligned_ticks;
+    THIS_PPU.sync_ticks = aligned_ticks;
   }
 }
 
-static void calculate_next_ppu_intr(Emulator* e) {
-  if (LCDC.display) {
+void Emulator::calculate_next_ppu_intr() {
+  if (THIS_LCDC.display) {
     /* TODO: Looser bounds on sync points. This syncs at every state
      * transition, even though we often won't need to sync that often. */
-    PPU.next_intr_ticks = PPU.sync_ticks + PPU.state_ticks;
+    THIS_PPU.next_intr_ticks = THIS_PPU.sync_ticks + THIS_PPU.state_ticks;
   } else {
-    PPU.next_intr_ticks = INVALID_TICKS;
+    THIS_PPU.next_intr_ticks = INVALID_TICKS;
   }
-  e->calculate_next_intr();
+  calculate_next_intr();
 }
 
-static void update_sweep(Emulator* e) {
-  if (!(CHANNEL1.status && SWEEP.enabled)) {
+void Emulator::update_sweep() {
+  if (!(THIS_CHANNEL1.status && THIS_SWEEP.enabled)) {
     return;
   }
 
-  u8 period = SWEEP.period;
-  if (--SWEEP.timer == 0) {
+  u8 period = THIS_SWEEP.period;
+  if (--THIS_SWEEP.timer == 0) {
     if (period) {
-      SWEEP.timer = period;
-      u16 new_frequency = e->calculate_sweep_frequency();
+      THIS_SWEEP.timer = period;
+      u16 new_frequency = calculate_sweep_frequency();
       if (new_frequency > SOUND_MAX_FREQUENCY) {
-        HOOK0(sweep_overflow_v);
-        CHANNEL1.status = false;
+        THIS_HOOK0(sweep_overflow_v);
+        THIS_CHANNEL1.status = false;
       } else {
-        if (SWEEP.shift) {
-          HOOK(sweep_update_frequency_i, new_frequency);
-          SWEEP.frequency = CHANNEL1.frequency = new_frequency;
-          e->write_square_wave_period(&CHANNEL1, &CHANNEL1.square_wave);
+        if (THIS_SWEEP.shift) {
+          THIS_HOOK(sweep_update_frequency_i, new_frequency);
+          THIS_SWEEP.frequency = THIS_CHANNEL1.frequency = new_frequency;
+          write_square_wave_period(&THIS_CHANNEL1, &THIS_CHANNEL1.square_wave);
         }
 
         /* Perform another overflow check. */
-        if (UNLIKELY(e->calculate_sweep_frequency() > SOUND_MAX_FREQUENCY)) {
-          HOOK0(sweep_overflow_2nd_v);
-          CHANNEL1.status = false;
+        if (UNLIKELY(calculate_sweep_frequency() > SOUND_MAX_FREQUENCY)) {
+          THIS_HOOK0(sweep_overflow_2nd_v);
+          THIS_CHANNEL1.status = false;
         }
       }
     } else {
-      SWEEP.timer = SWEEP_MAX_PERIOD;
+      THIS_SWEEP.timer = SWEEP_MAX_PERIOD;
     }
   }
 }
 
-static void update_lengths(Emulator* e) {
+void Emulator::update_lengths() {
   int i;
   for (i = 0; i < APU_CHANNEL_COUNT; ++i) {
-    Channel* channel = &APU.channel[i];
+    Channel* channel = &THIS_APU.channel[i];
     if (channel->length_enabled && channel->length > 0) {
       if (--channel->length == 0) {
         channel->status = false;
@@ -3055,10 +3052,10 @@ static void update_lengths(Emulator* e) {
   }
 }
 
-static void update_envelopes(Emulator* e) {
+void Emulator::update_envelopes() {
   int i;
   for (i = 0; i < APU_CHANNEL_COUNT; ++i) {
-    Envelope* envelope = &APU.channel[i].envelope;
+    Envelope* envelope = &THIS_APU.channel[i].envelope;
     if (envelope->period) {
       if (envelope->automatic && --envelope->timer == 0) {
         envelope->timer = envelope->period;
@@ -3105,58 +3102,58 @@ static void update_square_wave(Channel* channel, u32 total_frames) {
   }
 }
 
-static void update_wave(Emulator* e, u32 apu_ticks, u32 total_frames) {
-  if (CHANNEL3.status) {
+void Emulator::update_wave(u32 apu_ticks, u32 total_frames) {
+  if (THIS_CHANNEL3.status) {
     while (total_frames) {
-      u32 frames = WAVE.ticks / APU_TICKS;
+      u32 frames = THIS_WAVE.ticks / APU_TICKS;
       /* Modulate 4-bit sample by wave volume. */
-      u8 sample = WAVE.sample_data >> WAVE.volume_shift;
+      u8 sample = THIS_WAVE.sample_data >> THIS_WAVE.volume_shift;
       if (frames <= total_frames) {
-        WAVE.position = (WAVE.position + 1) % WAVE_SAMPLE_COUNT;
-        WAVE.sample_time = apu_ticks + WAVE.ticks;
-        u8 byte = WAVE.ram[WAVE.position >> 1];
-        if ((WAVE.position & 1) == 0) {
-          WAVE.sample_data = byte >> 4; /* High nybble. */
+        THIS_WAVE.position = (THIS_WAVE.position + 1) % WAVE_SAMPLE_COUNT;
+        THIS_WAVE.sample_time = apu_ticks + THIS_WAVE.ticks;
+        u8 byte = THIS_WAVE.ram[THIS_WAVE.position >> 1];
+        if ((THIS_WAVE.position & 1) == 0) {
+          THIS_WAVE.sample_data = byte >> 4; /* High nybble. */
         } else {
-          WAVE.sample_data = byte & 0x0f; /* Low nybble. */
+          THIS_WAVE.sample_data = byte & 0x0f; /* Low nybble. */
         }
-        WAVE.ticks = WAVE.period;
-        HOOK(wave_update_position_iii, WAVE.position, WAVE.sample_data,
-             WAVE.sample_time);
+        THIS_WAVE.ticks = THIS_WAVE.period;
+        THIS_HOOK(wave_update_position_iii, THIS_WAVE.position, THIS_WAVE.sample_data,
+             THIS_WAVE.sample_time);
       } else {
         frames = total_frames;
-        WAVE.ticks -= frames * APU_TICKS;
+        THIS_WAVE.ticks -= frames * APU_TICKS;
       }
       apu_ticks += frames * APU_TICKS;
-      CHANNEL3.accumulator += sample * frames;
+      THIS_CHANNEL3.accumulator += sample * frames;
       total_frames -= frames;
     }
   }
 }
 
-static void update_noise(Emulator* e, u32 total_frames) {
-  if (CHANNEL4.status) {
+void Emulator::update_noise(u32 total_frames) {
+  if (THIS_CHANNEL4.status) {
     while (total_frames) {
-      u32 frames = NOISE.ticks / APU_TICKS;
-      u8 sample = CHANNELX_SAMPLE(&CHANNEL4, NOISE.sample);
-      if (NOISE.clock_shift <= NOISE_MAX_CLOCK_SHIFT) {
+      u32 frames = THIS_NOISE.ticks / APU_TICKS;
+      u8 sample = CHANNELX_SAMPLE(&THIS_CHANNEL4, THIS_NOISE.sample);
+      if (THIS_NOISE.clock_shift <= NOISE_MAX_CLOCK_SHIFT) {
         if (frames <= total_frames) {
-          u16 bit = (NOISE.lfsr ^ (NOISE.lfsr >> 1)) & 1;
-          if (NOISE.lfsr_width == LFSR_WIDTH_7) {
-            NOISE.lfsr = ((NOISE.lfsr >> 1) & ~0x40) | (bit << 6);
+          u16 bit = (THIS_NOISE.lfsr ^ (THIS_NOISE.lfsr >> 1)) & 1;
+          if (THIS_NOISE.lfsr_width == LFSR_WIDTH_7) {
+            THIS_NOISE.lfsr = ((THIS_NOISE.lfsr >> 1) & ~0x40) | (bit << 6);
           } else {
-            NOISE.lfsr = ((NOISE.lfsr >> 1) & ~0x4000) | (bit << 14);
+            THIS_NOISE.lfsr = ((THIS_NOISE.lfsr >> 1) & ~0x4000) | (bit << 14);
           }
-          NOISE.sample = ~NOISE.lfsr & 1;
-          NOISE.ticks = NOISE.period;
+          THIS_NOISE.sample = ~THIS_NOISE.lfsr & 1;
+          THIS_NOISE.ticks = THIS_NOISE.period;
         } else {
           frames = total_frames;
-          NOISE.ticks -= frames * APU_TICKS;
+          THIS_NOISE.ticks -= frames * APU_TICKS;
         }
       } else {
         frames = total_frames;
       }
-      CHANNEL4.accumulator += sample * frames;
+      THIS_CHANNEL4.accumulator += sample * frames;
       total_frames -= frames;
     }
   }
@@ -3203,8 +3200,8 @@ static void apu_update_channels(Emulator* e, u32 total_frames) {
     frames = MIN(frames, total_frames);
     update_square_wave(&CHANNEL1, frames);
     update_square_wave(&CHANNEL2, frames);
-    update_wave(e, APU.sync_ticks, frames);
-    update_noise(e, frames);
+    e->update_wave(APU.sync_ticks, frames);
+    e->update_noise(frames);
     write_audio_frame(e, frames);
     APU.sync_ticks += frames * APU_TICKS;
     total_frames -= frames;
@@ -3217,9 +3214,9 @@ static void apu_update(Emulator* e, u32 total_ticks) {
     if (next_seq_ticks == FRAME_SEQUENCER_TICKS) {
       APU.frame = (APU.frame + 1) % FRAME_SEQUENCER_COUNT;
       switch (APU.frame) {
-        case 2: case 6: update_sweep(e); /* Fallthrough. */
-        case 0: case 4: update_lengths(e); break;
-        case 7: update_envelopes(e); break;
+        case 2: case 6: e->update_sweep(); /* Fallthrough. */
+        case 0: case 4: e->update_lengths(); break;
+        case 7: e->update_envelopes(); break;
       }
     }
     Ticks ticks = MIN(next_seq_ticks, total_ticks);
@@ -3231,7 +3228,7 @@ static void apu_update(Emulator* e, u32 total_ticks) {
 static void intr_synchronize(Emulator* e) {
   dma_synchronize(e);
   serial_synchronize(e);
-  ppu_synchronize(e);
+  e->ppu_synchronize();
   e->timer_synchronize();
 }
 
@@ -3650,7 +3647,7 @@ void Emulator::execute_instruction() {
       serial_synchronize(this);
     }
     if (THIS_TICKS >= THIS_PPU.next_intr_ticks) {
-      ppu_synchronize(this);
+      ppu_synchronize();
     }
   }
 
@@ -4133,7 +4130,7 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
   randomize_buffer(&random_seed, e->state.hram, HIGH_RAM_SIZE);
 
   e->state.cpu_tick = CPU_TICK;
-  calculate_next_ppu_intr(e);
+  e->calculate_next_ppu_intr();
   return OK;
 }
 
