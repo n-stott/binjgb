@@ -992,10 +992,10 @@ struct Emulator {
   void timer_synchronize();
   void calculate_next_timer_intr();
   void do_timer_interrupt();
-  // void clear_div();
-  // void check_stat();
-  // void check_ly_eq_lyc(bool write);
-  // void check_joyp_intr();
+  void clear_div();
+  void check_stat();
+  void check_ly_eq_lyc(bool write);
+  void check_joyp_intr();
   // void update_bw_palette_rgba(PaletteType type);
   // RGBA unpack_cgb_color(u16 color);
   // RGBA unpack_cgb_color8(u8 lo, u8 hi);
@@ -1008,7 +1008,7 @@ struct Emulator {
   // void set_sgb_attr_block(int x0, int y0, int x1, int y1, u8 pal);
 
   // void do_sgb();
-  // void write_io(MaskedAddress addr, u8 value);
+  void write_io(MaskedAddress addr, u8 value);
 
   // void write_nrx1_reg(Channel* channel, Address addr, u8 value);
   // void write_nrx2_reg(Channel* channel, Address addr, u8 value);

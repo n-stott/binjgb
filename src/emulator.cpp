@@ -1455,11 +1455,11 @@ void Emulator::increment_tima() {
   }
 }
 
-static void clear_div(Emulator* e) {
-  if (TIMER.on && e->is_div_falling_edge(TIMER.div_counter, 0)) {
-    e->increment_tima();
+void Emulator::clear_div() {
+  if (THIS_TIMER.on && is_div_falling_edge(THIS_TIMER.div_counter, 0)) {
+    increment_tima();
   }
-  TIMER.div_counter = 0;
+  THIS_TIMER.div_counter = 0;
 }
 
 /* Trigger is only true on the tick where it transitioned to the new state;
@@ -1468,61 +1468,61 @@ static void clear_div(Emulator* e) {
  * cleared only when the "check" returns false for all STAT IF bits. HBLANK and
  * VBLANK don't have a special trigger, so "trigger" and "check" are equal for
  * those modes. */
-#define TRIGGER_MODE_IS(X) (STAT.trigger_mode == PPU_MODE_##X)
-#define TRIGGER_HBLANK (TRIGGER_MODE_IS(HBLANK) && STAT.hblank.irq)
-#define TRIGGER_VBLANK (TRIGGER_MODE_IS(VBLANK) && STAT.vblank.irq)
-#define TRIGGER_MODE2 (STAT.mode2.trigger && STAT.mode2.irq)
-#define CHECK_MODE2 (TRIGGER_MODE_IS(MODE2) && STAT.mode2.irq)
-#define TRIGGER_Y_COMPARE (STAT.y_compare.trigger && STAT.y_compare.irq)
-#define CHECK_Y_COMPARE (STAT.new_ly_eq_lyc && STAT.y_compare.irq)
+#define TRIGGER_MODE_IS(X) (THIS_STAT.trigger_mode == PPU_MODE_##X)
+#define TRIGGER_HBLANK (TRIGGER_MODE_IS(HBLANK) && THIS_STAT.hblank.irq)
+#define TRIGGER_VBLANK (TRIGGER_MODE_IS(VBLANK) && THIS_STAT.vblank.irq)
+#define TRIGGER_MODE2 (THIS_STAT.mode2.trigger && THIS_STAT.mode2.irq)
+#define CHECK_MODE2 (TRIGGER_MODE_IS(MODE2) && THIS_STAT.mode2.irq)
+#define TRIGGER_Y_COMPARE (THIS_STAT.y_compare.trigger && THIS_STAT.y_compare.irq)
+#define CHECK_Y_COMPARE (THIS_STAT.new_ly_eq_lyc && THIS_STAT.y_compare.irq)
 #define SHOULD_TRIGGER_STAT \
   (TRIGGER_HBLANK || TRIGGER_VBLANK || TRIGGER_MODE2 || TRIGGER_Y_COMPARE)
 
-static void check_stat(Emulator* e) {
-  if (!STAT.if_ && SHOULD_TRIGGER_STAT) {
-    HOOK(trigger_stat_ii, PPU.ly, TICKS + CPU_TICK);
-    INTR.new_if |= IF_STAT;
+void Emulator::check_stat() {
+  if (!THIS_STAT.if_ && SHOULD_TRIGGER_STAT) {
+    THIS_HOOK(trigger_stat_ii, THIS_PPU.ly, THIS_TICKS + CPU_TICK);
+    THIS_INTR.new_if |= IF_STAT;
     if (!(TRIGGER_VBLANK || TRIGGER_Y_COMPARE)) {
-      INTR.if_ |= IF_STAT;
+      THIS_INTR.if_ |= IF_STAT;
     }
-    STAT.if_ = true;
+    THIS_STAT.if_ = true;
   } else if (!(TRIGGER_HBLANK || TRIGGER_VBLANK || CHECK_MODE2 ||
                CHECK_Y_COMPARE)) {
-    STAT.if_ = false;
+    THIS_STAT.if_ = false;
   }
 }
 
-static void check_ly_eq_lyc(Emulator* e, bool write) {
-  if (PPU.ly == PPU.lyc ||
-      (write && PPU.last_ly == SCREEN_HEIGHT_WITH_VBLANK - 1 &&
-       PPU.last_ly == PPU.lyc)) {
-    HOOK(trigger_y_compare_ii, PPU.ly, TICKS + CPU_TICK);
-    STAT.y_compare.trigger = true;
-    STAT.new_ly_eq_lyc = true;
+void Emulator::check_ly_eq_lyc(bool write) {
+  if (THIS_PPU.ly == THIS_PPU.lyc ||
+      (write && THIS_PPU.last_ly == SCREEN_HEIGHT_WITH_VBLANK - 1 &&
+       THIS_PPU.last_ly == THIS_PPU.lyc)) {
+    THIS_HOOK(trigger_y_compare_ii, THIS_PPU.ly, THIS_TICKS + CPU_TICK);
+    THIS_STAT.y_compare.trigger = true;
+    THIS_STAT.new_ly_eq_lyc = true;
   } else {
-    STAT.y_compare.trigger = false;
-    STAT.ly_eq_lyc = STAT.new_ly_eq_lyc = false;
+    THIS_STAT.y_compare.trigger = false;
+    THIS_STAT.ly_eq_lyc = THIS_STAT.new_ly_eq_lyc = false;
     if (write) {
       /* If stat was triggered this frame due to Y compare, cancel it.
        * There's probably a nicer way to do this. */
-      if ((INTR.new_if ^ INTR.if_) & INTR.new_if & IF_STAT) {
+      if ((THIS_INTR.new_if ^ THIS_INTR.if_) & THIS_INTR.new_if & IF_STAT) {
         if (!SHOULD_TRIGGER_STAT) {
-          INTR.new_if &= ~IF_STAT;
+          THIS_INTR.new_if &= ~IF_STAT;
         }
       }
     }
   }
 }
 
-static void check_joyp_intr(Emulator* e) {
-  e->call_joyp_callback(true);
-  u8 p10_p13 = e->read_joyp_p10_p13();
+void Emulator::check_joyp_intr() {
+  call_joyp_callback(true);
+  u8 p10_p13 = read_joyp_p10_p13();
   /* joyp interrupt only triggers on p10-p13 going from high to low (i.e. not
    * pressed to pressed). */
-  if ((p10_p13 ^ JOYP.last_p10_p13) & ~p10_p13) {
-    INTR.new_if |= IF_JOYPAD;
+  if ((p10_p13 ^ THIS_JOYP.last_p10_p13) & ~p10_p13) {
+    THIS_INTR.new_if |= IF_JOYPAD;
   }
-  JOYP.last_p10_p13 = p10_p13;
+  THIS_JOYP.last_p10_p13 = p10_p13;
 }
 
 static void update_bw_palette_rgba(Emulator* e, PaletteType type) {
@@ -1919,283 +1919,283 @@ static void do_sgb(Emulator* e) {
   }
 }
 
-static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
-  HOOK(write_io_asb, addr, get_io_reg_string(static_cast<IOReg>(addr)), value);
+void Emulator::write_io(MaskedAddress addr, u8 value) {
+  THIS_HOOK(write_io_asb, addr, get_io_reg_string(static_cast<IOReg>(addr)), value);
   switch (addr) {
     case IO_JOYP_ADDR:
-      JOYP.joypad_select = static_cast<JoypadSelect>(unpack(value, JOYP_JOYPAD_SELECT));
-      do_sgb(e);
-      check_joyp_intr(e);
+      THIS_JOYP.joypad_select = static_cast<JoypadSelect>(unpack(value, JOYP_JOYPAD_SELECT));
+      do_sgb(this);
+      check_joyp_intr();
       break;
     case IO_SB_ADDR:
-      serial_synchronize(e);
-      SERIAL.sb = value;
+      serial_synchronize(this);
+      THIS_SERIAL.sb = value;
       break;
     case IO_SC_ADDR:
-      serial_synchronize(e);
-      SERIAL.transferring = unpack(value, SC_TRANSFER_START);
-      SERIAL.clock = static_cast<SerialClock>(unpack(value, SC_SHIFT_CLOCK));
-      if (SERIAL.transferring) {
-        SERIAL.tick_count = 0;
-        SERIAL.transferred_bits = 0;
+      serial_synchronize(this);
+      THIS_SERIAL.transferring = unpack(value, SC_TRANSFER_START);
+      THIS_SERIAL.clock = static_cast<SerialClock>(unpack(value, SC_SHIFT_CLOCK));
+      if (THIS_SERIAL.transferring) {
+        THIS_SERIAL.tick_count = 0;
+        THIS_SERIAL.transferred_bits = 0;
       }
-      calculate_next_serial_intr(e);
+      calculate_next_serial_intr(this);
       break;
     case IO_DIV_ADDR:
-      e->timer_synchronize();
-      clear_div(e);
-      e->calculate_next_timer_intr();
+      timer_synchronize();
+      clear_div();
+      calculate_next_timer_intr();
       break;
     case IO_TIMA_ADDR:
-      e->timer_synchronize();
-      if (TIMER.on) {
-        if (UNLIKELY(TIMER.tima_state == TIMA_STATE_OVERFLOW)) {
+      timer_synchronize();
+      if (THIS_TIMER.on) {
+        if (UNLIKELY(THIS_TIMER.tima_state == TIMA_STATE_OVERFLOW)) {
           /* Cancel the overflow and interrupt if written on the same tick. */
-          TIMER.tima_state = TIMA_STATE_NORMAL;
-          INTR.new_if &= ~IF_TIMER;
-          TIMER.tima = value;
-        } else if (TIMER.tima_state != TIMA_STATE_RESET) {
+          THIS_TIMER.tima_state = TIMA_STATE_NORMAL;
+          THIS_INTR.new_if &= ~IF_TIMER;
+          THIS_TIMER.tima = value;
+        } else if (THIS_TIMER.tima_state != TIMA_STATE_RESET) {
           /* Only update tima if it wasn't reset this tick. */
-          TIMER.tima = value;
+          THIS_TIMER.tima = value;
         }
-        e->calculate_next_timer_intr();
+        calculate_next_timer_intr();
       } else {
-        TIMER.tima = value;
+        THIS_TIMER.tima = value;
       }
       break;
     case IO_TMA_ADDR:
-      e->timer_synchronize();
-      TIMER.tma = value;
-      if (UNLIKELY(TIMER.on && TIMER.tima_state == TIMA_STATE_RESET)) {
-        TIMER.tima = value;
+      timer_synchronize();
+      THIS_TIMER.tma = value;
+      if (UNLIKELY(THIS_TIMER.on && THIS_TIMER.tima_state == TIMA_STATE_RESET)) {
+        THIS_TIMER.tima = value;
       }
-      e->calculate_next_timer_intr();
+      calculate_next_timer_intr();
       break;
     case IO_TAC_ADDR: {
-      e->timer_synchronize();
-      bool old_timer_on = TIMER.on;
-      u16 old_tima_mask = s_tima_mask[TIMER.clock_select];
-      TIMER.clock_select = static_cast<TimerClock>(unpack(value, TAC_CLOCK_SELECT));
-      TIMER.on = unpack(value, TAC_TIMER_ON);
+      timer_synchronize();
+      bool old_timer_on = THIS_TIMER.on;
+      u16 old_tima_mask = s_tima_mask[THIS_TIMER.clock_select];
+      THIS_TIMER.clock_select = static_cast<TimerClock>(unpack(value, TAC_CLOCK_SELECT));
+      THIS_TIMER.on = unpack(value, TAC_TIMER_ON);
       /* tima is incremented when a specific bit of div_counter transitions
        * from 1 to 0. This can happen as a result of writing to DIV, or in this
        * case modifying which bit we're looking at. */
       bool tima_tick = false;
       if (!old_timer_on) {
-        u16 tima_mask = s_tima_mask[TIMER.clock_select];
-        if (TIMER.on) {
-          tima_tick = (TIMER.div_counter & old_tima_mask) != 0;
+        u16 tima_mask = s_tima_mask[THIS_TIMER.clock_select];
+        if (THIS_TIMER.on) {
+          tima_tick = (THIS_TIMER.div_counter & old_tima_mask) != 0;
         } else {
-          tima_tick = (TIMER.div_counter & old_tima_mask) != 0 &&
-                      (TIMER.div_counter & tima_mask) == 0;
+          tima_tick = (THIS_TIMER.div_counter & old_tima_mask) != 0 &&
+                      (THIS_TIMER.div_counter & tima_mask) == 0;
         }
         if (tima_tick) {
-          e->increment_tima();
+          increment_tima();
         }
       }
-      e->calculate_next_timer_intr();
+      calculate_next_timer_intr();
       break;
     }
     case IO_IF_ADDR:
-      intr_synchronize(e);
-      INTR.new_if = INTR.if_ = value & IF_ALL;
+      intr_synchronize(this);
+      THIS_INTR.new_if = THIS_INTR.if_ = value & IF_ALL;
       break;
     case IO_LCDC_ADDR: {
-      ppu_synchronize(e);
-      ppu_mode3_synchronize(e);
-      bool was_enabled = LCDC.display;
-      LCDC.display = unpack(value, LCDC_DISPLAY);
-      LCDC.window_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_WINDOW_TILE_MAP_SELECT));
-      LCDC.window_display = unpack(value, LCDC_WINDOW_DISPLAY);
-      LCDC.bg_tile_data_select = static_cast<TileDataSelect>(unpack(value, LCDC_BG_TILE_DATA_SELECT));
-      LCDC.bg_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_BG_TILE_MAP_SELECT));
-      LCDC.obj_size = static_cast<ObjSize>(unpack(value, LCDC_OBJ_SIZE));
-      LCDC.obj_display = unpack(value, LCDC_OBJ_DISPLAY);
-      LCDC.bg_display = unpack(value, LCDC_BG_DISPLAY);
-      if (was_enabled ^ LCDC.display) {
-        STAT.mode = PPU_MODE_HBLANK;
-        PPU.ly = PPU.line_y = 0;
-        if (LCDC.display) {
-          check_ly_eq_lyc(e, false);
-          HOOK0(enable_display_v);
-          PPU.state = PPU_STATE_LCD_ON_MODE2;
-          PPU.state_ticks = PPU_MODE2_TICKS;
-          PPU.line_start_ticks =
-              ALIGN_UP(TICKS - CPU_TICK - CPU_TICK, CPU_TICK);
-          PPU.display_delay_frames = PPU_ENABLE_DISPLAY_DELAY_FRAMES;
-          STAT.trigger_mode = PPU_MODE_MODE2;
+      ppu_synchronize(this);
+      ppu_mode3_synchronize(this);
+      bool was_enabled = THIS_LCDC.display;
+      THIS_LCDC.display = unpack(value, LCDC_DISPLAY);
+      THIS_LCDC.window_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_WINDOW_TILE_MAP_SELECT));
+      THIS_LCDC.window_display = unpack(value, LCDC_WINDOW_DISPLAY);
+      THIS_LCDC.bg_tile_data_select = static_cast<TileDataSelect>(unpack(value, LCDC_BG_TILE_DATA_SELECT));
+      THIS_LCDC.bg_tile_map_select = static_cast<TileMapSelect>(unpack(value, LCDC_BG_TILE_MAP_SELECT));
+      THIS_LCDC.obj_size = static_cast<ObjSize>(unpack(value, LCDC_OBJ_SIZE));
+      THIS_LCDC.obj_display = unpack(value, LCDC_OBJ_DISPLAY);
+      THIS_LCDC.bg_display = unpack(value, LCDC_BG_DISPLAY);
+      if (was_enabled ^ THIS_LCDC.display) {
+        THIS_STAT.mode = PPU_MODE_HBLANK;
+        THIS_PPU.ly = THIS_PPU.line_y = 0;
+        if (THIS_LCDC.display) {
+          check_ly_eq_lyc(false);
+          THIS_HOOK0(enable_display_v);
+          THIS_PPU.state = PPU_STATE_LCD_ON_MODE2;
+          THIS_PPU.state_ticks = PPU_MODE2_TICKS;
+          THIS_PPU.line_start_ticks =
+              ALIGN_UP(THIS_TICKS - CPU_TICK - CPU_TICK, CPU_TICK);
+          THIS_PPU.display_delay_frames = PPU_ENABLE_DISPLAY_DELAY_FRAMES;
+          THIS_STAT.trigger_mode = PPU_MODE_MODE2;
         } else {
-          HOOK0(disable_display_v);
+          THIS_HOOK0(disable_display_v);
           /* Clear the framebuffer. */
-          if (IS_SGB) {
-            update_sgb_mask(e);
+          if (THIS_IS_SGB) {
+            update_sgb_mask(this);
           } else {
-            clear_frame_buffer(e, RGBA_WHITE);
+            clear_frame_buffer(this, RGBA_WHITE);
           }
-          e->state.event |= EMULATOR_EVENT_NEW_FRAME;
+          state.event |= EMULATOR_EVENT_NEW_FRAME;
         }
-        calculate_next_ppu_intr(e);
+        calculate_next_ppu_intr(this);
       }
       break;
     }
     case IO_STAT_ADDR: {
-      ppu_synchronize(e);
+      ppu_synchronize(this);
       bool new_vblank_irq = unpack(value, STAT_VBLANK_INTR);
       bool new_hblank_irq = unpack(value, STAT_HBLANK_INTR);
-      if (LCDC.display) {
-        bool hblank = TRIGGER_MODE_IS(HBLANK) && !STAT.hblank.irq;
-        bool vblank = TRIGGER_MODE_IS(VBLANK) && !STAT.vblank.irq;
-        bool y_compare = STAT.new_ly_eq_lyc && !STAT.y_compare.irq;
-        if (IS_CGB) {
+      if (THIS_LCDC.display) {
+        bool hblank = TRIGGER_MODE_IS(HBLANK) && !THIS_STAT.hblank.irq;
+        bool vblank = TRIGGER_MODE_IS(VBLANK) && !THIS_STAT.vblank.irq;
+        bool y_compare = THIS_STAT.new_ly_eq_lyc && !THIS_STAT.y_compare.irq;
+        if (THIS_IS_CGB) {
           /* CGB only triggers on STAT write if the value being written
            * actually sets that IRQ */
           hblank = hblank && new_hblank_irq;
           vblank = vblank && new_vblank_irq;
         }
-        if (!STAT.if_ && (hblank || vblank || y_compare)) {
-          HOOK(trigger_stat_from_write_cccii, y_compare ? 'Y' : '.',
-               vblank ? 'V' : '.', hblank ? 'H' : '.', PPU.ly,
-               TICKS + CPU_TICK);
-          INTR.new_if |= IF_STAT;
-          INTR.if_ |= IF_STAT;
-          STAT.if_ = true;
+        if (!THIS_STAT.if_ && (hblank || vblank || y_compare)) {
+          THIS_HOOK(trigger_stat_from_write_cccii, y_compare ? 'Y' : '.',
+               vblank ? 'V' : '.', hblank ? 'H' : '.', THIS_PPU.ly,
+               THIS_TICKS + CPU_TICK);
+          THIS_INTR.new_if |= IF_STAT;
+          THIS_INTR.if_ |= IF_STAT;
+          THIS_STAT.if_ = true;
         }
       }
-      STAT.y_compare.irq = unpack(value, STAT_YCOMPARE_INTR);
-      STAT.mode2.irq = unpack(value, STAT_MODE2_INTR);
-      STAT.vblank.irq = new_vblank_irq;
-      STAT.hblank.irq = new_hblank_irq;
-      calculate_next_ppu_intr(e);
+      THIS_STAT.y_compare.irq = unpack(value, STAT_YCOMPARE_INTR);
+      THIS_STAT.mode2.irq = unpack(value, STAT_MODE2_INTR);
+      THIS_STAT.vblank.irq = new_vblank_irq;
+      THIS_STAT.hblank.irq = new_hblank_irq;
+      calculate_next_ppu_intr(this);
       break;
     }
     case IO_SCY_ADDR:
-      ppu_mode3_synchronize(e);
-      PPU.scy = value;
+      ppu_mode3_synchronize(this);
+      THIS_PPU.scy = value;
       break;
     case IO_SCX_ADDR:
-      ppu_synchronize(e);
-      ppu_mode3_synchronize(e);
-      PPU.scx = value;
+      ppu_synchronize(this);
+      ppu_mode3_synchronize(this);
+      THIS_PPU.scx = value;
       break;
     case IO_LY_ADDR:
       break;
     case IO_LYC_ADDR:
-      ppu_synchronize(e);
-      PPU.lyc = value;
-      if (LCDC.display) {
-        check_ly_eq_lyc(e, true);
-        check_stat(e);
+      ppu_synchronize(this);
+      THIS_PPU.lyc = value;
+      if (THIS_LCDC.display) {
+        check_ly_eq_lyc(true);
+        check_stat();
       }
-      calculate_next_ppu_intr(e);
+      calculate_next_ppu_intr(this);
       break;
     case IO_DMA_ADDR:
       /* DMA can be restarted. */
-      dma_synchronize(e);
-      DMA.sync_ticks = TICKS;
-      DMA.tick_count = 0;
-      DMA.state = (DMA.state != DMA_INACTIVE ? DMA.state : DMA_TRIGGERED);
-      DMA.source = value << 8;
+      dma_synchronize(this);
+      THIS_DMA.sync_ticks = THIS_TICKS;
+      THIS_DMA.tick_count = 0;
+      THIS_DMA.state = (THIS_DMA.state != DMA_INACTIVE ? THIS_DMA.state : DMA_TRIGGERED);
+      THIS_DMA.source = value << 8;
       break;
     case IO_BGP_ADDR:
     case IO_OBP0_ADDR:
     case IO_OBP1_ADDR: {
       PaletteType type = static_cast<PaletteType>(addr - IO_BGP_ADDR);
-      Palette* pal = &PPU.pal[type];
-      ppu_mode3_synchronize(e);
+      Palette* pal = &THIS_PPU.pal[type];
+      ppu_mode3_synchronize(this);
       pal->color[3] = static_cast<Color>(unpack(value, PALETTE_COLOR3));
       pal->color[2] = static_cast<Color>(unpack(value, PALETTE_COLOR2));
       pal->color[1] = static_cast<Color>(unpack(value, PALETTE_COLOR1));
       pal->color[0] = static_cast<Color>(unpack(value, PALETTE_COLOR0));
-      update_bw_palette_rgba(e, type);
+      update_bw_palette_rgba(this, type);
       break;
     }
     case IO_WY_ADDR:
-      ppu_synchronize(e);
-      ppu_mode3_synchronize(e);
-      PPU.wy = value;
+      ppu_synchronize(this);
+      ppu_mode3_synchronize(this);
+      THIS_PPU.wy = value;
       break;
     case IO_WX_ADDR:
-      ppu_mode3_synchronize(e);
-      PPU.wx = value;
+      ppu_mode3_synchronize(this);
+      THIS_PPU.wx = value;
       break;
     case IO_KEY1_ADDR:
-      if (IS_CGB) {
-        CPU_SPEED.switching = unpack(value, KEY1_PREPARE_SPEED_SWITCH);
+      if (THIS_IS_CGB) {
+        THIS_CPU_SPEED.switching = unpack(value, KEY1_PREPARE_SPEED_SWITCH);
       }
       break;
     case IO_VBK_ADDR:
-      if (IS_CGB) {
-        VRAM.bank = unpack(value, VBK_VRAM_BANK);
-        VRAM.offset = VRAM.bank << 13;
+      if (THIS_IS_CGB) {
+        THIS_VRAM.bank = unpack(value, VBK_VRAM_BANK);
+        THIS_VRAM.offset = THIS_VRAM.bank << 13;
       }
       break;
     case IO_HDMA1_ADDR:
-      if (IS_CGB) {
-        HDMA.source = (HDMA.source & 0x00ff) | (value << 8);
+      if (THIS_IS_CGB) {
+        THIS_HDMA.source = (THIS_HDMA.source & 0x00ff) | (value << 8);
       }
       break;
     case IO_HDMA2_ADDR:
-      if (IS_CGB) {
-        HDMA.source = (HDMA.source & 0xff00) | (value & 0xf0);
+      if (THIS_IS_CGB) {
+        THIS_HDMA.source = (THIS_HDMA.source & 0xff00) | (value & 0xf0);
       }
       break;
     case IO_HDMA3_ADDR:
-      if (IS_CGB) {
-        HDMA.dest = (HDMA.dest & 0x00ff) | (value << 8);
+      if (THIS_IS_CGB) {
+        THIS_HDMA.dest = (THIS_HDMA.dest & 0x00ff) | (value << 8);
       }
       break;
     case IO_HDMA4_ADDR:
-      if (IS_CGB) {
-        HDMA.dest = (HDMA.dest & 0xff00) | (value & 0xf0);
+      if (THIS_IS_CGB) {
+        THIS_HDMA.dest = (THIS_HDMA.dest & 0xff00) | (value & 0xf0);
       }
       break;
     case IO_HDMA5_ADDR:
-      if (IS_CGB) {
+      if (THIS_IS_CGB) {
         HdmaTransferMode new_mode = static_cast<HdmaTransferMode>(unpack(value, HDMA5_TRANSFER_MODE));
         u8 new_blocks = unpack(value, HDMA5_BLOCKS);
-        if (HDMA.mode == HDMA_TRANSFER_MODE_HDMA &&
-            (HDMA.blocks & 0x80) == 0) { /* HDMA Active */
+        if (THIS_HDMA.mode == HDMA_TRANSFER_MODE_HDMA &&
+            (THIS_HDMA.blocks & 0x80) == 0) { /* HDMA Active */
           if (new_mode == HDMA_TRANSFER_MODE_GDMA) {
             /* Stop HDMA copy. */
-            HDMA.blocks |= 0x80 | new_blocks;
+            THIS_HDMA.blocks |= 0x80 | new_blocks;
           } else {
-            HDMA.blocks = new_blocks;
-            HDMA.mode = new_mode;
+            THIS_HDMA.blocks = new_blocks;
+            THIS_HDMA.mode = new_mode;
           }
         } else {
-          HDMA.mode = new_mode;
-          HDMA.blocks = new_blocks;
+          THIS_HDMA.mode = new_mode;
+          THIS_HDMA.blocks = new_blocks;
         }
-        if (HDMA.mode == HDMA_TRANSFER_MODE_GDMA) {
-          HDMA.state = DMA_ACTIVE;
+        if (THIS_HDMA.mode == HDMA_TRANSFER_MODE_GDMA) {
+          THIS_HDMA.state = DMA_ACTIVE;
         }
       }
       break;
     case IO_RP_ADDR:
-      if (IS_CGB) {
-        INFRARED.write = unpack(value, RP_WRITE_DATA);
-        INFRARED.enabled = static_cast<DataReadEnable>(unpack(value, RP_DATA_READ_ENABLE));
+      if (THIS_IS_CGB) {
+        THIS_INFRARED.write = unpack(value, RP_WRITE_DATA);
+        THIS_INFRARED.enabled = static_cast<DataReadEnable>(unpack(value, RP_DATA_READ_ENABLE));
       }
       break;
     case IO_BCPS_ADDR:
     case IO_OCPS_ADDR:
-      if (IS_CGB) {
-        ppu_mode3_synchronize(e);
-        ColorPalettes* cp = addr == IO_BCPS_ADDR ? &PPU.bgcp : &PPU.obcp;
+      if (THIS_IS_CGB) {
+        ppu_mode3_synchronize(this);
+        ColorPalettes* cp = addr == IO_BCPS_ADDR ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
         cp->index = unpack(value, XCPS_INDEX);
         cp->auto_increment = unpack(value, XCPS_AUTO_INCREMENT);
       }
       break;
     case IO_BCPD_ADDR:
     case IO_OCPD_ADDR:
-      if (IS_CGB) {
-        ppu_mode3_synchronize(e);
-        ColorPalettes* cp = addr == IO_BCPD_ADDR ? &PPU.bgcp : &PPU.obcp;
+      if (THIS_IS_CGB) {
+        ppu_mode3_synchronize(this);
+        ColorPalettes* cp = addr == IO_BCPD_ADDR ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
         cp->data[cp->index] = value;
         u8 palette_index = (cp->index >> 3) & 7;
         u8 color_index = (cp->index >> 1) & 3;
         u16 color16 = (cp->data[cp->index | 1] << 8) | cp->data[cp->index & ~1];
-        RGBA color = unpack_cgb_color(e, color16);
+        RGBA color = unpack_cgb_color(this, color16);
         cp->palettes[palette_index].color[color_index] = color;
         if (cp->auto_increment) {
           cp->index = (cp->index + 1) & 0x3f;
@@ -2203,16 +2203,16 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       }
       break;
     case IO_SVBK_ADDR:
-      if (IS_CGB) {
-        WRAM.bank = unpack(value, SVBK_WRAM_BANK);
-        WRAM.offset = WRAM.bank == 0 ? 0x1000 : (WRAM.bank << 12);
+      if (THIS_IS_CGB) {
+        THIS_WRAM.bank = unpack(value, SVBK_WRAM_BANK);
+        THIS_WRAM.offset = THIS_WRAM.bank == 0 ? 0x1000 : (THIS_WRAM.bank << 12);
       }
       break;
     case IO_IE_ADDR:
-      INTR.ie = value;
+      THIS_INTR.ie = value;
       break;
     default:
-      HOOK(write_io_ignored_as, addr, get_io_reg_string((IOReg)addr), value);
+      THIS_HOOK(write_io_ignored_as, addr, get_io_reg_string((IOReg)addr), value);
       break;
   }
 }
@@ -2583,7 +2583,7 @@ static void write_u8_pair(Emulator* e, MemoryTypeAddressPair pair, u8 value) {
     case MEMORY_MAP_UNUSED:
       break;
     case MEMORY_MAP_IO:
-      write_io(e, pair.addr, value);
+      e->write_io(pair.addr, value);
       break;
     case MEMORY_MAP_APU:
       write_apu(e, pair.addr, value);
@@ -2876,7 +2876,7 @@ static void ppu_synchronize(Emulator* e) {
             PPU.line_y++;
             PPU.ly++;
             PPU.line_start_ticks = ticks;
-            check_ly_eq_lyc(e, false);
+            e->check_ly_eq_lyc(false);
             PPU.state_ticks = CPU_TICK;
 
             if (PPU.state == PPU_STATE_HBLANK) {
@@ -2910,7 +2910,7 @@ static void ppu_synchronize(Emulator* e) {
                 PPU.state_ticks = PPU_LINE_TICKS;
               }
             }
-            check_stat(e);
+            e->check_stat();
             break;
 
           case PPU_STATE_HBLANK_PLUS_4:
@@ -2924,7 +2924,7 @@ static void ppu_synchronize(Emulator* e) {
             PPU.state = PPU_STATE_VBLANK_PLUS_4;
             PPU.state_ticks = PPU_LINE_TICKS - CPU_TICK;
             STAT.mode = PPU_MODE_VBLANK;
-            check_stat(e);
+            e->check_stat();
             break;
 
           case PPU_STATE_VBLANK_LY_0:
@@ -2936,8 +2936,8 @@ static void ppu_synchronize(Emulator* e) {
           case PPU_STATE_VBLANK_LY_0_PLUS_4:
             PPU.state = PPU_STATE_VBLANK_LINE_Y_0;
             PPU.state_ticks = PPU_LINE_TICKS - CPU_TICK - CPU_TICK;
-            check_ly_eq_lyc(e, false);
-            check_stat(e);
+            e->check_ly_eq_lyc(false);
+            e->check_stat();
             break;
 
           case PPU_STATE_VBLANK_LINE_Y_0:
@@ -2949,7 +2949,7 @@ static void ppu_synchronize(Emulator* e) {
             STAT.mode2.trigger = true;
             STAT.mode = PPU_MODE_HBLANK;
             STAT.trigger_mode = PPU_MODE_MODE2;
-            check_stat(e);
+            e->check_stat();
             break;
 
           case PPU_STATE_LCD_ON_MODE2:
@@ -2967,14 +2967,14 @@ static void ppu_synchronize(Emulator* e) {
             PPU.mode3_render_ticks = ticks;
             PPU.render_x = 0;
             PPU.rendering_window = false;
-            check_stat(e);
+            e->check_stat();
             break;
 
           case PPU_STATE_MODE3_EARLY_TRIGGER:
             PPU.state = PPU_STATE_MODE3_COMMON;
             PPU.state_ticks = CPU_TICK;
             STAT.trigger_mode = PPU_MODE_HBLANK;
-            check_stat(e);
+            e->check_stat();
             break;
 
           case PPU_STATE_MODE3:
@@ -2986,7 +2986,7 @@ static void ppu_synchronize(Emulator* e) {
             PPU.state = PPU_STATE_HBLANK;
             PPU.state_ticks = PPU_LINE_TICKS + PPU.line_start_ticks - ticks;
             STAT.mode = PPU_MODE_HBLANK;
-            check_stat(e);
+            e->check_stat();
             break;
 
           case PPU_STATE_COUNT:
@@ -3963,7 +3963,7 @@ EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
   if (state.event & EMULATOR_EVENT_AUDIO_BUFFER_FULL) {
     ab->position = ab->data;
   }
-  check_joyp_intr(this);
+  check_joyp_intr();
   state.event = 0;
 
   u64 frames_left = ab->frames - audio_buffer_get_frames(ab);
@@ -4098,15 +4098,15 @@ Result init_emulator(Emulator* e, const EmulatorInit* init) {
    * GB startup sound), but we don't want to hear it when starting the
    * emulator. */
   CHANNEL1.envelope.volume = 0;
-  write_io(e, IO_LCDC_ADDR, 0x91);
-  write_io(e, IO_SCY_ADDR, 0x00);
-  write_io(e, IO_SCX_ADDR, 0x00);
-  write_io(e, IO_LYC_ADDR, 0x00);
-  write_io(e, IO_BGP_ADDR, 0xfc);
-  write_io(e, IO_OBP0_ADDR, 0xff);
-  write_io(e, IO_OBP1_ADDR, 0xff);
-  write_io(e, IO_IF_ADDR, 0x1);
-  write_io(e, IO_IE_ADDR, 0x0);
+  e->write_io(IO_LCDC_ADDR, 0x91);
+  e->write_io(IO_SCY_ADDR, 0x00);
+  e->write_io(IO_SCX_ADDR, 0x00);
+  e->write_io(IO_LYC_ADDR, 0x00);
+  e->write_io(IO_BGP_ADDR, 0xfc);
+  e->write_io(IO_OBP0_ADDR, 0xff);
+  e->write_io(IO_OBP1_ADDR, 0xff);
+  e->write_io(IO_IF_ADDR, 0x1);
+  e->write_io(IO_IE_ADDR, 0x0);
   HDMA.blocks = 0xff;
 
   /* Set initial DMG/SGB palettes */
