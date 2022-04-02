@@ -968,48 +968,48 @@ static Result init_memory_map(Emulator* e) {
   return OK;
 }
 
-static bool is_almost_mode3(Emulator* e) {
-  return PPU.state_ticks == CPU_TICK && STAT.mode == PPU_MODE_MODE2;
+bool Emulator::is_almost_mode3() {
+  return THIS_PPU.state_ticks == CPU_TICK && THIS_STAT.mode == PPU_MODE_MODE2;
 }
 
-static bool is_using_vram(Emulator* e, bool write) {
+bool Emulator::is_using_vram(bool write) {
   if (write) {
-    return STAT.mode == PPU_MODE_MODE3;
+    return THIS_STAT.mode == PPU_MODE_MODE3;
   } else {
-    return STAT.mode == PPU_MODE_MODE3 || is_almost_mode3(e);
+    return THIS_STAT.mode == PPU_MODE_MODE3 || is_almost_mode3();
   }
 }
 
-static bool is_using_oam(Emulator* e, bool write) {
+bool Emulator::is_using_oam(bool write) {
   if (write) {
-    return (STAT.mode == PPU_MODE_MODE2 && !is_almost_mode3(e)) ||
-           STAT.mode == PPU_MODE_MODE3;
+    return (THIS_STAT.mode == PPU_MODE_MODE2 && !is_almost_mode3()) ||
+           THIS_STAT.mode == PPU_MODE_MODE3;
   } else {
-    return STAT.mode2.trigger || STAT.mode == PPU_MODE_MODE2 ||
-           STAT.mode == PPU_MODE_MODE3;
+    return THIS_STAT.mode2.trigger || THIS_STAT.mode == PPU_MODE_MODE2 ||
+           THIS_STAT.mode == PPU_MODE_MODE3;
   }
 }
 
-static u8 read_vram(Emulator* e, MaskedAddress addr) {
-  ppu_synchronize(e);
-  if (is_using_vram(e, false)) {
-    HOOK(read_vram_in_use_a, addr);
+u8 Emulator::read_vram(MaskedAddress addr) {
+  ppu_synchronize(this);
+  if (is_using_vram(false)) {
+    THIS_HOOK(read_vram_in_use_a, addr);
     return INVALID_READ_BYTE;
   } else {
     assert(addr <= ADDR_MASK_8K);
-    return VRAM.data[VRAM.offset + addr];
+    return THIS_VRAM.data[THIS_VRAM.offset + addr];
   }
 }
 
-static u8 read_oam(Emulator* e, MaskedAddress addr) {
-  ppu_synchronize(e);
-  if (is_using_oam(e, false)) {
-    HOOK(read_oam_in_use_a, addr);
+u8 Emulator::read_oam(MaskedAddress addr) {
+  ppu_synchronize(this);
+  if (is_using_oam(false)) {
+    THIS_HOOK(read_oam_in_use_a, addr);
     return INVALID_READ_BYTE;
   }
 
   u8 obj_index = addr >> 2;
-  Obj* obj = &OAM[obj_index];
+  Obj* obj = &THIS_OAM[obj_index];
   switch (addr & 3) {
     case 0: return obj->y + OBJ_Y_OFFSET;
     case 1: return obj->x + OBJ_X_OFFSET;
@@ -1019,26 +1019,26 @@ static u8 read_oam(Emulator* e, MaskedAddress addr) {
   UNREACHABLE("invalid OAM address: 0x%04x\n", addr);
 }
 
-static u8 read_joyp_p10_p13(Emulator* e) {
-  if (JOYP.joypad_select == JOYPAD_SELECT_NONE) {
-    return ~(SGB.current_player & 3);
+u8 Emulator::read_joyp_p10_p13() {
+  if (THIS_JOYP.joypad_select == JOYPAD_SELECT_NONE) {
+    return ~(THIS_SGB.current_player & 3);
   }
-  if (SGB.current_player != 0) { return ~0; }  // Ignore other controllers.
+  if (THIS_SGB.current_player != 0) { return ~0; }  // Ignore other controllers.
 
   u8 result = 0;
-  if (JOYP.joypad_select == JOYPAD_SELECT_BUTTONS ||
-      JOYP.joypad_select == JOYPAD_SELECT_BOTH) {
-    result |= pack(JOYP.buttons.start, JOYP_BUTTON_START) |
-              pack(JOYP.buttons.select, JOYP_BUTTON_SELECT) |
-              pack(JOYP.buttons.B, JOYP_BUTTON_B) |
-              pack(JOYP.buttons.A, JOYP_BUTTON_A);
+  if (THIS_JOYP.joypad_select == JOYPAD_SELECT_BUTTONS ||
+      THIS_JOYP.joypad_select == JOYPAD_SELECT_BOTH) {
+    result |= pack(THIS_JOYP.buttons.start, JOYP_BUTTON_START) |
+              pack(THIS_JOYP.buttons.select, JOYP_BUTTON_SELECT) |
+              pack(THIS_JOYP.buttons.B, JOYP_BUTTON_B) |
+              pack(THIS_JOYP.buttons.A, JOYP_BUTTON_A);
   }
 
-  bool left = JOYP.buttons.left;
-  bool right = JOYP.buttons.right;
-  bool up = JOYP.buttons.up;
-  bool down = JOYP.buttons.down;
-  if (!e->config.allow_simulataneous_dpad_opposites) {
+  bool left = THIS_JOYP.buttons.left;
+  bool right = THIS_JOYP.buttons.right;
+  bool up = THIS_JOYP.buttons.up;
+  bool down = THIS_JOYP.buttons.down;
+  if (!config.allow_simulataneous_dpad_opposites) {
     if (left && right) {
       left = false;
     } else if (up && down) {
@@ -1046,8 +1046,8 @@ static u8 read_joyp_p10_p13(Emulator* e) {
     }
   }
 
-  if (JOYP.joypad_select == JOYPAD_SELECT_DPAD ||
-      JOYP.joypad_select == JOYPAD_SELECT_BOTH) {
+  if (THIS_JOYP.joypad_select == JOYPAD_SELECT_DPAD ||
+      THIS_JOYP.joypad_select == JOYPAD_SELECT_BOTH) {
     result |= pack(down, JOYP_DPAD_DOWN) | pack(up, JOYP_DPAD_UP) |
               pack(left, JOYP_DPAD_LEFT) | pack(right, JOYP_DPAD_RIGHT);
   }
@@ -1068,7 +1068,7 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
     case IO_JOYP_ADDR:
       call_joyp_callback(e, false);
       return JOYP_UNUSED | pack(JOYP.joypad_select, JOYP_JOYPAD_SELECT) |
-             (read_joyp_p10_p13(e) & JOYP_RESULT_MASK);
+             (e->read_joyp_p10_p13() & JOYP_RESULT_MASK);
     case IO_SB_ADDR:
       serial_synchronize(e);
       return SERIAL.sb;
@@ -1288,7 +1288,7 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
       return value;
     }
     case MEMORY_MAP_VRAM:
-      return read_vram(this, pair.addr);
+      return read_vram(pair.addr);
     case MEMORY_MAP_EXT_RAM:
       return memory_map.read_ext_ram(pair.addr);
     case MEMORY_MAP_WORK_RAM0:
@@ -1296,7 +1296,7 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
     case MEMORY_MAP_WORK_RAM1:
       return THIS_WRAM.data[THIS_WRAM.offset + pair.addr];
     case MEMORY_MAP_OAM:
-      return read_oam(this, pair.addr);
+      return read_oam(pair.addr);
     case MEMORY_MAP_UNUSED:
       return INVALID_READ_BYTE;
     case MEMORY_MAP_IO: {
@@ -1338,7 +1338,7 @@ u8 Emulator::read_u8(Address addr) {
 
 void Emulator::write_vram(MaskedAddress addr, u8 value) {
   ppu_synchronize(this);
-  if (UNLIKELY(is_using_vram(this, true))) {
+  if (UNLIKELY(is_using_vram(true))) {
     THIS_HOOK(write_vram_in_use_ab, addr, value);
     return;
   }
@@ -1367,7 +1367,7 @@ void Emulator::write_oam_no_mode_check(MaskedAddress addr, u8 value) {
 
 void Emulator::write_oam(MaskedAddress addr, u8 value) {
   ppu_synchronize(this);
-  if (UNLIKELY(is_using_oam(this, true))) {
+  if (UNLIKELY(is_using_oam(true))) {
     THIS_HOOK(write_oam_in_use_ab, addr, value);
     return;
   }
@@ -1520,7 +1520,7 @@ static void check_ly_eq_lyc(Emulator* e, bool write) {
 
 static void check_joyp_intr(Emulator* e) {
   call_joyp_callback(e, true);
-  u8 p10_p13 = read_joyp_p10_p13(e);
+  u8 p10_p13 = e->read_joyp_p10_p13();
   /* joyp interrupt only triggers on p10-p13 going from high to low (i.e. not
    * pressed to pressed). */
   if ((p10_p13 ^ JOYP.last_p10_p13) & ~p10_p13) {

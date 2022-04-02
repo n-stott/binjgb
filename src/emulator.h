@@ -967,12 +967,12 @@ struct Emulator {
   void huc1_write_rom(MaskedAddress addr, u8 value);
   void mmm01_write_rom(MaskedAddress addr, u8 value);
   // Result init_memory_map();
-  // bool is_almost_mode3();
-  // bool is_using_vram(bool write);
-  // bool is_using_oam(bool write);
-  // u8 read_vram(MaskedAddress addr);
-  // u8 read_oam(MaskedAddress addr);
-  // u8 read_joyp_p10_p13();
+  bool is_almost_mode3();
+  bool is_using_vram(bool write);
+  bool is_using_oam(bool write);
+  u8 read_vram(MaskedAddress addr);
+  u8 read_oam(MaskedAddress addr);
+  u8 read_joyp_p10_p13();
   // void call_joyp_callback(bool wait);
   // u8 read_io(MaskedAddress addr);
   // u8 read_apu(MaskedAddress addr);
