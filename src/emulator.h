@@ -1050,6 +1050,8 @@ struct Emulator {
   void set_af_reg(u16 af);
   Result init_audio_buffer(u32 frequency, u32 frames);
   Result init_emulator(const EmulatorInit* init);
+
+  Result set_rom_file_data(const FileData* file_data);
 };
 
 extern const size_t s_emulator_state_size;

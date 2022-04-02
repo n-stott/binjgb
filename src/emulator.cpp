@@ -4185,12 +4185,12 @@ void Emulator::emulator_set_all_bw_palettes(const PaletteRGBA* palette) {
   color_to_rgba[PALETTE_TYPE_OBP1] = *palette;
 }
 
-static Result set_rom_file_data(Emulator* e, const FileData* file_data) {
+Result Emulator::set_rom_file_data(const FileData* file_data) {
   CHECK_MSG(file_data->size > 0, "File is empty.\n");
   CHECK_MSG((file_data->size & (MINIMUM_ROM_SIZE - 1)) == 0,
             "File size (%ld) should be a multiple of minimum rom size (%ld).\n",
             (long)file_data->size, (long)MINIMUM_ROM_SIZE);
-  e->file_data = *file_data;
+  this->file_data = *file_data;
   return OK;
   ON_ERROR_RETURN;
 }
@@ -4318,7 +4318,7 @@ error:
 
 std::unique_ptr<Emulator> Emulator::try_create(const EmulatorInit* init) {
   std::unique_ptr<Emulator> e = std::make_unique<Emulator>();
-  CHECK(SUCCESS(set_rom_file_data(e.get(), &init->rom)));
+  CHECK(SUCCESS(e->set_rom_file_data(&init->rom)));
   CHECK(SUCCESS(e->init_emulator(init)));
   CHECK(
       SUCCESS(e->init_audio_buffer(init->audio_frequency, init->audio_frames)));
