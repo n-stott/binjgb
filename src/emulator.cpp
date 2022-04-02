@@ -2216,44 +2216,44 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
   }
 }
 
-static void write_nrx1_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
+void Emulator::write_nrx1_reg(Channel* channel, [[maybe_unused]] Address addr,
                            u8 value) {
-  if (APU.enabled) {
+  if (THIS_APU.enabled) {
     channel->square_wave.duty = static_cast<WaveDuty>(unpack(value, NRX1_WAVE_DUTY));
   }
   channel->length = NRX1_MAX_LENGTH - unpack(value, NRX1_LENGTH);
-  HOOK(write_nrx1_abi, addr, value, channel->length);
+  THIS_HOOK(write_nrx1_abi, addr, value, channel->length);
 }
 
-static void write_nrx2_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
+void Emulator::write_nrx2_reg(Channel* channel, [[maybe_unused]] Address addr,
                            u8 value) {
   channel->envelope.initial_volume = unpack(value, NRX2_INITIAL_VOLUME);
   channel->dac_enabled = unpack(value, NRX2_DAC_ENABLED) != 0;
   if (!channel->dac_enabled) {
     channel->status = false;
-    HOOK(write_nrx2_disable_dac_ab, addr, value);
+    THIS_HOOK(write_nrx2_disable_dac_ab, addr, value);
   }
   if (channel->status) {
     if (UNLIKELY(channel->envelope.period == 0 &&
                  channel->envelope.automatic)) {
       u8 new_volume = (channel->envelope.volume + 1) & ENVELOPE_MAX_VOLUME;
-      HOOK(write_nrx2_zombie_mode_abii, addr, value, channel->envelope.volume,
+      THIS_HOOK(write_nrx2_zombie_mode_abii, addr, value, channel->envelope.volume,
            new_volume);
       channel->envelope.volume = new_volume;
     }
   }
   channel->envelope.direction = static_cast<EnvelopeDirection>(unpack(value, NRX2_ENVELOPE_DIRECTION));
   channel->envelope.period = unpack(value, NRX2_ENVELOPE_PERIOD);
-  HOOK(write_nrx2_initial_volume_abi, addr, value,
+  THIS_HOOK(write_nrx2_initial_volume_abi, addr, value,
        channel->envelope.initial_volume);
 }
 
-static void write_nrx3_reg([[maybe_unused]] Emulator* e, Channel* channel, u8 value) {
+void Emulator::write_nrx3_reg(Channel* channel, u8 value) {
   channel->frequency = (channel->frequency & ~0xff) | value;
 }
 
 /* Returns true if this channel was triggered. */
-static bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[maybe_unused]] Address addr,
+bool Emulator::write_nrx4_reg(Channel* channel, [[maybe_unused]] Address addr,
                            u8 value, u16 max_length) {
   bool trigger = unpack(value, NRX4_INITIAL);
   bool was_length_enabled = channel->length_enabled;
@@ -2264,13 +2264,13 @@ static bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[may
   /* Extra length clocking occurs on NRX4 writes if the next APU frame isn't a
    * length counter frame. This only occurs on transition from disabled to
    * enabled. */
-  bool next_frame_is_length = (APU.frame & 1) == 1;
+  bool next_frame_is_length = (THIS_APU.frame & 1) == 1;
   if (UNLIKELY(!was_length_enabled && channel->length_enabled &&
                !next_frame_is_length && channel->length > 0)) {
     channel->length--;
-    HOOK(write_nrx4_extra_length_clock_abi, addr, value, channel->length);
+    THIS_HOOK(write_nrx4_extra_length_clock_abi, addr, value, channel->length);
     if (!trigger && channel->length == 0) {
-      HOOK(write_nrx4_disable_channel_ab, addr, value);
+      THIS_HOOK(write_nrx4_disable_channel_ab, addr, value);
       channel->status = false;
     }
   }
@@ -2281,27 +2281,26 @@ static bool write_nrx4_reg([[maybe_unused]] Emulator* e, Channel* channel, [[may
       if (channel->length_enabled && !next_frame_is_length) {
         channel->length--;
       }
-      HOOK(write_nrx4_trigger_new_length_abi, addr, value, channel->length);
+      THIS_HOOK(write_nrx4_trigger_new_length_abi, addr, value, channel->length);
     }
     if (channel->dac_enabled) {
       channel->status = true;
     }
   }
 
-  HOOK(write_nrx4_info_abii, addr, value, trigger, channel->length_enabled);
+  THIS_HOOK(write_nrx4_info_abii, addr, value, trigger, channel->length_enabled);
   return trigger;
 }
 
-static void trigger_nrx4_envelope(Emulator* e, Envelope* envelope,
-                                  [[maybe_unused]] Address addr) {
+void Emulator::trigger_nrx4_envelope(Envelope* envelope, [[maybe_unused]] Address addr) {
   envelope->volume = envelope->initial_volume;
   envelope->timer = envelope->period ? envelope->period : ENVELOPE_MAX_PERIOD;
   envelope->automatic = true;
   /* If the next APU frame will update the envelope, increment the timer. */
-  if (UNLIKELY(APU.frame + 1 == FRAME_SEQUENCER_UPDATE_ENVELOPE_FRAME)) {
+  if (UNLIKELY(THIS_APU.frame + 1 == FRAME_SEQUENCER_UPDATE_ENVELOPE_FRAME)) {
     envelope->timer++;
   }
-  HOOK(trigger_nrx4_info_asii, addr, get_apu_reg_string((APUReg)addr), envelope->volume,
+  THIS_HOOK(trigger_nrx4_info_asii, addr, get_apu_reg_string((APUReg)addr), envelope->volume,
        envelope->timer);
 }
 
@@ -2391,40 +2390,40 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     }
     case APU_NR11_ADDR:
-      write_nrx1_reg(e, &CHANNEL1, addr, value);
+      e->write_nrx1_reg(&CHANNEL1, addr, value);
       break;
     case APU_NR12_ADDR:
-      write_nrx2_reg(e, &CHANNEL1, addr, value);
+      e->write_nrx2_reg(&CHANNEL1, addr, value);
       break;
     case APU_NR13_ADDR:
-      write_nrx3_reg(e, &CHANNEL1, value);
+      e->write_nrx3_reg(&CHANNEL1, value);
       write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
       break;
     case APU_NR14_ADDR: {
-      bool trigger = write_nrx4_reg(e, &CHANNEL1, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = e->write_nrx4_reg(&CHANNEL1, addr, value, NRX1_MAX_LENGTH);
       write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
       if (trigger) {
-        trigger_nrx4_envelope(e, &CHANNEL1.envelope, addr);
+        e->trigger_nrx4_envelope(&CHANNEL1.envelope, addr);
         trigger_nr14_reg(e, &CHANNEL1);
         CHANNEL1.square_wave.ticks = CHANNEL1.square_wave.period;
       }
       break;
     }
     case APU_NR21_ADDR:
-      write_nrx1_reg(e, &CHANNEL2, addr, value);
+      e->write_nrx1_reg(&CHANNEL2, addr, value);
       break;
     case APU_NR22_ADDR:
-      write_nrx2_reg(e, &CHANNEL2, addr, value);
+      e->write_nrx2_reg(&CHANNEL2, addr, value);
       break;
     case APU_NR23_ADDR:
-      write_nrx3_reg(e, &CHANNEL2, value);
+      e->write_nrx3_reg(&CHANNEL2, value);
       write_square_wave_period(e, &CHANNEL2, &CHANNEL2.square_wave);
       break;
     case APU_NR24_ADDR: {
-      bool trigger = write_nrx4_reg(e, &CHANNEL2, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = e->write_nrx4_reg(&CHANNEL2, addr, value, NRX1_MAX_LENGTH);
       write_square_wave_period(e, &CHANNEL2, &CHANNEL2.square_wave);
       if (trigger) {
-        trigger_nrx4_envelope(e, &CHANNEL2.envelope, addr);
+        e->trigger_nrx4_envelope(&CHANNEL2.envelope, addr);
         CHANNEL2.square_wave.ticks = CHANNEL2.square_wave.period;
       }
       break;
@@ -2445,11 +2444,11 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       WAVE.volume_shift = s_wave_volume_shift[WAVE.volume];
       break;
     case APU_NR33_ADDR:
-      write_nrx3_reg(e, &CHANNEL3, value);
+      e->write_nrx3_reg(&CHANNEL3, value);
       write_wave_period(e, &CHANNEL3);
       break;
     case APU_NR34_ADDR: {
-      bool trigger = write_nrx4_reg(e, &CHANNEL3, addr, value, NR31_MAX_LENGTH);
+      bool trigger = e->write_nrx4_reg(&CHANNEL3, addr, value, NR31_MAX_LENGTH);
       write_wave_period(e, &CHANNEL3);
       if (trigger) {
         if (!IS_CGB && WAVE.playing) {
@@ -2480,10 +2479,10 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     }
     case APU_NR41_ADDR:
-      write_nrx1_reg(e, &CHANNEL4, addr, value);
+      e->write_nrx1_reg(&CHANNEL4, addr, value);
       break;
     case APU_NR42_ADDR:
-      write_nrx2_reg(e, &CHANNEL4, addr, value);
+      e->write_nrx2_reg(&CHANNEL4, addr, value);
       break;
     case APU_NR43_ADDR: {
       NOISE.clock_shift = unpack(value, NR43_CLOCK_SHIFT);
@@ -2493,10 +2492,10 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       break;
     }
     case APU_NR44_ADDR: {
-      bool trigger = write_nrx4_reg(e, &CHANNEL4, addr, value, NRX1_MAX_LENGTH);
+      bool trigger = e->write_nrx4_reg(&CHANNEL4, addr, value, NRX1_MAX_LENGTH);
       if (trigger) {
         write_noise_period(e);
-        trigger_nrx4_envelope(e, &CHANNEL4.envelope, addr);
+        e->trigger_nrx4_envelope(&CHANNEL4.envelope, addr);
         NOISE.lfsr = 0x7fff;
         NOISE.sample = 1;
         NOISE.ticks = NOISE.period;
