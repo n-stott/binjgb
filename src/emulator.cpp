@@ -2304,27 +2304,27 @@ void Emulator::trigger_nrx4_envelope(Envelope* envelope, [[maybe_unused]] Addres
        envelope->timer);
 }
 
-static u16 calculate_sweep_frequency(Emulator* e) {
-  u16 f = SWEEP.frequency;
-  if (SWEEP.direction == SWEEP_DIRECTION_ADDITION) {
-    return f + (f >> SWEEP.shift);
+u16 Emulator::calculate_sweep_frequency() {
+  u16 f = THIS_SWEEP.frequency;
+  if (THIS_SWEEP.direction == SWEEP_DIRECTION_ADDITION) {
+    return f + (f >> THIS_SWEEP.shift);
   } else {
-    SWEEP.calculated_subtract = true;
-    return f - (f >> SWEEP.shift);
+    THIS_SWEEP.calculated_subtract = true;
+    return f - (f >> THIS_SWEEP.shift);
   }
 }
 
-static void trigger_nr14_reg(Emulator* e, Channel* channel) {
-  SWEEP.enabled = SWEEP.period || SWEEP.shift;
-  SWEEP.frequency = channel->frequency;
-  SWEEP.timer = SWEEP.period ? SWEEP.period : SWEEP_MAX_PERIOD;
-  SWEEP.calculated_subtract = false;
-  if (UNLIKELY(SWEEP.shift &&
-               calculate_sweep_frequency(e) > SOUND_MAX_FREQUENCY)) {
+void Emulator::trigger_nr14_reg(Channel* channel) {
+  THIS_SWEEP.enabled = THIS_SWEEP.period || THIS_SWEEP.shift;
+  THIS_SWEEP.frequency = channel->frequency;
+  THIS_SWEEP.timer = THIS_SWEEP.period ? THIS_SWEEP.period : SWEEP_MAX_PERIOD;
+  THIS_SWEEP.calculated_subtract = false;
+  if (UNLIKELY(THIS_SWEEP.shift &&
+               calculate_sweep_frequency() > SOUND_MAX_FREQUENCY)) {
     channel->status = false;
-    HOOK0(trigger_nr14_sweep_overflow_v);
+    THIS_HOOK0(trigger_nr14_sweep_overflow_v);
   } else {
-    HOOK(trigger_nr14_info_i, SWEEP.frequency);
+    THIS_HOOK(trigger_nr14_info_i, THIS_SWEEP.frequency);
   }
 }
 
@@ -2404,7 +2404,7 @@ static void write_apu(Emulator* e, MaskedAddress addr, u8 value) {
       write_square_wave_period(e, &CHANNEL1, &CHANNEL1.square_wave);
       if (trigger) {
         e->trigger_nrx4_envelope(&CHANNEL1.envelope, addr);
-        trigger_nr14_reg(e, &CHANNEL1);
+        e->trigger_nr14_reg(&CHANNEL1);
         CHANNEL1.square_wave.ticks = CHANNEL1.square_wave.period;
       }
       break;
@@ -3020,7 +3020,7 @@ static void update_sweep(Emulator* e) {
   if (--SWEEP.timer == 0) {
     if (period) {
       SWEEP.timer = period;
-      u16 new_frequency = calculate_sweep_frequency(e);
+      u16 new_frequency = e->calculate_sweep_frequency();
       if (new_frequency > SOUND_MAX_FREQUENCY) {
         HOOK0(sweep_overflow_v);
         CHANNEL1.status = false;
@@ -3032,7 +3032,7 @@ static void update_sweep(Emulator* e) {
         }
 
         /* Perform another overflow check. */
-        if (UNLIKELY(calculate_sweep_frequency(e) > SOUND_MAX_FREQUENCY)) {
+        if (UNLIKELY(e->calculate_sweep_frequency() > SOUND_MAX_FREQUENCY)) {
           HOOK0(sweep_overflow_2nd_v);
           CHANNEL1.status = false;
         }

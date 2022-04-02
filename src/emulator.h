@@ -1015,8 +1015,8 @@ struct Emulator {
   void write_nrx3_reg(Channel* channel, u8 value);
   bool write_nrx4_reg(Channel* channel, Address addr, u8 value, u16 max_length);
   void trigger_nrx4_envelope(Envelope* envelope, Address addr);
-  // u16 calculate_sweep_frequency();
-  // void trigger_nr14_reg(Channel* channel);
+  u16 calculate_sweep_frequency();
+  void trigger_nr14_reg(Channel* channel);
   // void write_wave_period(Channel* channel);
   // void write_noise_period();
   // void write_apu(MaskedAddress addr, u8 value);
