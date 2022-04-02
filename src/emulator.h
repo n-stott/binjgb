@@ -897,6 +897,8 @@ struct Emulator {
   CgbColorCurve cgb_color_curve;
   ApuLog apu_log;
 
+public:
+
   Emulator();
   ~Emulator();
 
@@ -915,7 +917,25 @@ struct Emulator {
   Ticks get_ticks();
   u32 get_ppu_frame();
 
+  Result read_state(const FileData*);
+  Result write_state(FileData*);
+  Result read_ext_ram(const FileData*);
+  Result write_ext_ram(FileData*);
+
+  Result read_state_from_file(const char* filename);
+  Result write_state_to_file(const char* filename);
+  Result read_ext_ram_from_file(const char* filename);
+  Result write_ext_ram_to_file(const char* filename);
+
+  void write_u8_raw(Address addr, u8 value);
+  u8 read_u8_raw(Address addr);
+
+  EmulatorEvent step();
+  EmulatorEvent run_until(Ticks until_ticks);
+
   void set_builtin_palette(u32 index);
+  
+private:
   void set_bw_palette(PaletteType, const PaletteRGBA*);
   void set_all_bw_palettes(const PaletteRGBA*);
 
@@ -923,19 +943,6 @@ struct Emulator {
 
   void init_ext_ram_file_data(FileData*);
 
-  Result read_state(const FileData*);
-  Result write_state(FileData*);
-  Result read_ext_ram(const FileData*);
-  Result write_ext_ram(FileData*);
-
-
-  Result read_state_from_file(const char* filename);
-  Result write_state_to_file(const char* filename);
-  Result read_ext_ram_from_file(const char* filename);
-  Result write_ext_ram_to_file(const char* filename);
-
-  EmulatorEvent step();
-  EmulatorEvent run_until(Ticks until_ticks);
   void step_internal();
   void execute_instruction();
   void dispatch_interrupt();
@@ -949,6 +956,7 @@ struct Emulator {
   u16 read_u16_tick(Address addr);
   void write_u8_tick(Address addr, u8 value);
   void write_u16_tick(Address addr, u16 value);
+
 
   // TODO
   void set_rom_bank(int index, u16 bank);
@@ -982,7 +990,6 @@ struct Emulator {
   bool is_dma_access_ok(Address addr);
 
   u8 read_u8_pair(MemoryTypeAddressPair pair, bool raw);
-  u8 read_u8_raw(Address addr);
   u8 read_u8(Address addr);
   void write_vram(MaskedAddress addr, u8 value);
   void write_oam_no_mode_check(MaskedAddress addr, u8 value);
@@ -1025,7 +1032,6 @@ struct Emulator {
   void write_apu(MaskedAddress addr, u8 value);
   void write_wave_ram(MaskedAddress addr, u8 value);
   void write_u8_pair(MemoryTypeAddressPair pair, u8 value);
-  void write_u8_raw(Address addr, u8 value);
   void write_u8(Address addr, u8 value);
   void do_ppu_mode2();
   u32 mode3_tick_count();
