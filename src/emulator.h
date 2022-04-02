@@ -996,16 +996,16 @@ struct Emulator {
   void check_stat();
   void check_ly_eq_lyc(bool write);
   void check_joyp_intr();
-  // void update_bw_palette_rgba(PaletteType type);
-  // RGBA unpack_cgb_color(u16 color);
-  // RGBA unpack_cgb_color8(u8 lo, u8 hi);
-  // void set_sgb_palette(int pal, u8 lo0, u8 hi0, u8 lo1,
-  //                      u8 hi1, u8 lo2, u8 hi2, u8 lo3, u8 hi3);
-  // void unpack_sgb_palette_ram(int pal, u8 idx_lo, u8 idx_hi);
-  // void clear_frame_buffer(RGBA color);
-  // void update_sgb_mask();
-  // void set_sgb_attr(u8 byte);
-  // void set_sgb_attr_block(int x0, int y0, int x1, int y1, u8 pal);
+  void update_bw_palette_rgba(PaletteType type);
+  RGBA unpack_cgb_color(u16 color);
+  RGBA unpack_cgb_color8(u8 lo, u8 hi);
+  void set_sgb_palette(int pal, u8 lo0, u8 hi0, u8 lo1,
+                       u8 hi1, u8 lo2, u8 hi2, u8 lo3, u8 hi3);
+  void unpack_sgb_palette_ram(int pal, u8 idx_lo, u8 idx_hi);
+  void clear_frame_buffer(RGBA color);
+  void update_sgb_mask();
+  void set_sgb_attr(u8 byte);
+  void set_sgb_attr_block(int x0, int y0, int x1, int y1, u8 pal);
 
   // void do_sgb();
   void write_io(MaskedAddress addr, u8 value);
