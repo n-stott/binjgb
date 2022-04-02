@@ -379,7 +379,6 @@ static const u16 s_tima_mask[] = {1 << 9, 1 << 3, 1 << 5, 1 << 7};
 static u8 s_wave_volume_shift[WAVE_VOLUME_COUNT] = {4, 0, 1, 2};
 static u8 s_obj_size_to_height[] = {[OBJ_SIZE_8X8] = 8, [OBJ_SIZE_8X16] = 16};
 
-static Result init_memory_map(Emulator*);
 static void apu_synchronize(Emulator*);
 static void dma_synchronize(Emulator*);
 static void intr_synchronize(Emulator*);
@@ -463,7 +462,7 @@ static MemoryTypeAddressPair map_hdma_source_address(Address addr) {
 static void set_cart_info(Emulator* e, u8 index) {
   e->state.cart_info_index = index;
   e->cart_info = &e->cart_infos[index];
-  if (!(e->cart_info->data && SUCCESS(init_memory_map(e)))) {
+  if (!(e->cart_info->data && SUCCESS(e->init_memory_map()))) {
     UNREACHABLE("Unable to switch cart (%d).\n", index);
   }
 }
@@ -902,69 +901,69 @@ void Emulator::mmm01_write_rom(MaskedAddress addr, u8 value) {
   }
 }
 
-static Result init_memory_map(Emulator* e) {
-  CartTypeInfo* cart_type_info = &s_cart_type_info[e->cart_info->cart_type];
-  MemoryMap* memory_map = &e->memory_map;
+Result Emulator::init_memory_map() {
+  CartTypeInfo* cart_type_info = &s_cart_type_info[cart_info->cart_type];
+  MemoryMap* memory_map = &this->memory_map;
 
   switch (cart_type_info->ext_ram_type) {
     case EXT_RAM_TYPE_WITH_RAM:
-      assert(is_ext_ram_size_valid(e->cart_info->ext_ram_size));
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return e->gb_read_ext_ram(addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return e->gb_write_ext_ram(addr, value); };
-      EXT_RAM.size = EXT_RAM_BYTE_SIZE(e);
+      assert(is_ext_ram_size_valid(cart_info->ext_ram_size));
+      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return gb_read_ext_ram(addr); };
+      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return gb_write_ext_ram(addr, value); };
+      THIS_EXT_RAM.size = EXT_RAM_BYTE_SIZE(this);
       break;
     default:
     case EXT_RAM_TYPE_NO_RAM:
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return dummy_read(e, addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(e, addr, value); };
-      EXT_RAM.size = 0;
+      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return dummy_read(this, addr); };
+      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(this, addr, value); };
+      THIS_EXT_RAM.size = 0;
       break;
   }
 
   switch (cart_type_info->mbc_type) {
     case MBC_TYPE_NO_MBC:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(e, addr, value); };
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(this, addr, value); };
       break;
     case MBC_TYPE_MBC1: {
-      bool is_mbc1m = e->cart_info_count > 1;
+      bool is_mbc1m = cart_info_count > 1;
       if(is_mbc1m) {
-        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc1m_write_rom(addr, value); };
+        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1m_write_rom(addr, value); };
       } else {
-        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc1_write_rom(addr, value); };
+        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1_write_rom(addr, value); };
       }
       break;
     }
     case MBC_TYPE_MBC2:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc2_write_rom(addr, value); };
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return e->mbc2_read_ram(addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return e->mbc2_write_ram(addr, value); };
-      EXT_RAM.size = MBC2_RAM_SIZE;
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_rom(addr, value); };
+      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc2_read_ram(addr); };
+      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_ram(addr, value); };
+      THIS_EXT_RAM.size = MBC2_RAM_SIZE;
       break;
     case MBC_TYPE_MMM01:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mmm01_write_rom(addr, value); };
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mmm01_write_rom(addr, value); };
       break;
     case MBC_TYPE_MBC3: {
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc3_write_rom(addr, value); };
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc3_write_rom(addr, value); };
       if (cart_type_info->timer_type == TIMER_TYPE_WITH_TIMER) {
-        memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return e->mbc3_read_ext_ram(addr); };
-        memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return e->mbc3_write_ext_ram(addr, value); };
+        memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc3_read_ext_ram(addr); };
+        memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc3_write_ext_ram(addr, value); };
       }
       break;
     }
     case MBC_TYPE_MBC5:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc5_write_rom(addr, value); };
-      MMAP_STATE.mbc5.byte_2000_2fff = 1;
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc5_write_rom(addr, value); };
+      THIS_MMAP_STATE.mbc5.byte_2000_2fff = 1;
       break;
     case MBC_TYPE_HUC1:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->huc1_write_rom(addr, value); };
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return huc1_write_rom(addr, value); };
       break;
     default:
       PRINT_ERROR("memory map for %s not implemented.\n",
-                  get_cart_type_string(e->cart_info->cart_type));
+                  get_cart_type_string(cart_info->cart_type));
       return ERROR;
   }
 
-  EXT_RAM.battery_type = cart_type_info->battery_type;
+  THIS_EXT_RAM.battery_type = cart_type_info->battery_type;
   return OK;
 }
 
