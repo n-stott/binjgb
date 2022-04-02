@@ -2739,7 +2739,7 @@ void Emulator::ppu_mode3_synchronize() {
               u8 palidx = (THIS_SGB.attr_map[idx >> 2] >> (2 * (3 - (idx & 3)))) & 3;
               pal = &sgb_pal[palidx];
             } else {
-              pal = &pal[PALETTE_TYPE_BGP];
+              pal = &this->pal[PALETTE_TYPE_BGP];
             }
             priority = false;
             u16 tile_addr = (tile_index * TILE_HEIGHT + my7) * TILE_ROW_BYTES;
@@ -2806,7 +2806,7 @@ void Emulator::ppu_mode3_synchronize() {
           pal = &THIS_PPU.obcp.palettes[o->cgb_palette & 0x7];
           if (o->bank) { tile_index += 0x200; }
         } else {
-          pal = &pal[o->palette + 1];
+          pal = &this->pal[o->palette + 1];
         }
         u16 tile_addr = (tile_index * TILE_HEIGHT + (oy & 7)) * TILE_ROW_BYTES;
         u8 lo = THIS_VRAM.data[tile_addr];
