@@ -954,18 +954,17 @@ struct Emulator {
   u8 gb_read_ext_ram(MaskedAddress addr);
   void gb_write_ext_ram(MaskedAddress addr, u8 value);
 
-  // void mbc1_write_rom_shared(u16 bank_lo_mask, int bank_hi_shift,
-  //                            MaskedAddress addr, u8 value);
-  // void mbc1_write_rom(MaskedAddress addr, u8 value);
-  // void mbc1m_write_rom(MaskedAddress addr, u8 value);
-  // void mbc2_write_rom(MaskedAddress addr, u8 value);
-  // u8 mbc2_read_ram(MaskedAddress addr);
-  // void mbc2_write_ram(MaskedAddress addr, u8 value);
-  // void mbc3_write_rom(MaskedAddress addr, u8 value);
-  // u8 mbc3_read_ext_ram(MaskedAddress addr);
-  // void mbc3_write_ext_ram(MaskedAddress addr, u8 value);
-  // void mbc5_write_rom(MaskedAddress addr, u8 value);
-  // void huc1_write_rom(MaskedAddress addr, u8 value);
+  void mbc1_write_rom_shared(u16 bank_lo_mask, int bank_hi_shift, MaskedAddress addr, u8 value);
+  void mbc1_write_rom(MaskedAddress addr, u8 value);
+  void mbc1m_write_rom(MaskedAddress addr, u8 value);
+  void mbc2_write_rom(MaskedAddress addr, u8 value);
+  u8 mbc2_read_ram(MaskedAddress addr);
+  void mbc2_write_ram(MaskedAddress addr, u8 value);
+  void mbc3_write_rom(MaskedAddress addr, u8 value);
+  u8 mbc3_read_ext_ram(MaskedAddress addr);
+  void mbc3_write_ext_ram(MaskedAddress addr, u8 value);
+  void mbc5_write_rom(MaskedAddress addr, u8 value);
+  void huc1_write_rom(MaskedAddress addr, u8 value);
   // void mmm01_write_rom(MaskedAddress addr, u8 value);
   // Result init_memory_map();
   // bool is_almost_mode3();

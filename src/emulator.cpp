@@ -575,13 +575,13 @@ void Emulator::gb_write_ext_ram(MaskedAddress addr, u8 value) {
   }
 }
 
-static void mbc1_write_rom_shared(Emulator* e, u16 bank_lo_mask,
+void Emulator::mbc1_write_rom_shared(u16 bank_lo_mask,
                                   int bank_hi_shift, MaskedAddress addr,
                                   u8 value) {
-  Mbc1* mbc1 = &MMAP_STATE.mbc1;
+  Mbc1* mbc1 = &THIS_MMAP_STATE.mbc1;
   switch (addr >> 13) {
     case 0: /* 0000-1fff */
-      MMAP_STATE.ext_ram_enabled =
+      THIS_MMAP_STATE.ext_ram_enabled =
           (value & MBC_RAM_ENABLED_MASK) == MBC_RAM_ENABLED_VALUE;
       break;
     case 1: /* 2000-3fff */
@@ -610,31 +610,31 @@ static void mbc1_write_rom_shared(Emulator* e, u16 bank_lo_mask,
     ext_ram_bank = mbc1->byte_4000_5fff;
   }
 
-  e->set_rom_bank(0, rom0_bank);
-  e->set_rom_bank(1, rom1_bank);
-  e->set_ext_ram_bank(ext_ram_bank);
+  set_rom_bank(0, rom0_bank);
+  set_rom_bank(1, rom1_bank);
+  set_ext_ram_bank(ext_ram_bank);
 }
 
-static void mbc1_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
-  mbc1_write_rom_shared(e, MBC1_ROM_BANK_LO_SELECT_MASK, MBC1_BANK_HI_SHIFT,
+void Emulator::mbc1_write_rom(MaskedAddress addr, u8 value) {
+  mbc1_write_rom_shared(MBC1_ROM_BANK_LO_SELECT_MASK, MBC1_BANK_HI_SHIFT,
                         addr, value);
 }
 
-static void mbc1m_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
-  mbc1_write_rom_shared(e, MBC1M_ROM_BANK_LO_SELECT_MASK, MBC1M_BANK_HI_SHIFT,
+void Emulator::mbc1m_write_rom(MaskedAddress addr, u8 value) {
+  mbc1_write_rom_shared(MBC1M_ROM_BANK_LO_SELECT_MASK, MBC1M_BANK_HI_SHIFT,
                         addr, value);
 }
 
-static void mbc2_write_rom(Emulator* e, MaskedAddress addr, u8 value) {
+void Emulator::mbc2_write_rom(MaskedAddress addr, u8 value) {
   if (addr < 0x4000) {
     if ((addr & MBC2_ADDR_SELECT_BIT_MASK) != 0) {
-      u16 rom1_bank = value & MBC2_ROM_BANK_SELECT_MASK & ROM_BANK_MASK(e);
+      u16 rom1_bank = value & MBC2_ROM_BANK_SELECT_MASK & ROM_BANK_MASK(this);
       if (rom1_bank == 0) {
         rom1_bank++;
       }
-      e->set_rom_bank(1, rom1_bank);
+      set_rom_bank(1, rom1_bank);
     } else {
-      MMAP_STATE.ext_ram_enabled =
+      THIS_MMAP_STATE.ext_ram_enabled =
           (value & MBC_RAM_ENABLED_MASK) == MBC_RAM_ENABLED_VALUE;
     }
   }
@@ -928,14 +928,14 @@ static Result init_memory_map(Emulator* e) {
     case MBC_TYPE_MBC1: {
       bool is_mbc1m = e->cart_info_count > 1;
       if(is_mbc1m) {
-        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1m_write_rom(e, addr, value); };
+        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc1m_write_rom(addr, value); };
       } else {
-        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1_write_rom(e, addr, value); };
+        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc1_write_rom(addr, value); };
       }
       break;
     }
     case MBC_TYPE_MBC2:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_rom(e, addr, value); };
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return e->mbc2_write_rom(addr, value); };
       memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc2_read_ram(e, addr); };
       memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_ram(e, addr, value); };
       EXT_RAM.size = MBC2_RAM_SIZE;
