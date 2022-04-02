@@ -965,7 +965,7 @@ struct Emulator {
   void mbc3_write_ext_ram(MaskedAddress addr, u8 value);
   void mbc5_write_rom(MaskedAddress addr, u8 value);
   void huc1_write_rom(MaskedAddress addr, u8 value);
-  // void mmm01_write_rom(MaskedAddress addr, u8 value);
+  void mmm01_write_rom(MaskedAddress addr, u8 value);
   // Result init_memory_map();
   // bool is_almost_mode3();
   // bool is_using_vram(bool write);
