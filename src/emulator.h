@@ -1052,6 +1052,7 @@ struct Emulator {
   Result init_emulator(const EmulatorInit* init);
 
   Result set_rom_file_data(const FileData* file_data);
+  void set_cart_info(u8 index);
 };
 
 extern const size_t s_emulator_state_size;

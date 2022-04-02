@@ -449,10 +449,10 @@ static MemoryTypeAddressPair map_hdma_source_address(Address addr) {
   }
 }
 
-static void set_cart_info(Emulator* e, u8 index) {
-  e->state.cart_info_index = index;
-  e->cart_info = &e->cart_infos[index];
-  if (!(e->cart_info->data && SUCCESS(e->init_memory_map()))) {
+void Emulator::set_cart_info(u8 index) {
+  state.cart_info_index = index;
+  cart_info = &cart_infos[index];
+  if (!(cart_info->data && SUCCESS(init_memory_map()))) {
     UNREACHABLE("Unable to switch cart (%d).\n", index);
   }
 }
@@ -508,14 +508,14 @@ static Result get_cart_infos(Emulator* e) {
       if (s_cart_type_info[e->cart_infos[i].cart_type].mbc_type ==
           MBC_TYPE_MMM01) {
         /* MMM01 has the cart header at the end. */
-        set_cart_info(e, i);
+        e->set_cart_info(i);
         return OK;
       }
       e->cart_info_count++;
     }
   }
   CHECK_MSG(e->cart_info_count != 0, "Invalid ROM.\n");
-  set_cart_info(e, 0);
+  e->set_cart_info(0);
   return OK;
   ON_ERROR_RETURN;
 }
@@ -882,7 +882,7 @@ void Emulator::mmm01_write_rom(MaskedAddress addr, u8 value) {
       assert((cart_info->size & (cart_info->size - 1)) == 0);
       u32 rom_offset =
           (mmm01->byte_2000_3fff << ROM_BANK_SHIFT) & (cart_info->size - 1);
-      set_cart_info(this, rom_offset >> CART_INFO_SHIFT);
+      set_cart_info(rom_offset >> CART_INFO_SHIFT);
       break;
     }
     case 1: /* 2000-3fff */
@@ -4220,7 +4220,7 @@ Result Emulator::emulator_read_state(const FileData* file_data) {
             // "header mismatch: %u, expected %u.\n", new_state->header,
             // SAVE_STATE_HEADER);
   memcpy(&state, new_state, sizeof(EmulatorState));
-  set_cart_info(this, state.cart_info_index);
+  set_cart_info(state.cart_info_index);
 
   if (THIS_IS_SGB) {
     emulator_set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
