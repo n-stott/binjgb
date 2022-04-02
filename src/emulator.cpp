@@ -3567,7 +3567,6 @@ void Emulator::dispatch_interrupt() {
   if (!(THIS_INTR.ime || was_halt)) {
     return;
   }
-  [[maybe_unused]] Emulator* e = this;
 
   THIS_INTR.ime = false;
   THIS_INTR.state = CPU_STATE_NORMAL;
@@ -3583,26 +3582,26 @@ void Emulator::dispatch_interrupt() {
   u8 mask = 0;
   Address vector = 0;
   if (interrupt & IF_VBLANK) {
-    HOOK(vblank_interrupt_i, THIS_PPU.frame);
+    THIS_HOOK(vblank_interrupt_i, THIS_PPU.frame);
     vector = 0x40;
     mask = IF_VBLANK;
   } else if (interrupt & IF_STAT) {
-    HOOK(stat_interrupt_cccc, STAT.y_compare.irq ? 'Y' : '.',
-         STAT.mode2.irq ? 'O' : '.', STAT.vblank.irq ? 'V' : '.',
-         STAT.hblank.irq ? 'H' : '.');
+    THIS_HOOK(stat_interrupt_cccc, THIS_STAT.y_compare.irq ? 'Y' : '.',
+         THIS_STAT.mode2.irq ? 'O' : '.', THIS_STAT.vblank.irq ? 'V' : '.',
+         THIS_STAT.hblank.irq ? 'H' : '.');
     vector = 0x48;
     mask = IF_STAT;
   } else if (interrupt & IF_TIMER) {
-    HOOK0(timer_interrupt_v);
+    THIS_HOOK0(timer_interrupt_v);
     vector = 0x50;
     mask = IF_TIMER;
     delay = was_halt;
   } else if (interrupt & IF_SERIAL) {
-    HOOK0(serial_interrupt_v);
+    THIS_HOOK0(serial_interrupt_v);
     vector = 0x58;
     mask = IF_SERIAL;
   } else if (interrupt & IF_JOYPAD) {
-    HOOK0(joypad_interrupt_v);
+    THIS_HOOK0(joypad_interrupt_v);
     vector = 0x60;
     mask = IF_JOYPAD;
   } else {
