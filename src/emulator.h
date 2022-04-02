@@ -986,12 +986,12 @@ struct Emulator {
   void write_oam_no_mode_check(MaskedAddress addr, u8 value);
   void write_oam(MaskedAddress addr, u8 value);
 
-  // void calculate_next_intr();
-  // bool is_div_falling_edge(u16 old_div_counter, u16 div_counter);
-  // void increment_tima();
-  // void timer_synchronize();
-  // void calculate_next_timer_intr();
-  // void do_timer_interrupt();
+  void calculate_next_intr();
+  bool is_div_falling_edge(u16 old_div_counter, u16 div_counter);
+  void increment_tima();
+  void timer_synchronize();
+  void calculate_next_timer_intr();
+  void do_timer_interrupt();
   // void clear_div();
   // void check_stat();
   // void check_ly_eq_lyc(bool write);

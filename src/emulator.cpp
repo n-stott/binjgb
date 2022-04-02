@@ -385,7 +385,6 @@ static void intr_synchronize(Emulator*);
 static void ppu_synchronize(Emulator*);
 static void ppu_mode3_synchronize(Emulator*);
 static void serial_synchronize(Emulator*);
-static void timer_synchronize(Emulator*);
 static void calculate_next_ppu_intr(Emulator*);
 static void calculate_next_serial_intr(Emulator*);
 
@@ -1076,13 +1075,13 @@ u8 Emulator::read_io(MaskedAddress addr) {
       return SC_UNUSED | pack(THIS_SERIAL.transferring, SC_TRANSFER_START) |
              pack(THIS_SERIAL.clock, SC_SHIFT_CLOCK);
     case IO_DIV_ADDR:
-      timer_synchronize(this);
+      timer_synchronize();
       return THIS_TIMER.div_counter >> 8;
     case IO_TIMA_ADDR:
-      timer_synchronize(this);
+      timer_synchronize();
       return THIS_TIMER.tima;
     case IO_TMA_ADDR:
-      timer_synchronize(this);
+      timer_synchronize();
       return THIS_TIMER.tma;
     case IO_TAC_ADDR:
       return TAC_UNUSED | pack(THIS_TIMER.on, TAC_TIMER_ON) |
@@ -1374,54 +1373,52 @@ void Emulator::write_oam(MaskedAddress addr, u8 value) {
   write_oam_no_mode_check(addr, value);
 }
 
-static void calculate_next_intr(Emulator* e) {
-  e->state.next_intr_ticks = MIN(
-      MIN(SERIAL.next_intr_ticks, TIMER.next_intr_ticks), PPU.next_intr_ticks);
+void Emulator::calculate_next_intr() {
+  state.next_intr_ticks = MIN(
+      MIN(THIS_SERIAL.next_intr_ticks, THIS_TIMER.next_intr_ticks), THIS_PPU.next_intr_ticks);
 }
 
-static bool is_div_falling_edge(Emulator* e, u16 old_div_counter,
+bool Emulator::is_div_falling_edge(u16 old_div_counter,
                                 u16 div_counter) {
   u16 falling_edge = ((old_div_counter ^ div_counter) & ~div_counter);
-  return falling_edge & s_tima_mask[TIMER.clock_select];
+  return falling_edge & s_tima_mask[THIS_TIMER.clock_select];
 }
 
-static void increment_tima(Emulator*);
+void Emulator::timer_synchronize() {
+  if (THIS_TICKS > THIS_TIMER.sync_ticks) {
+    Ticks delta_ticks = THIS_TICKS - THIS_TIMER.sync_ticks;
+    THIS_TIMER.sync_ticks = THIS_TICKS;
 
-static void timer_synchronize(Emulator* e) {
-  if (TICKS > TIMER.sync_ticks) {
-    Ticks delta_ticks = TICKS - TIMER.sync_ticks;
-    TIMER.sync_ticks = TICKS;
-
-    if (TIMER.on) {
-      Ticks cpu_tick = e->state.cpu_tick;
+    if (THIS_TIMER.on) {
+      Ticks cpu_tick = state.cpu_tick;
       for (; delta_ticks > 0; delta_ticks -= cpu_tick) {
-        if (TIMER.tima_state == TIMA_STATE_OVERFLOW) {
-          INTR.if_ |= (INTR.new_if & IF_TIMER);
-          TIMER.tima = TIMER.tma;
-          TIMER.tima_state = TIMA_STATE_RESET;
-        } else if (TIMER.tima_state == TIMA_STATE_RESET) {
-          TIMER.tima_state = TIMA_STATE_NORMAL;
+        if (THIS_TIMER.tima_state == TIMA_STATE_OVERFLOW) {
+          THIS_INTR.if_ |= (THIS_INTR.new_if & IF_TIMER);
+          THIS_TIMER.tima = THIS_TIMER.tma;
+          THIS_TIMER.tima_state = TIMA_STATE_RESET;
+        } else if (THIS_TIMER.tima_state == TIMA_STATE_RESET) {
+          THIS_TIMER.tima_state = TIMA_STATE_NORMAL;
         }
-        u16 old_div_counter = TIMER.div_counter;
-        TIMER.div_counter += CPU_TICK;
-        if (is_div_falling_edge(e, old_div_counter, TIMER.div_counter)) {
-          increment_tima(e);
+        u16 old_div_counter = THIS_TIMER.div_counter;
+        THIS_TIMER.div_counter += CPU_TICK;
+        if (is_div_falling_edge(old_div_counter, THIS_TIMER.div_counter)) {
+          increment_tima();
         }
       }
     } else {
-      TIMER.div_counter += delta_ticks;
+      THIS_TIMER.div_counter += delta_ticks;
     }
   }
 }
 
-static void calculate_next_timer_intr(Emulator* e) {
-  if (TIMER.on) {
-    Ticks ticks = TIMER.sync_ticks;
-    Ticks cpu_tick = e->state.cpu_tick;
-    u16 div_counter = TIMER.div_counter;
-    u8 tima = TIMER.tima;
-    if (TIMER.tima_state == TIMA_STATE_OVERFLOW) {
-      tima = TIMER.tma;
+void Emulator::calculate_next_timer_intr() {
+  if (THIS_TIMER.on) {
+    Ticks ticks = THIS_TIMER.sync_ticks;
+    Ticks cpu_tick = state.cpu_tick;
+    u16 div_counter = THIS_TIMER.div_counter;
+    u8 tima = THIS_TIMER.tima;
+    if (THIS_TIMER.tima_state == TIMA_STATE_OVERFLOW) {
+      tima = THIS_TIMER.tma;
       div_counter += CPU_TICK;
       ticks += cpu_tick;
     }
@@ -1429,38 +1426,38 @@ static void calculate_next_timer_intr(Emulator* e) {
     while (1) {
       u16 old_div_counter = div_counter;
       div_counter += CPU_TICK;
-      if (is_div_falling_edge(e, old_div_counter, div_counter) && ++tima == 0) {
+      if (is_div_falling_edge(old_div_counter, div_counter) && ++tima == 0) {
         break;
       }
       ticks += cpu_tick;
     }
-    TIMER.next_intr_ticks = ticks;
+    THIS_TIMER.next_intr_ticks = ticks;
   } else {
-    TIMER.next_intr_ticks = INVALID_TICKS;
+    THIS_TIMER.next_intr_ticks = INVALID_TICKS;
   }
-  calculate_next_intr(e);
+  calculate_next_intr();
 }
 
-static void do_timer_interrupt(Emulator* e) {
-  Ticks cpu_tick = e->state.cpu_tick;
-  HOOK(trigger_timer_i, TICKS + cpu_tick);
-  TIMER.tima_state = TIMA_STATE_OVERFLOW;
-  TIMER.div_counter += TICKS + CPU_TICK - TIMER.sync_ticks;
-  TIMER.sync_ticks = TICKS + cpu_tick;
-  TIMER.tima = 0;
-  INTR.new_if |= IF_TIMER;
-  calculate_next_timer_intr(e);
+void Emulator::do_timer_interrupt() {
+  Ticks cpu_tick = state.cpu_tick;
+  THIS_HOOK(trigger_timer_i, THIS_TICKS + cpu_tick);
+  THIS_TIMER.tima_state = TIMA_STATE_OVERFLOW;
+  THIS_TIMER.div_counter += THIS_TICKS + CPU_TICK - THIS_TIMER.sync_ticks;
+  THIS_TIMER.sync_ticks = THIS_TICKS + cpu_tick;
+  THIS_TIMER.tima = 0;
+  THIS_INTR.new_if |= IF_TIMER;
+  calculate_next_timer_intr();
 }
 
-static void increment_tima(Emulator* e) {
-  if (++TIMER.tima == 0) {
-    do_timer_interrupt(e);
+void Emulator::increment_tima() {
+  if (++THIS_TIMER.tima == 0) {
+    do_timer_interrupt();
   }
 }
 
 static void clear_div(Emulator* e) {
-  if (TIMER.on && is_div_falling_edge(e, TIMER.div_counter, 0)) {
-    increment_tima(e);
+  if (TIMER.on && e->is_div_falling_edge(TIMER.div_counter, 0)) {
+    e->increment_tima();
   }
   TIMER.div_counter = 0;
 }
@@ -1945,12 +1942,12 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
       calculate_next_serial_intr(e);
       break;
     case IO_DIV_ADDR:
-      timer_synchronize(e);
+      e->timer_synchronize();
       clear_div(e);
-      calculate_next_timer_intr(e);
+      e->calculate_next_timer_intr();
       break;
     case IO_TIMA_ADDR:
-      timer_synchronize(e);
+      e->timer_synchronize();
       if (TIMER.on) {
         if (UNLIKELY(TIMER.tima_state == TIMA_STATE_OVERFLOW)) {
           /* Cancel the overflow and interrupt if written on the same tick. */
@@ -1961,21 +1958,21 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
           /* Only update tima if it wasn't reset this tick. */
           TIMER.tima = value;
         }
-        calculate_next_timer_intr(e);
+        e->calculate_next_timer_intr();
       } else {
         TIMER.tima = value;
       }
       break;
     case IO_TMA_ADDR:
-      timer_synchronize(e);
+      e->timer_synchronize();
       TIMER.tma = value;
       if (UNLIKELY(TIMER.on && TIMER.tima_state == TIMA_STATE_RESET)) {
         TIMER.tima = value;
       }
-      calculate_next_timer_intr(e);
+      e->calculate_next_timer_intr();
       break;
     case IO_TAC_ADDR: {
-      timer_synchronize(e);
+      e->timer_synchronize();
       bool old_timer_on = TIMER.on;
       u16 old_tima_mask = s_tima_mask[TIMER.clock_select];
       TIMER.clock_select = static_cast<TimerClock>(unpack(value, TAC_CLOCK_SELECT));
@@ -1993,10 +1990,10 @@ static void write_io(Emulator* e, MaskedAddress addr, u8 value) {
                       (TIMER.div_counter & tima_mask) == 0;
         }
         if (tima_tick) {
-          increment_tima(e);
+          e->increment_tima();
         }
       }
-      calculate_next_timer_intr(e);
+      e->calculate_next_timer_intr();
       break;
     }
     case IO_IF_ADDR:
@@ -3013,7 +3010,7 @@ static void calculate_next_ppu_intr(Emulator* e) {
   } else {
     PPU.next_intr_ticks = INVALID_TICKS;
   }
-  calculate_next_intr(e);
+  e->calculate_next_intr();
 }
 
 static void update_sweep(Emulator* e) {
@@ -3237,7 +3234,7 @@ static void intr_synchronize(Emulator* e) {
   dma_synchronize(e);
   serial_synchronize(e);
   ppu_synchronize(e);
-  timer_synchronize(e);
+  e->timer_synchronize();
 }
 
 static void apu_synchronize(Emulator* e) {
@@ -3314,7 +3311,7 @@ static void hdma_copy_byte(Emulator* e) {
 static void calculate_next_serial_intr(Emulator* e) {
   if (!SERIAL.transferring || SERIAL.clock != SERIAL_CLOCK_INTERNAL) {
     SERIAL.next_intr_ticks = INVALID_TICKS;
-    calculate_next_intr(e);
+    e->calculate_next_intr();
     return;
   }
 
@@ -3324,7 +3321,7 @@ static void calculate_next_serial_intr(Emulator* e) {
   SERIAL.next_intr_ticks =
       SERIAL.sync_ticks +
       SERIAL_TICKS * (CPU_SPEED.speed == SPEED_NORMAL ? 8 : 4);
-  calculate_next_intr(e);
+  e->calculate_next_intr();
 }
 
 static void serial_synchronize(Emulator* e) {
@@ -3649,7 +3646,7 @@ void Emulator::execute_instruction() {
 
   if (UNLIKELY(THIS_TICKS >= state.next_intr_ticks)) {
     if (THIS_TICKS >= THIS_TIMER.next_intr_ticks) {
-      timer_synchronize(this);
+      timer_synchronize();
     }
     if (THIS_TICKS >= THIS_SERIAL.next_intr_ticks) {
       serial_synchronize(this);
