@@ -499,30 +499,30 @@ static Result get_cart_info(FileData* file_data, size_t offset,
   return OK;
 }
 
-static Result get_cart_infos(Emulator* e) {
+Result Emulator::get_cart_infos() {
   u32 i;
   for (i = 0; i < MAX_CART_INFOS; ++i) {
     size_t offset = i << CART_INFO_SHIFT;
-    if (offset + MINIMUM_ROM_SIZE > e->file_data.size) break;
-    if (SUCCESS(get_cart_info(&e->file_data, offset, &e->cart_infos[i]))) {
-      if (s_cart_type_info[e->cart_infos[i].cart_type].mbc_type ==
+    if (offset + MINIMUM_ROM_SIZE > file_data.size) break;
+    if (SUCCESS(get_cart_info(&file_data, offset, &cart_infos[i]))) {
+      if (s_cart_type_info[cart_infos[i].cart_type].mbc_type ==
           MBC_TYPE_MMM01) {
         /* MMM01 has the cart header at the end. */
-        e->set_cart_info(i);
+        set_cart_info(i);
         return OK;
       }
-      e->cart_info_count++;
+      cart_info_count++;
     }
   }
-  CHECK_MSG(e->cart_info_count != 0, "Invalid ROM.\n");
-  e->set_cart_info(0);
+  CHECK_MSG(cart_info_count != 0, "Invalid ROM.\n");
+  set_cart_info(0);
   return OK;
   ON_ERROR_RETURN;
 }
 
-static void dummy_write([[maybe_unused]] Emulator* e, [[maybe_unused]] MaskedAddress addr, [[maybe_unused]] u8 value) {}
+void Emulator::dummy_write([[maybe_unused]] MaskedAddress addr, [[maybe_unused]] u8 value) {}
 
-static u8 dummy_read([[maybe_unused]] Emulator* e, [[maybe_unused]] MaskedAddress addr) {
+u8 Emulator::dummy_read([[maybe_unused]] MaskedAddress addr) {
   return INVALID_READ_BYTE;
 }
 
@@ -904,15 +904,15 @@ Result Emulator::init_memory_map() {
       break;
     default:
     case EXT_RAM_TYPE_NO_RAM:
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return dummy_read(this, addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(this, addr, value); };
+      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return dummy_read(addr); };
+      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(addr, value); };
       THIS_EXT_RAM.size = 0;
       break;
   }
 
   switch (cart_type_info->mbc_type) {
     case MBC_TYPE_NO_MBC:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(this, addr, value); };
+      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(addr, value); };
       break;
     case MBC_TYPE_MBC1: {
       bool is_mbc1m = cart_info_count > 1;
@@ -4054,7 +4054,7 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
       0x60, 0x0d, 0xda, 0xdd, 0x50, 0x0f, 0xad, 0xed,
       0xc0, 0xde, 0xf0, 0x0d, 0xbe, 0xef, 0xfe, 0xed,
   };
-  if(!(SUCCESS(get_cart_infos(this)))) return ERROR;
+  if(!(SUCCESS(get_cart_infos()))) return ERROR;
   log_cart_info(cart_info);
   THIS_MMAP_STATE.rom_base[0] = 0;
   THIS_MMAP_STATE.rom_base[1] = 1 << ROM_BANK_SHIFT;

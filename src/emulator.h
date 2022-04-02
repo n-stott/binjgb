@@ -1053,6 +1053,10 @@ struct Emulator {
 
   Result set_rom_file_data(const FileData* file_data);
   void set_cart_info(u8 index);
+  Result get_cart_infos();
+
+  void dummy_write(MaskedAddress addr, u8 value);
+  u8 dummy_read(MaskedAddress addr);
 };
 
 extern const size_t s_emulator_state_size;
