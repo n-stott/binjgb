@@ -1055,102 +1055,102 @@ u8 Emulator::read_joyp_p10_p13() {
   return ~result;
 }
 
-static void call_joyp_callback(Emulator* e, bool wait) {
-  if (e->joypad_info.callback &&
-      (!wait || TICKS - JOYP.last_callback >= JOYP_INTERRUPT_WAIT_TICKS)) {
-    e->joypad_info.callback(&JOYP.buttons, e->joypad_info.user_data);
-    JOYP.last_callback = TICKS;
+void Emulator::call_joyp_callback(bool wait) {
+  if (joypad_info.callback &&
+      (!wait || THIS_TICKS - THIS_JOYP.last_callback >= JOYP_INTERRUPT_WAIT_TICKS)) {
+    joypad_info.callback(&THIS_JOYP.buttons, joypad_info.user_data);
+    THIS_JOYP.last_callback = THIS_TICKS;
   }
 }
 
-static u8 read_io(Emulator* e, MaskedAddress addr) {
+u8 Emulator::read_io(MaskedAddress addr) {
   switch (addr) {
     case IO_JOYP_ADDR:
-      call_joyp_callback(e, false);
-      return JOYP_UNUSED | pack(JOYP.joypad_select, JOYP_JOYPAD_SELECT) |
-             (e->read_joyp_p10_p13() & JOYP_RESULT_MASK);
+      call_joyp_callback(false);
+      return JOYP_UNUSED | pack(THIS_JOYP.joypad_select, JOYP_JOYPAD_SELECT) |
+             (read_joyp_p10_p13() & JOYP_RESULT_MASK);
     case IO_SB_ADDR:
-      serial_synchronize(e);
-      return SERIAL.sb;
+      serial_synchronize(this);
+      return THIS_SERIAL.sb;
     case IO_SC_ADDR:
-      serial_synchronize(e);
-      return SC_UNUSED | pack(SERIAL.transferring, SC_TRANSFER_START) |
-             pack(SERIAL.clock, SC_SHIFT_CLOCK);
+      serial_synchronize(this);
+      return SC_UNUSED | pack(THIS_SERIAL.transferring, SC_TRANSFER_START) |
+             pack(THIS_SERIAL.clock, SC_SHIFT_CLOCK);
     case IO_DIV_ADDR:
-      timer_synchronize(e);
-      return TIMER.div_counter >> 8;
+      timer_synchronize(this);
+      return THIS_TIMER.div_counter >> 8;
     case IO_TIMA_ADDR:
-      timer_synchronize(e);
-      return TIMER.tima;
+      timer_synchronize(this);
+      return THIS_TIMER.tima;
     case IO_TMA_ADDR:
-      timer_synchronize(e);
-      return TIMER.tma;
+      timer_synchronize(this);
+      return THIS_TIMER.tma;
     case IO_TAC_ADDR:
-      return TAC_UNUSED | pack(TIMER.on, TAC_TIMER_ON) |
-             pack(TIMER.clock_select, TAC_CLOCK_SELECT);
+      return TAC_UNUSED | pack(THIS_TIMER.on, TAC_TIMER_ON) |
+             pack(THIS_TIMER.clock_select, TAC_CLOCK_SELECT);
     case IO_IF_ADDR:
-      intr_synchronize(e);
-      return IF_UNUSED | INTR.if_;
+      intr_synchronize(this);
+      return IF_UNUSED | THIS_INTR.if_;
     case IO_LCDC_ADDR:
-      return pack(LCDC.display, LCDC_DISPLAY) |
-             pack(LCDC.window_tile_map_select,
+      return pack(THIS_LCDC.display, LCDC_DISPLAY) |
+             pack(THIS_LCDC.window_tile_map_select,
                   LCDC_WINDOW_TILE_MAP_SELECT) |
-             pack(LCDC.window_display, LCDC_WINDOW_DISPLAY) |
-             pack(LCDC.bg_tile_data_select, LCDC_BG_TILE_DATA_SELECT) |
-             pack(LCDC.bg_tile_map_select, LCDC_BG_TILE_MAP_SELECT) |
-             pack(LCDC.obj_size, LCDC_OBJ_SIZE) |
-             pack(LCDC.obj_display, LCDC_OBJ_DISPLAY) |
-             pack(LCDC.bg_display, LCDC_BG_DISPLAY);
+             pack(THIS_LCDC.window_display, LCDC_WINDOW_DISPLAY) |
+             pack(THIS_LCDC.bg_tile_data_select, LCDC_BG_TILE_DATA_SELECT) |
+             pack(THIS_LCDC.bg_tile_map_select, LCDC_BG_TILE_MAP_SELECT) |
+             pack(THIS_LCDC.obj_size, LCDC_OBJ_SIZE) |
+             pack(THIS_LCDC.obj_display, LCDC_OBJ_DISPLAY) |
+             pack(THIS_LCDC.bg_display, LCDC_BG_DISPLAY);
     case IO_STAT_ADDR:
-      ppu_synchronize(e);
-      return STAT_UNUSED | pack(STAT.y_compare.irq, STAT_YCOMPARE_INTR) |
-             pack(STAT.mode2.irq, STAT_MODE2_INTR) |
-             pack(STAT.vblank.irq, STAT_VBLANK_INTR) |
-             pack(STAT.hblank.irq, STAT_HBLANK_INTR) |
-             pack(STAT.ly_eq_lyc, STAT_YCOMPARE) |
-             pack(STAT.mode, STAT_MODE);
+      ppu_synchronize(this);
+      return STAT_UNUSED | pack(THIS_STAT.y_compare.irq, STAT_YCOMPARE_INTR) |
+             pack(THIS_STAT.mode2.irq, STAT_MODE2_INTR) |
+             pack(THIS_STAT.vblank.irq, STAT_VBLANK_INTR) |
+             pack(THIS_STAT.hblank.irq, STAT_HBLANK_INTR) |
+             pack(THIS_STAT.ly_eq_lyc, STAT_YCOMPARE) |
+             pack(THIS_STAT.mode, STAT_MODE);
     case IO_SCY_ADDR:
-      return PPU.scy;
+      return THIS_PPU.scy;
     case IO_SCX_ADDR:
-      return PPU.scx;
+      return THIS_PPU.scx;
     case IO_LY_ADDR:
-      ppu_synchronize(e);
-      return PPU.ly;
+      ppu_synchronize(this);
+      return THIS_PPU.ly;
     case IO_LYC_ADDR:
-      return PPU.lyc;
+      return THIS_PPU.lyc;
     case IO_DMA_ADDR:
       return INVALID_READ_BYTE; /* Write only. */
     case IO_BGP_ADDR:
     case IO_OBP0_ADDR:
     case IO_OBP1_ADDR: {
-      Palette* pal = &PPU.pal[addr - IO_BGP_ADDR];
+      Palette* pal = &THIS_PPU.pal[addr - IO_BGP_ADDR];
       return pack(pal->color[3], PALETTE_COLOR3) |
              pack(pal->color[2], PALETTE_COLOR2) |
              pack(pal->color[1], PALETTE_COLOR1) |
              pack(pal->color[0], PALETTE_COLOR0);
     }
     case IO_WY_ADDR:
-      return PPU.wy;
+      return THIS_PPU.wy;
     case IO_WX_ADDR:
-      return PPU.wx;
+      return THIS_PPU.wx;
     case IO_KEY1_ADDR:
-      return IS_CGB ? (KEY1_UNUSED | pack(CPU_SPEED.speed, KEY1_CURRENT_SPEED) |
-                       pack(CPU_SPEED.switching, KEY1_PREPARE_SPEED_SWITCH))
+      return THIS_IS_CGB ? (KEY1_UNUSED | pack(THIS_CPU_SPEED.speed, KEY1_CURRENT_SPEED) |
+                       pack(THIS_CPU_SPEED.switching, KEY1_PREPARE_SPEED_SWITCH))
                     : INVALID_READ_BYTE;
     case IO_VBK_ADDR:
-      return IS_CGB ? (VBK_UNUSED | pack(VRAM.bank, VBK_VRAM_BANK))
+      return THIS_IS_CGB ? (VBK_UNUSED | pack(THIS_VRAM.bank, VBK_VRAM_BANK))
                     : INVALID_READ_BYTE;
     case IO_HDMA5_ADDR:
-      return IS_CGB ? HDMA.blocks : INVALID_READ_BYTE;
+      return THIS_IS_CGB ? THIS_HDMA.blocks : INVALID_READ_BYTE;
     case IO_RP_ADDR:
-      return IS_CGB ? (RP_UNUSED | pack(INFRARED.enabled, RP_DATA_READ_ENABLE) |
-                       pack(INFRARED.read, RP_READ_DATA) |
-                       pack(INFRARED.write, RP_WRITE_DATA))
+      return THIS_IS_CGB ? (RP_UNUSED | pack(THIS_INFRARED.enabled, RP_DATA_READ_ENABLE) |
+                       pack(THIS_INFRARED.read, RP_READ_DATA) |
+                       pack(THIS_INFRARED.write, RP_WRITE_DATA))
                     : INVALID_READ_BYTE;
     case IO_BCPS_ADDR:
     case IO_OCPS_ADDR:
-      if (IS_CGB) {
-        ColorPalettes* cp = addr == IO_BCPS_ADDR ? &PPU.bgcp : &PPU.obcp;
+      if (THIS_IS_CGB) {
+        ColorPalettes* cp = addr == IO_BCPS_ADDR ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
         return XCPS_UNUSED | pack(cp->index, XCPS_INDEX) |
                pack(cp->auto_increment, XCPS_AUTO_INCREMENT);
       } else {
@@ -1158,19 +1158,19 @@ static u8 read_io(Emulator* e, MaskedAddress addr) {
       }
     case IO_BCPD_ADDR:
     case IO_OCPD_ADDR:
-      if (IS_CGB) {
-        ColorPalettes* cp = addr == IO_BCPD_ADDR ? &PPU.bgcp : &PPU.obcp;
+      if (THIS_IS_CGB) {
+        ColorPalettes* cp = addr == IO_BCPD_ADDR ? &THIS_PPU.bgcp : &THIS_PPU.obcp;
         return cp->data[cp->index];
       } else {
         return INVALID_READ_BYTE;
       }
     case IO_SVBK_ADDR:
-      return IS_CGB ? (SVBK_UNUSED | pack(WRAM.bank, SVBK_WRAM_BANK))
+      return THIS_IS_CGB ? (SVBK_UNUSED | pack(THIS_WRAM.bank, SVBK_WRAM_BANK))
                     : INVALID_READ_BYTE;
     case IO_IE_ADDR:
-      return INTR.ie;
+      return THIS_INTR.ie;
     default:
-      HOOK(read_io_ignored_as, addr, get_io_reg_string(static_cast<IOReg>(addr)));
+      THIS_HOOK(read_io_ignored_as, addr, get_io_reg_string(static_cast<IOReg>(addr)));
       return INVALID_READ_BYTE;
   }
 }
@@ -1189,88 +1189,88 @@ static u8 read_nrx4_reg(Channel* channel) {
   return pack(channel->length_enabled, NRX4_LENGTH_ENABLED);
 }
 
-static u8 read_apu(Emulator* e, MaskedAddress addr) {
-  apu_synchronize(e);
+u8 Emulator::read_apu(MaskedAddress addr) {
+  apu_synchronize(this);
   switch (addr) {
     case APU_NR10_ADDR:
-      return NR10_UNUSED | pack(SWEEP.period, NR10_SWEEP_PERIOD) |
-             pack(SWEEP.direction, NR10_SWEEP_DIRECTION) |
-             pack(SWEEP.shift, NR10_SWEEP_SHIFT);
+      return NR10_UNUSED | pack(THIS_SWEEP.period, NR10_SWEEP_PERIOD) |
+             pack(THIS_SWEEP.direction, NR10_SWEEP_DIRECTION) |
+             pack(THIS_SWEEP.shift, NR10_SWEEP_SHIFT);
     case APU_NR11_ADDR:
-      return NRX1_UNUSED | read_nrx1_reg(&CHANNEL1);
+      return NRX1_UNUSED | read_nrx1_reg(&THIS_CHANNEL1);
     case APU_NR12_ADDR:
-      return read_nrx2_reg(&CHANNEL1);
+      return read_nrx2_reg(&THIS_CHANNEL1);
     case APU_NR14_ADDR:
-      return NRX4_UNUSED | read_nrx4_reg(&CHANNEL1);
+      return NRX4_UNUSED | read_nrx4_reg(&THIS_CHANNEL1);
     case APU_NR21_ADDR:
-      return NRX1_UNUSED | read_nrx1_reg(&CHANNEL2);
+      return NRX1_UNUSED | read_nrx1_reg(&THIS_CHANNEL2);
     case APU_NR22_ADDR:
-      return read_nrx2_reg(&CHANNEL2);
+      return read_nrx2_reg(&THIS_CHANNEL2);
     case APU_NR24_ADDR:
-      return NRX4_UNUSED | read_nrx4_reg(&CHANNEL2);
+      return NRX4_UNUSED | read_nrx4_reg(&THIS_CHANNEL2);
     case APU_NR30_ADDR:
       return NR30_UNUSED |
-             pack(CHANNEL3.dac_enabled, NR30_DAC_ENABLED);
+             pack(THIS_CHANNEL3.dac_enabled, NR30_DAC_ENABLED);
     case APU_NR32_ADDR:
-      return NR32_UNUSED | pack(WAVE.volume, NR32_SELECT_WAVE_VOLUME);
+      return NR32_UNUSED | pack(THIS_WAVE.volume, NR32_SELECT_WAVE_VOLUME);
     case APU_NR34_ADDR:
-      return NRX4_UNUSED | read_nrx4_reg(&CHANNEL3);
+      return NRX4_UNUSED | read_nrx4_reg(&THIS_CHANNEL3);
     case APU_NR42_ADDR:
-      return read_nrx2_reg(&CHANNEL4);
+      return read_nrx2_reg(&THIS_CHANNEL4);
     case APU_NR43_ADDR:
-      return pack(NOISE.clock_shift, NR43_CLOCK_SHIFT) |
-             pack(NOISE.lfsr_width, NR43_LFSR_WIDTH) |
-             pack(NOISE.divisor, NR43_DIVISOR);
+      return pack(THIS_NOISE.clock_shift, NR43_CLOCK_SHIFT) |
+             pack(THIS_NOISE.lfsr_width, NR43_LFSR_WIDTH) |
+             pack(THIS_NOISE.divisor, NR43_DIVISOR);
     case APU_NR44_ADDR:
-      return NRX4_UNUSED | read_nrx4_reg(&CHANNEL4);
+      return NRX4_UNUSED | read_nrx4_reg(&THIS_CHANNEL4);
     case APU_NR50_ADDR:
-      return pack(APU.so_output[VIN][1], NR50_VIN_SO2) |
-             pack(APU.so_volume[1], NR50_SO2_VOLUME) |
-             pack(APU.so_output[VIN][0], NR50_VIN_SO1) |
-             pack(APU.so_volume[0], NR50_SO1_VOLUME);
+      return pack(THIS_APU.so_output[VIN][1], NR50_VIN_SO2) |
+             pack(THIS_APU.so_volume[1], NR50_SO2_VOLUME) |
+             pack(THIS_APU.so_output[VIN][0], NR50_VIN_SO1) |
+             pack(THIS_APU.so_volume[0], NR50_SO1_VOLUME);
     case APU_NR51_ADDR:
-      return pack(APU.so_output[SOUND4][1], NR51_SOUND4_SO2) |
-             pack(APU.so_output[SOUND3][1], NR51_SOUND3_SO2) |
-             pack(APU.so_output[SOUND2][1], NR51_SOUND2_SO2) |
-             pack(APU.so_output[SOUND1][1], NR51_SOUND1_SO2) |
-             pack(APU.so_output[SOUND4][0], NR51_SOUND4_SO1) |
-             pack(APU.so_output[SOUND3][0], NR51_SOUND3_SO1) |
-             pack(APU.so_output[SOUND2][0], NR51_SOUND2_SO1) |
-             pack(APU.so_output[SOUND1][0], NR51_SOUND1_SO1);
+      return pack(THIS_APU.so_output[SOUND4][1], NR51_SOUND4_SO2) |
+             pack(THIS_APU.so_output[SOUND3][1], NR51_SOUND3_SO2) |
+             pack(THIS_APU.so_output[SOUND2][1], NR51_SOUND2_SO2) |
+             pack(THIS_APU.so_output[SOUND1][1], NR51_SOUND1_SO2) |
+             pack(THIS_APU.so_output[SOUND4][0], NR51_SOUND4_SO1) |
+             pack(THIS_APU.so_output[SOUND3][0], NR51_SOUND3_SO1) |
+             pack(THIS_APU.so_output[SOUND2][0], NR51_SOUND2_SO1) |
+             pack(THIS_APU.so_output[SOUND1][0], NR51_SOUND1_SO1);
     case APU_NR52_ADDR:
-      return NR52_UNUSED | pack(APU.enabled, NR52_ALL_SOUND_ENABLED) |
-             pack(CHANNEL4.status, NR52_SOUND4_ON) |
-             pack(CHANNEL3.status, NR52_SOUND3_ON) |
-             pack(CHANNEL2.status, NR52_SOUND2_ON) |
-             pack(CHANNEL1.status, NR52_SOUND1_ON);
+      return NR52_UNUSED | pack(THIS_APU.enabled, NR52_ALL_SOUND_ENABLED) |
+             pack(THIS_CHANNEL4.status, NR52_SOUND4_ON) |
+             pack(THIS_CHANNEL3.status, NR52_SOUND3_ON) |
+             pack(THIS_CHANNEL2.status, NR52_SOUND2_ON) |
+             pack(THIS_CHANNEL1.status, NR52_SOUND1_ON);
     default:
       return INVALID_READ_BYTE;
   }
 }
 
-static u8 read_wave_ram(Emulator* e, MaskedAddress addr) {
-  apu_synchronize(e);
-  if (CHANNEL3.status) {
+u8 Emulator::read_wave_ram(MaskedAddress addr) {
+  apu_synchronize(this);
+  if (THIS_CHANNEL3.status) {
     /* If the wave channel is playing, the byte is read from the sample
      * position. On DMG, this is only allowed if the read occurs exactly when
      * it is being accessed by the Wave channel. */
     u8 result;
-    if (IS_CGB || TICKS == WAVE.sample_time) {
-      result = WAVE.ram[WAVE.position >> 1];
-      HOOK(read_wave_ram_while_playing_ab, addr, result);
+    if (THIS_IS_CGB || THIS_TICKS == THIS_WAVE.sample_time) {
+      result = THIS_WAVE.ram[THIS_WAVE.position >> 1];
+      THIS_HOOK(read_wave_ram_while_playing_ab, addr, result);
     } else {
       result = INVALID_READ_BYTE;
-      HOOK(read_wave_ram_while_playing_invalid_a, addr);
+      THIS_HOOK(read_wave_ram_while_playing_invalid_a, addr);
     }
     return result;
   } else {
-    return WAVE.ram[addr];
+    return THIS_WAVE.ram[addr];
   }
 }
 
-static bool is_dma_access_ok(Emulator* e, Address addr) {
+bool Emulator::is_dma_access_ok(Address addr) {
   /* TODO: need to figure out bus conflicts during DMA for non-OAM accesses. */
-  return DMA.state != DMA_ACTIVE || (addr & 0xff00) != 0xfe00;
+  return THIS_DMA.state != DMA_ACTIVE || (addr & 0xff00) != 0xfe00;
 }
 
 u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
@@ -1300,14 +1300,14 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
     case MEMORY_MAP_UNUSED:
       return INVALID_READ_BYTE;
     case MEMORY_MAP_IO: {
-      u8 value = read_io(this, pair.addr);
+      u8 value = read_io(pair.addr);
       THIS_HOOK(read_io_asb, pair.addr, get_io_reg_string(static_cast<IOReg>(pair.addr)), value);
       return value;
     }
     case MEMORY_MAP_APU:
-      return read_apu(this, pair.addr);
+      return read_apu(pair.addr);
     case MEMORY_MAP_WAVE_RAM:
-      return read_wave_ram(this, pair.addr);
+      return read_wave_ram(pair.addr);
     case MEMORY_MAP_HIGH_RAM:
       return THIS_HRAM[pair.addr];
     default:
@@ -1321,7 +1321,7 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
 
 u8 Emulator::read_u8(Address addr) {
   dma_synchronize(this);
-  if (UNLIKELY(!is_dma_access_ok(this, addr))) {
+  if (UNLIKELY(!is_dma_access_ok(addr))) {
     THIS_HOOK(read_during_dma_a, addr);
     return INVALID_READ_BYTE;
   }
@@ -1519,7 +1519,7 @@ static void check_ly_eq_lyc(Emulator* e, bool write) {
 }
 
 static void check_joyp_intr(Emulator* e) {
-  call_joyp_callback(e, true);
+  e->call_joyp_callback(true);
   u8 p10_p13 = e->read_joyp_p10_p13();
   /* joyp interrupt only triggers on p10-p13 going from high to low (i.e. not
    * pressed to pressed). */
@@ -2607,7 +2607,7 @@ static void write_u8_pair(Emulator* e, MemoryTypeAddressPair pair, u8 value) {
 
 static void write_u8(Emulator* e, Address addr, u8 value) {
   dma_synchronize(e);
-  if (UNLIKELY(!is_dma_access_ok(e, addr))) {
+  if (UNLIKELY(!e->is_dma_access_ok(addr))) {
     HOOK(write_during_dma_ab, addr, value);
     return;
   }

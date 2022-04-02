@@ -973,11 +973,11 @@ struct Emulator {
   u8 read_vram(MaskedAddress addr);
   u8 read_oam(MaskedAddress addr);
   u8 read_joyp_p10_p13();
-  // void call_joyp_callback(bool wait);
-  // u8 read_io(MaskedAddress addr);
-  // u8 read_apu(MaskedAddress addr);
-  // u8 read_wave_ram(MaskedAddress addr);
-  // bool is_dma_access_ok(Address addr);
+  void call_joyp_callback(bool wait);
+  u8 read_io(MaskedAddress addr);
+  u8 read_apu(MaskedAddress addr);
+  u8 read_wave_ram(MaskedAddress addr);
+  bool is_dma_access_ok(Address addr);
 
   u8 read_u8_pair(MemoryTypeAddressPair pair, bool raw);
   u8 read_u8_raw(Address addr);
