@@ -199,8 +199,8 @@ static RewindInfo* find_first_base_in_range(RewindInfoRange range) {
 }
 
 void rewind_append(RewindBuffer* buf, Emulator* e) {
-  Ticks ticks = e->emulator_get_ticks();
-  (void)e->emulator_write_state(&buf->last_state);
+  Ticks ticks = e->get_ticks();
+  (void)e->write_state(&buf->last_state);
 
   /* The new state must be written in sorted order; if it is out of order (from
    * a rewind), then the subsequent saved states should have been cleared

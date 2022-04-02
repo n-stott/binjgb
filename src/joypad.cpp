@@ -261,7 +261,7 @@ static void joypad_playback_callback(struct JoypadButtons* joyp,
                                      void* user_data) {
   bool changed = false;
   JoypadPlayback* playback = reinterpret_cast<JoypadPlayback*>(user_data);
-  Ticks ticks = playback->e->emulator_get_ticks();
+  Ticks ticks = playback->e->get_ticks();
   if (ticks < playback->current.state->ticks) {
     playback->current = joypad_find_state(playback->buffer, ticks);
     playback->next = joypad_get_next_state(playback->current);
@@ -295,12 +295,12 @@ static void init_joypad_playback_state(JoypadPlayback* playback,
   playback->e = e;
   playback->buffer = buffer;
   playback->current =
-      joypad_find_state(playback->buffer, e->emulator_get_ticks());
+      joypad_find_state(playback->buffer, e->get_ticks());
   playback->next = joypad_get_next_state(playback->current);
 }
 
 void emulator_set_joypad_playback_callback(Emulator* e, JoypadBuffer* buffer,
                                            JoypadPlayback* playback) {
   init_joypad_playback_state(playback, buffer, e);
-  e->emulator_set_joypad_callback(joypad_playback_callback, playback);
+  e->set_joypad_callback(joypad_playback_callback, playback);
 }

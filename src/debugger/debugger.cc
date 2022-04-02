@@ -187,7 +187,7 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
 }
 
 void Debugger::Run() {
-  e->emulator_read_ext_ram_from_file(save_filename);
+  e->read_ext_ram_from_file(save_filename);
 
   f64 refresh_ms = host_get_monitor_refresh_ms(host);
   while (run_state != Exiting && host_poll_events(host)) {
@@ -291,11 +291,11 @@ void Debugger::Run() {
     host_end_video(host);
   }
 
-  e->emulator_write_ext_ram_to_file(save_filename);
+  e->write_ext_ram_to_file(save_filename);
 }
 
 void Debugger::OnAudioBufferFull() {
-  AudioBuffer* audio_buffer = e->emulator_get_audio_buffer();
+  AudioBuffer* audio_buffer = e->get_audio_buffer();
   int size = audio_buffer->position - audio_buffer->data;
 
   for (int i = 0; i < AudioWindow::kAudioDataSamples; ++i) {
@@ -320,7 +320,7 @@ void Debugger::SetTrace(bool trace) {
 }
 
 void Debugger::OnKeyDown(HostKeycode code) {
-  EmulatorConfig emu_config = e->emulator_get_config();
+  EmulatorConfig emu_config = e->get_config();
   HostConfig host_config = host_get_config(host);
 
   switch (code) {
@@ -344,7 +344,7 @@ void Debugger::OnKeyDown(HostKeycode code) {
     default: return;
   }
 
-  e->emulator_set_config(&emu_config);
+  e->set_config(&emu_config);
   host_set_config(host, &host_config);
 }
 
@@ -365,7 +365,7 @@ void Debugger::StepFrame() {
   if (run_state == Running || run_state == Paused) {
     run_state = SteppingFrame;
   } else if (run_state == Rewinding) {
-    RewindTo(e->emulator_get_ticks() + PPU_FRAME_TICKS);
+    RewindTo(e->get_ticks() + PPU_FRAME_TICKS);
   }
 }
 
@@ -393,11 +393,11 @@ void Debugger::Exit() {
 }
 
 void Debugger::WriteStateToFile() {
-  e->emulator_write_state_to_file(save_state_filename);
+  e->write_state_to_file(save_state_filename);
 }
 
 void Debugger::ReadStateFromFile() {
-  e->emulator_read_state_from_file(save_state_filename);
+  e->read_state_from_file(save_state_filename);
 }
 
 void Debugger::SetAudioVolume(f32 volume) {
@@ -483,7 +483,7 @@ void Debugger::EndAutoRewind() {
 void Debugger::AutoRewind(f64 delta_ms) {
   assert(run_state == AutoRewinding);
   Ticks delta_ticks = (Ticks)(delta_ms * CPU_TICKS_PER_SECOND / 1000);
-  Ticks now = e->emulator_get_ticks();
+  Ticks now = e->get_ticks();
   Ticks then = now >= delta_ticks ? now - delta_ticks : 0;
   RewindTo(then);
 }

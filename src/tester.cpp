@@ -54,8 +54,8 @@ Result write_frame_ppm(Emulator* e, const char* filename) {
   if(!(fprintf(f, "P3\n%u %u\n255\n", width, height) >= 0)) if(f) fclose(f); return ERROR;
             // "fputs failed.\n");
   int x, y;
-  RGBA* data = *e->emulator_get_frame_buffer();
-  RGBA* sgb_data = *e->emulator_get_sgb_frame_buffer();
+  RGBA* data = *e->get_frame_buffer();
+  RGBA* sgb_data = *e->get_sgb_frame_buffer();
   if (s_use_sgb_border) {
     for (y = 0; y < height; ++y) {
       for (x = 0; x < width; ++x) {
@@ -470,7 +470,7 @@ int main(int argc, char** argv) {
 #endif
 
   u32 total_ticks = (u32)(s_frames * PPU_FRAME_TICKS);
-  u32 until_ticks = e->emulator_get_ticks() + total_ticks;
+  u32 until_ticks = e->get_ticks() + total_ticks;
   printf("frames = %u total_ticks = %u\n", s_frames, total_ticks);
   bool finish_at_next_frame = false;
   u32 animation_frame = 0; /* Will likely differ from PPU frame. */
@@ -478,7 +478,7 @@ int main(int argc, char** argv) {
   [[maybe_unused]] u32 next_input_frame_buttons = 0;
   f64 start_time = get_time_sec();
   while (true) {
-    EmulatorEvent event = e->emulator_run_until(until_ticks);
+    EmulatorEvent event = e->run_until(until_ticks);
     if (event & EMULATOR_EVENT_NEW_FRAME) {
       if (s_output_ppm && s_animate) {
         char buffer[32];
@@ -507,7 +507,7 @@ int main(int argc, char** argv) {
     }
   }
   f64 host_time = get_time_sec() - start_time;
-  Ticks real_total_ticks = e->emulator_get_ticks();
+  Ticks real_total_ticks = e->get_ticks();
   f64 gb_time = (f64)real_total_ticks / CPU_TICKS_PER_SECOND;
   printf("time: gb=%.1fs host=%.1fs (%.1fx)\n", gb_time, host_time,
          gb_time / host_time);

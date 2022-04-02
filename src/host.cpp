@@ -219,7 +219,7 @@ void host_set_audio_volume(Host* host, f32 volume) {
 void host_render_audio(Host* host) {
   Emulator* e = host_get_emulator(host);
   Audio* audio = &host->audio;
-  AudioBuffer* audio_buffer = e->emulator_get_audio_buffer();
+  AudioBuffer* audio_buffer = e->get_audio_buffer();
 
   size_t src_frames = audio_buffer_get_frames(audio_buffer);
   size_t max_dst_frames = audio->spec.size / AUDIO_FRAME_SIZE;
@@ -282,7 +282,7 @@ static void joypad_callback(JoypadButtons* joyp, void* user_data) {
 #undef GAMEPAD
   }
 
-  Ticks ticks = host_get_emulator(host)->emulator_get_ticks();
+  Ticks ticks = host_get_emulator(host)->get_ticks();
   joypad_append_if_new(host->joypad_buffer, joyp, ticks);
 }
 
@@ -295,7 +295,7 @@ static Result host_init_joypad(Host* host, Emulator* e) {
     emulator_set_joypad_playback_callback(
         host_get_emulator(host), host->joypad_buffer, &host->joypad_playback);
   } else {
-    e->emulator_set_joypad_callback(joypad_callback, host);
+    e->set_joypad_callback(joypad_callback, host);
     host->joypad_buffer = joypad_new();
   }
   return OK;
@@ -342,10 +342,10 @@ static void host_handle_event(Host* host, EmulatorEvent event) {
   Emulator* e = host_get_emulator(host);
   if (event & EMULATOR_EVENT_NEW_FRAME) {
     host_upload_texture(host, host->fb_texture, SCREEN_WIDTH, SCREEN_HEIGHT,
-                        *e->emulator_get_frame_buffer());
+                        *e->get_frame_buffer());
     if (host->init.use_sgb_border) {
       host_upload_texture(host, host->sgb_fb_texture, SGB_SCREEN_WIDTH,
-                          SGB_SCREEN_HEIGHT, *e->emulator_get_sgb_frame_buffer());
+                          SGB_SCREEN_HEIGHT, *e->get_sgb_frame_buffer());
     }
 
     append_rewind_state(host);
@@ -358,10 +358,10 @@ static void host_handle_event(Host* host, EmulatorEvent event) {
 
 static EmulatorEvent host_run_until_ticks(struct Host* host, Ticks ticks) {
   Emulator* e = host_get_emulator(host);
-  assert(e->emulator_get_ticks() <= ticks);
+  assert(e->get_ticks() <= ticks);
   EmulatorEvent event;
   do {
-    event = e->emulator_run_until(ticks);
+    event = e->run_until(ticks);
     host_handle_event(host, event);
   } while (!(event & (EMULATOR_EVENT_UNTIL_TICKS | EMULATOR_EVENT_BREAKPOINT |
                       EMULATOR_EVENT_INVALID_OPCODE)));
@@ -380,24 +380,24 @@ Result host_rewind_to_ticks(Host* host, Ticks ticks) {
   if(!(SUCCESS(rewind_to_ticks(host->rewind_buffer, ticks, result)))) return ERROR;
 
   Emulator* e = host_get_emulator(host);
-  if(!(SUCCESS(e->emulator_read_state(&result->file_data)))) return ERROR;
-  assert(e->emulator_get_ticks() == result->info->ticks);
+  if(!(SUCCESS(e->read_state(&result->file_data)))) return ERROR;
+  assert(e->get_ticks() == result->info->ticks);
 
-  if (e->emulator_get_ticks() < ticks) {
+  if (e->get_ticks() < ticks) {
     /* Save old joypad callback. */
-    JoypadCallbackInfo old_jci = e->emulator_get_joypad_callback();
+    JoypadCallbackInfo old_jci = e->get_joypad_callback();
     emulator_set_joypad_playback_callback(e, host->joypad_buffer,
                                           &host->rewind_state.joypad_playback);
     host_run_until_ticks(host, ticks);
     /* Restore old joypad callback. */
-    e->emulator_set_joypad_callback(old_jci.callback, old_jci.user_data);
+    e->set_joypad_callback(old_jci.callback, old_jci.user_data);
   }
 
   return OK;
 }
 
 void host_end_rewind(Host* host) {
-  [[maybe_unused]] Ticks ticks = host_get_emulator(host)->emulator_get_ticks();
+  [[maybe_unused]] Ticks ticks = host_get_emulator(host)->get_ticks();
   assert(host->rewind_state.rewinding);
 
   if (host->rewind_state.rewind_result.info) {
@@ -411,7 +411,7 @@ void host_end_rewind(Host* host) {
       JoypadButtons buttons;
       joypad_callback(&buttons, host);
     }
-    host->last_ticks = e->emulator_get_ticks();
+    host->last_ticks = e->get_ticks();
   }
 
   memset(&host->rewind_state, 0, sizeof(host->rewind_state));
@@ -430,7 +430,7 @@ Result host_init(Host* host, Emulator* e) {
   CHECK(SUCCESS(host_init_audio(host)));
   host_init_joypad(host, e);
   host->rewind_buffer = rewind_new(&host->init.rewind, e);
-  host->last_ticks = e->emulator_get_ticks();
+  host->last_ticks = e->get_ticks();
   return OK;
   ON_ERROR_RETURN;
 }
@@ -439,18 +439,18 @@ EmulatorEvent host_run_ms(struct Host* host, f64 delta_ms) {
   assert(!host->rewind_state.rewinding);
   Emulator* e = host_get_emulator(host);
   Ticks delta_ticks = (Ticks)(delta_ms * CPU_TICKS_PER_SECOND / 1000);
-  Ticks until_ticks = e->emulator_get_ticks() + delta_ticks;
+  Ticks until_ticks = e->get_ticks() + delta_ticks;
   EmulatorEvent event = host_run_until_ticks(host, until_ticks);
-  host->last_ticks = e->emulator_get_ticks();
+  host->last_ticks = e->get_ticks();
   return event;
 }
 
 EmulatorEvent host_step(Host* host) {
   assert(!host->rewind_state.rewinding);
   Emulator* e = host_get_emulator(host);
-  EmulatorEvent event = e->emulator_step();
+  EmulatorEvent event = e->step();
   host_handle_event(host, event);
-  host->last_ticks = e->emulator_get_ticks();
+  host->last_ticks = e->get_ticks();
   return event;
 }
 

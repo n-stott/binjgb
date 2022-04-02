@@ -1577,8 +1577,8 @@ void Emulator::set_sgb_palette(int pal, u8 lo0, u8 hi0, u8 lo1,
   THIS_SGB.screen_pal[pal].color[2] = unpack_cgb_color8(lo2, hi2);
   THIS_SGB.screen_pal[pal].color[3] = unpack_cgb_color8(lo3, hi3);
   if (pal == 0) {
-    emulator_set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
-    emulator_set_bw_palette(PALETTE_TYPE_OBP1, &THIS_SGB.screen_pal[0]);
+    set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
+    set_bw_palette(PALETTE_TYPE_OBP1, &THIS_SGB.screen_pal[0]);
   }
   update_bw_palette_rgba(PALETTE_TYPE_BGP);
 }
@@ -3930,7 +3930,7 @@ void Emulator::execute_instruction() {
   THIS_REG.PC = new_pc;
 }
 
-void Emulator::emulator_step_internal() {
+void Emulator::step_internal() {
   if (THIS_HDMA.state == DMA_INACTIVE) {
     if (THIS_HOOK0_false(emulator_step)) {
       return;
@@ -3943,7 +3943,7 @@ void Emulator::emulator_step_internal() {
   }
 }
 
-EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
+EmulatorEvent Emulator::run_until(Ticks until_ticks) {
   AudioBuffer* ab = &audio_buffer;
   if (state.event & EMULATOR_EVENT_AUDIO_BUFFER_FULL) {
     ab->position = ab->data;
@@ -3957,7 +3957,7 @@ EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
       (u32)DIV_CEIL(frames_left * CPU_TICKS_PER_SECOND, ab->frequency);
   Ticks check_ticks = MIN(until_ticks, max_audio_ticks);
   while (state.event == 0 && THIS_TICKS < check_ticks) {
-    emulator_step_internal();
+    step_internal();
   }
   if (THIS_TICKS >= max_audio_ticks) {
     state.event |= EMULATOR_EVENT_AUDIO_BUFFER_FULL;
@@ -3969,8 +3969,8 @@ EmulatorEvent Emulator::emulator_run_until(Ticks until_ticks) {
   return state.event;
 }
 
-EmulatorEvent Emulator::emulator_step() {
-  return emulator_run_until(THIS_TICKS + 1);
+EmulatorEvent Emulator::step() {
+  return run_until(THIS_TICKS + 1);
 }
 
 static Result validate_header_checksum(CartInfo* cart_info) {
@@ -4095,7 +4095,7 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
   THIS_HDMA.blocks = 0xff;
 
   /* Set initial DMG/SGB palettes */
-  emulator_set_builtin_palette(init->builtin_palette);
+  set_builtin_palette(init->builtin_palette);
 
   /* Set up cgb color curve */
   cgb_color_curve = init->cgb_color_curve;
@@ -4124,44 +4124,44 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
   return OK;
 }
 
-void Emulator::emulator_set_joypad_buttons(JoypadButtons* buttons) {
+void Emulator::set_joypad_buttons(JoypadButtons* buttons) {
   THIS_JOYP.buttons = *buttons;
 }
 
-void Emulator::emulator_set_joypad_callback(JoypadCallback callback, void* user_data) {
+void Emulator::set_joypad_callback(JoypadCallback callback, void* user_data) {
   joypad_info.callback = callback;
   joypad_info.user_data = user_data;
 }
 
-JoypadCallbackInfo Emulator::emulator_get_joypad_callback() {
+JoypadCallbackInfo Emulator::get_joypad_callback() {
   return joypad_info;
 }
 
-void Emulator::emulator_set_config(const EmulatorConfig* config) {
+void Emulator::set_config(const EmulatorConfig* config) {
   this->config = *config;
 }
 
-EmulatorConfig Emulator::emulator_get_config() {
+EmulatorConfig Emulator::get_config() {
   return config;
 }
 
-FrameBuffer* Emulator::emulator_get_frame_buffer() {
+FrameBuffer* Emulator::get_frame_buffer() {
   return &frame_buffer;
 }
 
-SgbFrameBuffer* Emulator::emulator_get_sgb_frame_buffer() {
+SgbFrameBuffer* Emulator::get_sgb_frame_buffer() {
   return &sgb_frame_buffer;
 }
 
-AudioBuffer* Emulator::emulator_get_audio_buffer() {
+AudioBuffer* Emulator::get_audio_buffer() {
   return &audio_buffer;
 }
 
-Ticks Emulator::emulator_get_ticks() {
+Ticks Emulator::get_ticks() {
   return THIS_TICKS;
 }
 
-u32 Emulator::emulator_get_ppu_frame() {
+u32 Emulator::get_ppu_frame() {
   return THIS_PPU.frame;
 }
 
@@ -4169,13 +4169,13 @@ u32 audio_buffer_get_frames(AudioBuffer* audio_buffer) {
   return (audio_buffer->position - audio_buffer->data) / SOUND_OUTPUT_COUNT;
 }
 
-void Emulator::emulator_set_bw_palette(PaletteType type,
+void Emulator::set_bw_palette(PaletteType type,
                              const PaletteRGBA* palette) {
   color_to_rgba[type] = *palette;
   update_bw_palette_rgba(type);
 }
 
-void Emulator::emulator_set_all_bw_palettes(const PaletteRGBA* palette) {
+void Emulator::set_all_bw_palettes(const PaletteRGBA* palette) {
   color_to_rgba[PALETTE_TYPE_BGP] = *palette;
   color_to_rgba[PALETTE_TYPE_OBP0] = *palette;
   color_to_rgba[PALETTE_TYPE_OBP1] = *palette;
@@ -4191,7 +4191,7 @@ Result Emulator::set_rom_file_data(const FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-bool Emulator::emulator_was_ext_ram_updated() {
+bool Emulator::was_ext_ram_updated() {
   bool result = state.ext_ram_updated;
   state.ext_ram_updated = false;
   return result;
@@ -4202,12 +4202,12 @@ void emulator_init_state_file_data(FileData* file_data) {
   file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
-void Emulator::emulator_init_ext_ram_file_data(FileData* file_data) {
+void Emulator::init_ext_ram_file_data(FileData* file_data) {
   file_data->size = THIS_EXT_RAM.size;
   file_data->data = reinterpret_cast<u8*>(xmalloc(file_data->size));
 }
 
-Result Emulator::emulator_read_state(const FileData* file_data) {
+Result Emulator::read_state(const FileData* file_data) {
   if(!(file_data->size == sizeof(EmulatorState))) return ERROR;
             // "save state file is wrong size: %ld, expected %ld.\n",
             // (long)file_data->size, (long)sizeof(EmulatorState));
@@ -4219,8 +4219,8 @@ Result Emulator::emulator_read_state(const FileData* file_data) {
   set_cart_info(state.cart_info_index);
 
   if (THIS_IS_SGB) {
-    emulator_set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
-    emulator_set_bw_palette(PALETTE_TYPE_OBP1, &THIS_SGB.screen_pal[0]);
+    set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
+    set_bw_palette(PALETTE_TYPE_OBP1, &THIS_SGB.screen_pal[0]);
   }
   update_bw_palette_rgba(PALETTE_TYPE_BGP);
   update_bw_palette_rgba(PALETTE_TYPE_OBP0);
@@ -4228,7 +4228,7 @@ Result Emulator::emulator_read_state(const FileData* file_data) {
   return OK;
 }
 
-Result Emulator::emulator_write_state(FileData* file_data) {
+Result Emulator::write_state(FileData* file_data) {
   CHECK(file_data->size >= sizeof(EmulatorState));
   state.header = SAVE_STATE_HEADER;
   memcpy(file_data->data, &state, file_data->size);
@@ -4236,7 +4236,7 @@ Result Emulator::emulator_write_state(FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-Result Emulator::emulator_read_ext_ram(const FileData* file_data) {
+Result Emulator::read_ext_ram(const FileData* file_data) {
   if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
 
@@ -4248,7 +4248,7 @@ Result Emulator::emulator_read_ext_ram(const FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-Result Emulator::emulator_write_ext_ram(FileData* file_data) {
+Result Emulator::write_ext_ram(FileData* file_data) {
   if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
 
@@ -4258,21 +4258,21 @@ Result Emulator::emulator_write_ext_ram(FileData* file_data) {
   ON_ERROR_RETURN;
 }
 
-Result Emulator::emulator_read_ext_ram_from_file(const char* filename) {
+Result Emulator::read_ext_ram_from_file(const char* filename) {
   if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
   Result result = ERROR;
   FileData file_data;
   ZERO_MEMORY(file_data);
   CHECK(SUCCESS(file_read(filename, &file_data)));
-  CHECK(SUCCESS(emulator_read_ext_ram(&file_data)));
+  CHECK(SUCCESS(read_ext_ram(&file_data)));
   result = OK;
 error:
   file_data_delete(&file_data);
   return result;
 }
 
-Result Emulator::emulator_write_ext_ram_to_file(const char* filename) {
+Result Emulator::write_ext_ram_to_file(const char* filename) {
   if (THIS_EXT_RAM.battery_type != BATTERY_TYPE_WITH_BATTERY)
     return OK;
 
@@ -4280,7 +4280,7 @@ Result Emulator::emulator_write_ext_ram_to_file(const char* filename) {
   FileData file_data;
   file_data.size = THIS_EXT_RAM.size;
   file_data.data = reinterpret_cast<u8*>(xmalloc(file_data.size));
-  CHECK(SUCCESS(emulator_write_ext_ram(&file_data)));
+  CHECK(SUCCESS(write_ext_ram(&file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
 error:
@@ -4288,23 +4288,23 @@ error:
   return result;
 }
 
-Result Emulator::emulator_read_state_from_file(const char* filename) {
+Result Emulator::read_state_from_file(const char* filename) {
   Result result = ERROR;
   FileData file_data;
   ZERO_MEMORY(file_data);
   CHECK(SUCCESS(file_read(filename, &file_data)));
-  CHECK(SUCCESS(emulator_read_state(&file_data)));
+  CHECK(SUCCESS(read_state(&file_data)));
   result = OK;
 error:
   file_data_delete(&file_data);
   return result;
 }
 
-Result Emulator::emulator_write_state_to_file(const char* filename) {
+Result Emulator::write_state_to_file(const char* filename) {
   Result result = ERROR;
   FileData file_data;
   emulator_init_state_file_data(&file_data);
-  CHECK(SUCCESS(emulator_write_state(&file_data)));
+  CHECK(SUCCESS(write_state(&file_data)));
   CHECK(SUCCESS(file_write(filename, &file_data)));
   result = OK;
 error:
@@ -4339,7 +4339,7 @@ void emulator_ticks_to_time(Ticks ticks, u32* day, u32* hr, u32* min, u32* sec,
   *day = secs / (60 * 60 * 24);
 }
 
-void Emulator::emulator_set_builtin_palette(u32 index) {
+void Emulator::set_builtin_palette(u32 index) {
   static const PaletteRGBA pals[][3] = {
 #define PAL(b0, b1, b2, b3, o00, o01, o02, o03, o10, o11, o12, o13) \
   {{{b0, b1, b2, b3}}, {{o00, o01, o02, o03}}, {{o10, o11, o12, o13}}},
@@ -4351,19 +4351,19 @@ void Emulator::emulator_set_builtin_palette(u32 index) {
   };
   size_t count = sizeof(pals) / sizeof(*pals);
   if (index >= count) { return; }
-  emulator_set_bw_palette(static_cast<PaletteType>(0), &pals[index][0]);
-  emulator_set_bw_palette(static_cast<PaletteType>(1), &pals[index][1]);
-  emulator_set_bw_palette(static_cast<PaletteType>(2), &pals[index][2]);
+  set_bw_palette(static_cast<PaletteType>(0), &pals[index][0]);
+  set_bw_palette(static_cast<PaletteType>(1), &pals[index][1]);
+  set_bw_palette(static_cast<PaletteType>(2), &pals[index][2]);
   for (int i = 0; i < 4; ++i) {
     THIS_SGB.screen_pal[i] = pals[index][0];
   }
   update_bw_palette_rgba(PALETTE_TYPE_BGP);
 }
 
-ApuLog* Emulator::emulator_get_apu_log() {
+ApuLog* Emulator::get_apu_log() {
   return &apu_log;
 }
 
-void Emulator::emulator_reset_apu_log() {
+void Emulator::reset_apu_log() {
   apu_log.write_count = 0;
 }

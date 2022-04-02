@@ -18,7 +18,7 @@ void Debugger::AudioWindow::Tick() {
   if (!is_open) return;
 
   if (ImGui::Begin(Debugger::s_audio_window_name, &is_open)) {
-    EmulatorConfig config = d->e->emulator_get_config();
+    EmulatorConfig config = d->e->get_config();
     ImGui::Text("channel enable");
     ImGui::SameLine(0, 20);
     ImGui::CheckboxNot("1", &config.disable_sound[APU_CHANNEL1]);
@@ -28,7 +28,7 @@ void Debugger::AudioWindow::Tick() {
     ImGui::CheckboxNot("3", &config.disable_sound[APU_CHANNEL3]);
     ImGui::SameLine();
     ImGui::CheckboxNot("4", &config.disable_sound[APU_CHANNEL4]);
-    d->e->emulator_set_config(&config);
+    d->e->set_config(&config);
     if (ImGui::SliderFloat("Volume", &d->audio_volume, 0, 1)) {
       d->audio_volume = CLAMP(d->audio_volume, 0, 1);
       host_set_audio_volume(d->host, d->audio_volume);

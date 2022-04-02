@@ -37,7 +37,7 @@ void Debugger::RewindWindow::Tick() {
     }
 
     if (rewinding) {
-      Ticks cur_cy = d->e->emulator_get_ticks();
+      Ticks cur_cy = d->e->get_ticks();
       Ticks oldest_cy = host_get_rewind_oldest_ticks(d->host);
       Ticks rel_cur_cy = cur_cy - oldest_cy;
       u32 range_fr = (host_newest_ticks(d->host) - oldest_cy) / PPU_FRAME_TICKS;
@@ -88,15 +88,15 @@ void Debugger::RewindWindow::Tick() {
         // will take, it's easier to just save state, step forward one
         // instruction too far, then load state and step just before it.
         if (reverse_step) {
-          d->e->emulator_write_state(&reverse_step_save_state);
+          d->e->write_state(&reverse_step_save_state);
           int count = 0;
-          for (; d->e->emulator_get_ticks() < cur_cy; ++count) {
-            d->e->emulator_step();
+          for (; d->e->get_ticks() < cur_cy; ++count) {
+            d->e->step();
           }
 
-          d->e->emulator_read_state(&reverse_step_save_state);
+          d->e->read_state(&reverse_step_save_state);
           for (int i = 0; i < count - 1; ++i) {
-            d->e->emulator_step();
+            d->e->step();
           }
         }
       }

@@ -169,9 +169,9 @@ static void inc_audio_volume(f32 delta) {
 }
 
 static void toggle_audio_channel(int channel) {
-  EmulatorConfig emu_config = e->emulator_get_config();
+  EmulatorConfig emu_config = e->get_config();
   emu_config.disable_sound[channel] ^= 1;
-  e->emulator_set_config(&emu_config);
+  e->set_config(&emu_config);
   set_status_text("Audio channels: %c%c%c%c",
                   emu_config.disable_sound[APU_CHANNEL1] ? '_' : '1',
                   emu_config.disable_sound[APU_CHANNEL2] ? '_' : '2',
@@ -182,18 +182,18 @@ static void toggle_audio_channel(int channel) {
 static void inc_palette(int delta) {
   s_builtin_palette = (s_builtin_palette + delta + BUILTIN_PALETTE_COUNT) %
                       BUILTIN_PALETTE_COUNT;
-  e->emulator_set_builtin_palette(s_builtin_palette);
+  e->set_builtin_palette(s_builtin_palette);
   set_status_text("Palette: %d", s_builtin_palette);
 }
 
 static void toggle_layer(Layer layer) {
-  EmulatorConfig emu_config = e->emulator_get_config();
+  EmulatorConfig emu_config = e->get_config();
   switch (layer) {
     case LAYER_BG: emu_config.disable_bg ^= 1; break;
     case LAYER_WINDOW: emu_config.disable_window ^= 1; break;
     case LAYER_OBJ: emu_config.disable_obj ^= 1; break;
   }
-  e->emulator_set_config(&emu_config);
+  e->set_config(&emu_config);
   set_status_text("Layer: %s %s %s", emu_config.disable_bg ? "__" : "bg",
                   emu_config.disable_window ? "___" : "win",
                   emu_config.disable_obj ? "___" : "obj");
@@ -212,7 +212,7 @@ static void toggle_fullscreen(void) {
 }
 
 static void save_state(void) {
-  if (SUCCESS(e->emulator_write_state_to_file(s_save_state_filename))) {
+  if (SUCCESS(e->write_state_to_file(s_save_state_filename))) {
     set_status_text("saved state");
   } else {
     set_status_text("unable to save state");
@@ -220,7 +220,7 @@ static void save_state(void) {
 }
 
 static void load_state(void) {
-  if (SUCCESS(e->emulator_read_state_from_file(s_save_state_filename))) {
+  if (SUCCESS(e->read_state_from_file(s_save_state_filename))) {
     set_status_text("loaded state");
   } else {
     set_status_text("unable to load state");
@@ -231,12 +231,12 @@ static void begin_rewind(void) {
   if (!s_rewinding) {
     host_begin_rewind(host);
     s_rewinding = true;
-    s_rewind_start = e->emulator_get_ticks();
+    s_rewind_start = e->get_ticks();
   }
 }
 
 static void rewind_by(Ticks delta) {
-  Ticks now = e->emulator_get_ticks();
+  Ticks now = e->get_ticks();
   Ticks then = now;
   if (now >= delta) {
     then = now - delta;
@@ -530,7 +530,7 @@ int main(int argc, char** argv) {
   const char* save_filename = replace_extension(s_rom_filename, SAVE_EXTENSION);
   s_save_state_filename =
       replace_extension(s_rom_filename, SAVE_STATE_EXTENSION);
-  e->emulator_read_ext_ram_from_file(save_filename);
+  e->read_ext_ram_from_file(save_filename);
 
   s_overlay.texture = host_create_texture(host, SCREEN_WIDTH, SCREEN_HEIGHT,
                                           HOST_TEXTURE_FORMAT_RGBA);
@@ -560,7 +560,7 @@ int main(int argc, char** argv) {
   if (s_write_joypad_filename) {
     host_write_joypad_to_file(host, s_write_joypad_filename);
   } else {
-    e->emulator_write_ext_ram_to_file(save_filename);
+    e->write_ext_ram_to_file(save_filename);
   }
 
   result = 0;

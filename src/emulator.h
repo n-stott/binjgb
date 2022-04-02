@@ -332,7 +332,7 @@ struct AudioBuffer {
   u32 frequency;    /* Sample frequency, as N samples per second */
   u32 freq_counter; /* Used for resampling; [0..APU_TICKS_PER_SECOND). */
   u32 divisor;
-  u32 frames; /* Number of frames to generate per call to emulator_run. */
+  u32 frames; /* Number of frames to generate per call to emulatorrun. */
   u8* data;   /* Unsigned 8-bit 2-channel samples @ |frequency| */
   u8* end;
   u8* position;
@@ -900,46 +900,46 @@ struct Emulator {
 
   static std::unique_ptr<Emulator> try_create(const EmulatorInit*);
 
-  void emulator_set_joypad_buttons(JoypadButtons*);
-  void emulator_set_joypad_callback(JoypadCallback, void* user_data);
-  JoypadCallbackInfo emulator_get_joypad_callback();
-  void emulator_set_config(const EmulatorConfig*);
-  EmulatorConfig emulator_get_config();
+  void set_joypad_buttons(JoypadButtons*);
+  void set_joypad_callback(JoypadCallback, void* user_data);
+  JoypadCallbackInfo get_joypad_callback();
+  void set_config(const EmulatorConfig*);
+  EmulatorConfig get_config();
 
-  FrameBuffer* emulator_get_frame_buffer();
-  SgbFrameBuffer* emulator_get_sgb_frame_buffer();
-  AudioBuffer* emulator_get_audio_buffer();
+  FrameBuffer* get_frame_buffer();
+  SgbFrameBuffer* get_sgb_frame_buffer();
+  AudioBuffer* get_audio_buffer();
 
-  Ticks emulator_get_ticks();
-  u32 emulator_get_ppu_frame();
+  Ticks get_ticks();
+  u32 get_ppu_frame();
 
-  void emulator_set_builtin_palette(u32 index);
-  void emulator_set_bw_palette(PaletteType, const PaletteRGBA*);
-  void emulator_set_all_bw_palettes(const PaletteRGBA*);
+  void set_builtin_palette(u32 index);
+  void set_bw_palette(PaletteType, const PaletteRGBA*);
+  void set_all_bw_palettes(const PaletteRGBA*);
 
-  bool emulator_was_ext_ram_updated();
+  bool was_ext_ram_updated();
 
-  void emulator_init_ext_ram_file_data(FileData*);
+  void init_ext_ram_file_data(FileData*);
 
-  Result emulator_read_state(const FileData*);
-  Result emulator_write_state(FileData*);
-  Result emulator_read_ext_ram(const FileData*);
-  Result emulator_write_ext_ram(FileData*);
+  Result read_state(const FileData*);
+  Result write_state(FileData*);
+  Result read_ext_ram(const FileData*);
+  Result write_ext_ram(FileData*);
 
 
-  Result emulator_read_state_from_file(const char* filename);
-  Result emulator_write_state_to_file(const char* filename);
-  Result emulator_read_ext_ram_from_file(const char* filename);
-  Result emulator_write_ext_ram_to_file(const char* filename);
+  Result read_state_from_file(const char* filename);
+  Result write_state_to_file(const char* filename);
+  Result read_ext_ram_from_file(const char* filename);
+  Result write_ext_ram_to_file(const char* filename);
 
-  EmulatorEvent emulator_step();
-  EmulatorEvent emulator_run_until(Ticks until_ticks);
-  void emulator_step_internal();
+  EmulatorEvent step();
+  EmulatorEvent run_until(Ticks until_ticks);
+  void step_internal();
   void execute_instruction();
   void dispatch_interrupt();
 
-  ApuLog* emulator_get_apu_log();
-  void emulator_reset_apu_log();
+  ApuLog* get_apu_log();
+  void reset_apu_log();
 
   void tick();
 
