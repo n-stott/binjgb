@@ -336,6 +336,8 @@ struct AudioBuffer {
   u8* data;   /* Unsigned 8-bit 2-channel samples @ |frequency| */
   u8* end;
   u8* position;
+
+  u32 audio_buffer_get_frames();
 };
 
 enum CgbColorCurve {
@@ -1060,8 +1062,6 @@ struct Emulator {
 };
 
 extern const size_t s_emulator_state_size;
-
-u32 audio_buffer_get_frames(AudioBuffer*);
 
 void emulator_ticks_to_time(Ticks, u32* day, u32* hr, u32* min, u32* sec,
                             u32* ms);

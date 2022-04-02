@@ -221,7 +221,7 @@ void host_render_audio(Host* host) {
   Audio* audio = &host->audio;
   AudioBuffer* audio_buffer = e->get_audio_buffer();
 
-  size_t src_frames = audio_buffer_get_frames(audio_buffer);
+  size_t src_frames = audio_buffer->audio_buffer_get_frames();
   size_t max_dst_frames = audio->spec.size / AUDIO_FRAME_SIZE;
   size_t frames = MIN(src_frames, max_dst_frames);
   u8* src = audio_buffer->data;

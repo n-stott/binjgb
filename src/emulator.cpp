@@ -3951,7 +3951,7 @@ EmulatorEvent Emulator::run_until(Ticks until_ticks) {
   check_joyp_intr();
   state.event = 0;
 
-  u64 frames_left = ab->frames - audio_buffer_get_frames(ab);
+  u64 frames_left = ab->frames - ab->audio_buffer_get_frames();
   Ticks max_audio_ticks =
       THIS_APU.sync_ticks +
       (u32)DIV_CEIL(frames_left * CPU_TICKS_PER_SECOND, ab->frequency);
@@ -4165,8 +4165,8 @@ u32 Emulator::get_ppu_frame() {
   return THIS_PPU.frame;
 }
 
-u32 audio_buffer_get_frames(AudioBuffer* audio_buffer) {
-  return (audio_buffer->position - audio_buffer->data) / SOUND_OUTPUT_COUNT;
+u32 AudioBuffer::audio_buffer_get_frames() {
+  return (position - data) / SOUND_OUTPUT_COUNT;
 }
 
 void Emulator::set_bw_palette(PaletteType type,
