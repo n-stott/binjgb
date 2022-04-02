@@ -878,24 +878,24 @@ struct EmulatorState {
 const size_t s_emulator_state_size = sizeof(EmulatorState);
 
 struct Emulator {
-  EmulatorConfig config;
-  FileData file_data;
-  CartInfo cart_infos[MAX_CART_INFOS];
-  u32 cart_info_count;
-  CartInfo* cart_info; /* Cached for convenience. */
-  MemoryMap memory_map;
-  EmulatorState state;
-  FrameBuffer frame_buffer;
-  SgbFrameBuffer sgb_frame_buffer;
-  AudioBuffer audio_buffer;
-  JoypadCallbackInfo joypad_info;
+  EmulatorConfig config_;
+  FileData file_data_;
+  CartInfo cart_infos_[MAX_CART_INFOS];
+  u32 cart_info_count_;
+  CartInfo* cart_info_; /* Cached for convenience. */
+  MemoryMap memory_map_;
+  EmulatorState state_;
+  FrameBuffer frame_buffer_;
+  SgbFrameBuffer sgb_frame_buffer_;
+  AudioBuffer audio_buffer_;
+  JoypadCallbackInfo joypad_info_;
   /* color_to_rgba stores mappings from 4 DMG colors to RGBA colors. pal is a
    * cached copy of the current DMG palette (e.g. could be all COLOR_WHITE). */
-  PaletteRGBA color_to_rgba[PALETTE_TYPE_COUNT];
-  PaletteRGBA pal[PALETTE_TYPE_COUNT];
-  PaletteRGBA sgb_pal[4];
-  CgbColorCurve cgb_color_curve;
-  ApuLog apu_log;
+  PaletteRGBA color_to_rgba_[PALETTE_TYPE_COUNT];
+  PaletteRGBA pal_[PALETTE_TYPE_COUNT];
+  PaletteRGBA sgb_pal_[4];
+  CgbColorCurve cgb_color_curve_;
+  ApuLog apu_log_;
 
 public:
 

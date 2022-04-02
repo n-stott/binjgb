@@ -12,69 +12,69 @@
 #include "emulator.h"
 
 /* Abbreviations of commonly accessed values. */
-#define APU (e->state.apu)
+#define APU (e->state_.apu)
 #define CHANNEL1 CHANNEL(1)
 #define CHANNEL2 CHANNEL(2)
 #define CHANNEL3 CHANNEL(3)
 #define CHANNEL4 CHANNEL(4)
 #define CHANNEL(i) (APU.channel[APU_CHANNEL##i])
-#define CPU_SPEED (e->state.cpu_speed)
-#define TICKS (e->state.ticks)
-#define DMA (e->state.dma)
-#define EXT_RAM (e->state.ext_ram)
-#define HRAM (e->state.hram)
-#define HDMA (e->state.hdma)
-#define INFRARED (e->state.infrared)
-#define INTR (e->state.interrupt)
-#define IS_CGB (e->state.is_cgb)
-#define IS_SGB (e->state.is_sgb)
-#define JOYP (e->state.joyp)
-#define SGB (e->state.sgb)
+#define CPU_SPEED (e->state_.cpu_speed)
+#define TICKS (e->state_.ticks)
+#define DMA (e->state_.dma)
+#define EXT_RAM (e->state_.ext_ram)
+#define HRAM (e->state_.hram)
+#define HDMA (e->state_.hdma)
+#define INFRARED (e->state_.infrared)
+#define INTR (e->state_.interrupt)
+#define IS_CGB (e->state_.is_cgb)
+#define IS_SGB (e->state_.is_sgb)
+#define JOYP (e->state_.joyp)
+#define SGB (e->state_.sgb)
 #define LCDC (PPU.lcdc)
-#define MMAP_STATE (e->state.memory_map_state)
+#define MMAP_STATE (e->state_.memory_map_state)
 #define NOISE (APU.noise)
-#define OAM (e->state.oam)
-#define PPU (e->state.ppu)
-#define REG (e->state.reg)
-#define SERIAL (e->state.serial)
+#define OAM (e->state_.oam)
+#define PPU (e->state_.ppu)
+#define REG (e->state_.reg)
+#define SERIAL (e->state_.serial)
 #define STAT (PPU.stat)
 #define SWEEP (APU.sweep)
-#define TIMER (e->state.timer)
-#define VRAM (e->state.vram)
+#define TIMER (e->state_.timer)
+#define VRAM (e->state_.vram)
 #define WAVE (APU.wave)
-#define WRAM (e->state.wram)
+#define WRAM (e->state_.wram)
 
-#define THIS_APU (state.apu)
+#define THIS_APU (state_.apu)
 #define THIS_CHANNEL1 THIS_CHANNEL(1)
 #define THIS_CHANNEL2 THIS_CHANNEL(2)
 #define THIS_CHANNEL3 THIS_CHANNEL(3)
 #define THIS_CHANNEL4 THIS_CHANNEL(4)
 #define THIS_CHANNEL(i) (THIS_APU.channel[APU_CHANNEL##i])
-#define THIS_CPU_SPEED (state.cpu_speed)
-#define THIS_TICKS (state.ticks)
-#define THIS_DMA (state.dma)
-#define THIS_EXT_RAM (state.ext_ram)
-#define THIS_HRAM (state.hram)
-#define THIS_HDMA (state.hdma)
-#define THIS_INFRARED (state.infrared)
-#define THIS_INTR (state.interrupt)
-#define THIS_IS_CGB (state.is_cgb)
-#define THIS_IS_SGB (state.is_sgb)
-#define THIS_JOYP (state.joyp)
-#define THIS_SGB (state.sgb)
+#define THIS_CPU_SPEED (state_.cpu_speed)
+#define THIS_TICKS (state_.ticks)
+#define THIS_DMA (state_.dma)
+#define THIS_EXT_RAM (state_.ext_ram)
+#define THIS_HRAM (state_.hram)
+#define THIS_HDMA (state_.hdma)
+#define THIS_INFRARED (state_.infrared)
+#define THIS_INTR (state_.interrupt)
+#define THIS_IS_CGB (state_.is_cgb)
+#define THIS_IS_SGB (state_.is_sgb)
+#define THIS_JOYP (state_.joyp)
+#define THIS_SGB (state_.sgb)
 #define THIS_LCDC (THIS_PPU.lcdc)
-#define THIS_MMAP_STATE (state.memory_map_state)
+#define THIS_MMAP_STATE (state_.memory_map_state)
 #define THIS_NOISE (THIS_APU.noise)
-#define THIS_OAM (state.oam)
-#define THIS_PPU (state.ppu)
-#define THIS_REG (state.reg)
-#define THIS_SERIAL (state.serial)
+#define THIS_OAM (state_.oam)
+#define THIS_PPU (state_.ppu)
+#define THIS_REG (state_.reg)
+#define THIS_SERIAL (state_.serial)
 #define THIS_STAT (THIS_PPU.stat)
 #define THIS_SWEEP (THIS_APU.sweep)
-#define THIS_TIMER (state.timer)
-#define THIS_VRAM (state.vram)
+#define THIS_TIMER (state_.timer)
+#define THIS_VRAM (state_.vram)
 #define THIS_WAVE (THIS_APU.wave)
-#define THIS_WRAM (state.wram)
+#define THIS_WRAM (state_.wram)
 
 
 #define DIV_CEIL(numer, denom) (((numer) + (denom) - 1) / (denom))
@@ -355,7 +355,7 @@ static u32 s_rom_bank_count[] = {
     FOREACH_ROM_SIZE(V)
 #undef V
 };
-#define ROM_BANK_COUNT(e) s_rom_bank_count[(e)->cart_info->rom_size]
+#define ROM_BANK_COUNT(e) s_rom_bank_count[(e)->cart_info_->rom_size]
 #define ROM_BANK_MASK(e) (ROM_BANK_COUNT(e) - 1)
 
 static u32 s_ext_ram_byte_size[] = {
@@ -363,7 +363,7 @@ static u32 s_ext_ram_byte_size[] = {
     FOREACH_EXT_RAM_SIZE(V)
 #undef V
 };
-#define EXT_RAM_BYTE_SIZE(e) s_ext_ram_byte_size[(e)->cart_info->ext_ram_size]
+#define EXT_RAM_BYTE_SIZE(e) s_ext_ram_byte_size[(e)->cart_info_->ext_ram_size]
 #define EXT_RAM_BYTE_SIZE_MASK(e) (EXT_RAM_BYTE_SIZE(e) - 1)
 
 static CartTypeInfo s_cart_type_info[] = {
@@ -450,9 +450,9 @@ static MemoryTypeAddressPair map_hdma_source_address(Address addr) {
 }
 
 void Emulator::set_cart_info(u8 index) {
-  state.cart_info_index = index;
-  cart_info = &cart_infos[index];
-  if (!(cart_info->data && SUCCESS(init_memory_map()))) {
+  state_.cart_info_index = index;
+  cart_info_ = &cart_infos_[index];
+  if (!(cart_info_->data && SUCCESS(init_memory_map()))) {
     UNREACHABLE("Unable to switch cart (%d).\n", index);
   }
 }
@@ -503,18 +503,18 @@ Result Emulator::get_cart_infos() {
   u32 i;
   for (i = 0; i < MAX_CART_INFOS; ++i) {
     size_t offset = i << CART_INFO_SHIFT;
-    if (offset + MINIMUM_ROM_SIZE > file_data.size) break;
-    if (SUCCESS(get_cart_info(&file_data, offset, &cart_infos[i]))) {
-      if (s_cart_type_info[cart_infos[i].cart_type].mbc_type ==
+    if (offset + MINIMUM_ROM_SIZE > file_data_.size) break;
+    if (SUCCESS(get_cart_info(&file_data_, offset, &cart_infos_[i]))) {
+      if (s_cart_type_info[cart_infos_[i].cart_type].mbc_type ==
           MBC_TYPE_MMM01) {
         /* MMM01 has the cart header at the end. */
         set_cart_info(i);
         return OK;
       }
-      cart_info_count++;
+      cart_info_count_++;
     }
   }
-  CHECK_MSG(cart_info_count != 0, "Invalid ROM.\n");
+  CHECK_MSG(cart_info_count_ != 0, "Invalid ROM.\n");
   set_cart_info(0);
   return OK;
   ON_ERROR_RETURN;
@@ -558,7 +558,7 @@ void Emulator::gb_write_ext_ram(MaskedAddress addr, u8 value) {
   if (THIS_MMAP_STATE.ext_ram_enabled) {
     assert(addr <= ADDR_MASK_8K);
     THIS_EXT_RAM.data[THIS_MMAP_STATE.ext_ram_base | addr] = value;
-    state.ext_ram_updated = true;
+    state_.ext_ram_updated = true;
   } else {
     THIS_HOOK(write_ram_disabled_ab, addr, value);
   }
@@ -879,9 +879,9 @@ void Emulator::mmm01_write_rom(MaskedAddress addr, u8 value) {
   switch (addr >> 13) {
     case 0: { /* 0000-1fff */
       /* ROM size should be power-of-two. */
-      assert((cart_info->size & (cart_info->size - 1)) == 0);
+      assert((cart_info_->size & (cart_info_->size - 1)) == 0);
       u32 rom_offset =
-          (mmm01->byte_2000_3fff << ROM_BANK_SHIFT) & (cart_info->size - 1);
+          (mmm01->byte_2000_3fff << ROM_BANK_SHIFT) & (cart_info_->size - 1);
       set_cart_info(rom_offset >> CART_INFO_SHIFT);
       break;
     }
@@ -892,64 +892,63 @@ void Emulator::mmm01_write_rom(MaskedAddress addr, u8 value) {
 }
 
 Result Emulator::init_memory_map() {
-  CartTypeInfo* cart_type_info = &s_cart_type_info[cart_info->cart_type];
-  MemoryMap* memory_map = &this->memory_map;
+  CartTypeInfo* cart_type_info = &s_cart_type_info[cart_info_->cart_type];
 
   switch (cart_type_info->ext_ram_type) {
     case EXT_RAM_TYPE_WITH_RAM:
-      assert(is_ext_ram_size_valid(cart_info->ext_ram_size));
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return gb_read_ext_ram(addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return gb_write_ext_ram(addr, value); };
+      assert(is_ext_ram_size_valid(cart_info_->ext_ram_size));
+      memory_map_.read_ext_ram = [=](MaskedAddress addr) -> u8 { return gb_read_ext_ram(addr); };
+      memory_map_.write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return gb_write_ext_ram(addr, value); };
       THIS_EXT_RAM.size = EXT_RAM_BYTE_SIZE(this);
       break;
     default:
     case EXT_RAM_TYPE_NO_RAM:
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return dummy_read(addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(addr, value); };
+      memory_map_.read_ext_ram = [=](MaskedAddress addr) -> u8 { return dummy_read(addr); };
+      memory_map_.write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(addr, value); };
       THIS_EXT_RAM.size = 0;
       break;
   }
 
   switch (cart_type_info->mbc_type) {
     case MBC_TYPE_NO_MBC:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(addr, value); };
+      memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return dummy_write(addr, value); };
       break;
     case MBC_TYPE_MBC1: {
-      bool is_mbc1m = cart_info_count > 1;
+      bool is_mbc1m = cart_info_count_ > 1;
       if(is_mbc1m) {
-        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1m_write_rom(addr, value); };
+        memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1m_write_rom(addr, value); };
       } else {
-        memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1_write_rom(addr, value); };
+        memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc1_write_rom(addr, value); };
       }
       break;
     }
     case MBC_TYPE_MBC2:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_rom(addr, value); };
-      memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc2_read_ram(addr); };
-      memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_ram(addr, value); };
+      memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_rom(addr, value); };
+      memory_map_.read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc2_read_ram(addr); };
+      memory_map_.write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc2_write_ram(addr, value); };
       THIS_EXT_RAM.size = MBC2_RAM_SIZE;
       break;
     case MBC_TYPE_MMM01:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mmm01_write_rom(addr, value); };
+      memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return mmm01_write_rom(addr, value); };
       break;
     case MBC_TYPE_MBC3: {
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc3_write_rom(addr, value); };
+      memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc3_write_rom(addr, value); };
       if (cart_type_info->timer_type == TIMER_TYPE_WITH_TIMER) {
-        memory_map->read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc3_read_ext_ram(addr); };
-        memory_map->write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc3_write_ext_ram(addr, value); };
+        memory_map_.read_ext_ram = [=](MaskedAddress addr) -> u8 { return mbc3_read_ext_ram(addr); };
+        memory_map_.write_ext_ram = [=](MaskedAddress addr, u8 value) -> void { return mbc3_write_ext_ram(addr, value); };
       }
       break;
     }
     case MBC_TYPE_MBC5:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc5_write_rom(addr, value); };
+      memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return mbc5_write_rom(addr, value); };
       THIS_MMAP_STATE.mbc5.byte_2000_2fff = 1;
       break;
     case MBC_TYPE_HUC1:
-      memory_map->write_rom = [=](MaskedAddress addr, u8 value) -> void { return huc1_write_rom(addr, value); };
+      memory_map_.write_rom = [=](MaskedAddress addr, u8 value) -> void { return huc1_write_rom(addr, value); };
       break;
     default:
       PRINT_ERROR("memory map for %s not implemented.\n",
-                  get_cart_type_string(cart_info->cart_type));
+                  get_cart_type_string(cart_info_->cart_type));
       return ERROR;
   }
 
@@ -1027,7 +1026,7 @@ u8 Emulator::read_joyp_p10_p13() {
   bool right = THIS_JOYP.buttons.right;
   bool up = THIS_JOYP.buttons.up;
   bool down = THIS_JOYP.buttons.down;
-  if (!config.allow_simulataneous_dpad_opposites) {
+  if (!config_.allow_simulataneous_dpad_opposites) {
     if (left && right) {
       left = false;
     } else if (up && down) {
@@ -1045,9 +1044,9 @@ u8 Emulator::read_joyp_p10_p13() {
 }
 
 void Emulator::call_joyp_callback(bool wait) {
-  if (joypad_info.callback &&
+  if (joypad_info_.callback &&
       (!wait || THIS_TICKS - THIS_JOYP.last_callback >= JOYP_INTERRUPT_WAIT_TICKS)) {
-    joypad_info.callback(&THIS_JOYP.buttons, joypad_info.user_data);
+    joypad_info_.callback(&THIS_JOYP.buttons, joypad_info_.user_data);
     THIS_JOYP.last_callback = THIS_TICKS;
   }
 }
@@ -1269,8 +1268,8 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
     case MEMORY_MAP_ROM0:
     case MEMORY_MAP_ROM1: {
       u32 rom_addr = THIS_MMAP_STATE.rom_base[pair.type] | pair.addr;
-      assert(rom_addr < cart_info->size);
-      u8 value = cart_info->data[rom_addr];
+      assert(rom_addr < cart_info_->size);
+      u8 value = cart_info_->data[rom_addr];
       if (!raw) {
         THIS_HOOK(read_rom_ib, rom_addr, value);
       }
@@ -1279,7 +1278,7 @@ u8 Emulator::read_u8_pair(MemoryTypeAddressPair pair, bool raw) {
     case MEMORY_MAP_VRAM:
       return read_vram(pair.addr);
     case MEMORY_MAP_EXT_RAM:
-      return memory_map.read_ext_ram(pair.addr);
+      return memory_map_.read_ext_ram(pair.addr);
     case MEMORY_MAP_WORK_RAM0:
       return THIS_WRAM.data[pair.addr];
     case MEMORY_MAP_WORK_RAM1:
@@ -1317,7 +1316,7 @@ u8 Emulator::read_u8(Address addr) {
   if (LIKELY(addr < 0x8000)) {
     u32 bank = addr >> ROM_BANK_SHIFT;
     u32 rom_addr = THIS_MMAP_STATE.rom_base[bank] | (addr & ADDR_MASK_16K);
-    u8 value = cart_info->data[rom_addr];
+    u8 value = cart_info_->data[rom_addr];
     THIS_HOOK(read_rom_ib, rom_addr, value);
     return value;
   } else {
@@ -1365,7 +1364,7 @@ void Emulator::write_oam(MaskedAddress addr, u8 value) {
 }
 
 void Emulator::calculate_next_intr() {
-  state.next_intr_ticks = MIN(
+  state_.next_intr_ticks = MIN(
       MIN(THIS_SERIAL.next_intr_ticks, THIS_TIMER.next_intr_ticks), THIS_PPU.next_intr_ticks);
 }
 
@@ -1381,7 +1380,7 @@ void Emulator::timer_synchronize() {
     THIS_TIMER.sync_ticks = THIS_TICKS;
 
     if (THIS_TIMER.on) {
-      Ticks cpu_tick = state.cpu_tick;
+      Ticks cpu_tick = state_.cpu_tick;
       for (; delta_ticks > 0; delta_ticks -= cpu_tick) {
         if (THIS_TIMER.tima_state == TIMA_STATE_OVERFLOW) {
           THIS_INTR.if_ |= (THIS_INTR.new_if & IF_TIMER);
@@ -1405,7 +1404,7 @@ void Emulator::timer_synchronize() {
 void Emulator::calculate_next_timer_intr() {
   if (THIS_TIMER.on) {
     Ticks ticks = THIS_TIMER.sync_ticks;
-    Ticks cpu_tick = state.cpu_tick;
+    Ticks cpu_tick = state_.cpu_tick;
     u16 div_counter = THIS_TIMER.div_counter;
     u8 tima = THIS_TIMER.tima;
     if (THIS_TIMER.tima_state == TIMA_STATE_OVERFLOW) {
@@ -1430,7 +1429,7 @@ void Emulator::calculate_next_timer_intr() {
 }
 
 void Emulator::do_timer_interrupt() {
-  Ticks cpu_tick = state.cpu_tick;
+  Ticks cpu_tick = state_.cpu_tick;
   THIS_HOOK(trigger_timer_i, THIS_TICKS + cpu_tick);
   THIS_TIMER.tima_state = TIMA_STATE_OVERFLOW;
   THIS_TIMER.div_counter += THIS_TICKS + CPU_TICK - THIS_TIMER.sync_ticks;
@@ -1518,13 +1517,13 @@ void Emulator::check_joyp_intr() {
 
 void Emulator::update_bw_palette_rgba(PaletteType type) {
   for (int i = 0; i < 4; ++i) {
-    pal[type].color[i] =
-        color_to_rgba[type].color[THIS_PPU.pal[type].color[i]];
+    pal_[type].color[i] =
+        color_to_rgba_[type].color[THIS_PPU.pal[type].color[i]];
   }
   if (type == PALETTE_TYPE_BGP) {
     for (int pal = 0; pal < 4; ++pal) {
       for (int i = 0; i < 4; ++i) {
-        sgb_pal[pal].color[i] =
+        sgb_pal_[pal].color[i] =
             THIS_SGB.screen_pal[pal].color[THIS_PPU.pal[PALETTE_TYPE_BGP].color[i]];
       }
     }
@@ -1536,7 +1535,7 @@ RGBA Emulator::unpack_cgb_color(u16 color) {
   u8 g = unpack(color, XCPD_GREEN_INTENSITY);
   u8 b = unpack(color, XCPD_BLUE_INTENSITY);
 
-  switch (cgb_color_curve) {
+  switch (cgb_color_curve_) {
     default:
     case CGB_COLOR_CURVE_NONE:
       return MAKE_RGBA(r << 3, g << 3, b << 3, 255);
@@ -1592,7 +1591,7 @@ void Emulator::unpack_sgb_palette_ram(int pal, u8 idx_lo, u8 idx_hi) {
 
 void Emulator::clear_frame_buffer(RGBA color) {
   for (size_t i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; ++i) {
-    frame_buffer[i] = color;
+    frame_buffer_[i] = color;
   }
 }
 
@@ -1851,7 +1850,7 @@ void Emulator::do_sgb() {
               THIS_SGB.border_pal[pal][col] = unpack_cgb_color8(lo, hi);
             }
           }
-          RGBA* dst = sgb_frame_buffer;
+          RGBA* dst = sgb_frame_buffer_;
           for (int col = 0; col < 28; ++col) {
             for (int row = 0; row < 32; ++row) {
               int idx = (col * 32 + row) * 2;
@@ -2022,7 +2021,7 @@ void Emulator::write_io(MaskedAddress addr, u8 value) {
           } else {
             clear_frame_buffer(RGBA_WHITE);
           }
-          state.event |= EMULATOR_EVENT_NEW_FRAME;
+          state_.event |= EMULATOR_EVENT_NEW_FRAME;
         }
         calculate_next_ppu_intr();
       }
@@ -2341,9 +2340,9 @@ void Emulator::write_noise_period() {
 }
 
 void Emulator::write_apu(MaskedAddress addr, u8 value) {
-  if (config.log_apu_writes || !THIS_APU.initialized) {
-    if (apu_log.write_count < MAX_APU_LOG_FRAME_WRITES) {
-      ApuWrite* write = &apu_log.writes[apu_log.write_count++];
+  if (config_.log_apu_writes || !THIS_APU.initialized) {
+    if (apu_log_.write_count < MAX_APU_LOG_FRAME_WRITES) {
+      ApuWrite* write = &apu_log_.writes[apu_log_.write_count++];
       write->addr = addr;
       write->value = value;
     }
@@ -2549,16 +2548,16 @@ void Emulator::write_wave_ram(MaskedAddress addr, u8 value) {
 void Emulator::write_u8_pair(MemoryTypeAddressPair pair, u8 value) {
   switch (pair.type) {
     case MEMORY_MAP_ROM0:
-      memory_map.write_rom(pair.addr, value);
+      memory_map_.write_rom(pair.addr, value);
       break;
     case MEMORY_MAP_ROM1:
-      memory_map.write_rom(pair.addr + 0x4000, value);
+      memory_map_.write_rom(pair.addr + 0x4000, value);
       break;
     case MEMORY_MAP_VRAM:
       write_vram(pair.addr, value);
       break;
     case MEMORY_MAP_EXT_RAM:
-      memory_map.write_ext_ram(pair.addr, value);
+      memory_map_.write_ext_ram(pair.addr, value);
       break;
     case MEMORY_MAP_WORK_RAM0:
       THIS_WRAM.data[pair.addr] = value;
@@ -2601,7 +2600,7 @@ void Emulator::write_u8(Address addr, u8 value) {
 
 void Emulator::do_ppu_mode2() {
   dma_synchronize();
-  if (!THIS_LCDC.obj_display || config.disable_obj) {
+  if (!THIS_LCDC.obj_display || config_.disable_obj) {
     return;
   }
 
@@ -2665,11 +2664,11 @@ void Emulator::ppu_mode3_synchronize() {
   const u8 y = THIS_PPU.line_y;
   if (THIS_STAT.mode != PPU_MODE_MODE3 || x >= SCREEN_WIDTH) return;
 
-  bool display_bg = (THIS_IS_CGB || THIS_LCDC.bg_display) && !config.disable_bg;
-  const bool display_obj = THIS_LCDC.obj_display && !config.disable_obj;
+  bool display_bg = (THIS_IS_CGB || THIS_LCDC.bg_display) && !config_.disable_bg;
+  const bool display_obj = THIS_LCDC.obj_display && !config_.disable_obj;
   bool rendering_window = THIS_PPU.rendering_window;
   int window_counter = rendering_window ? 0 : 255;
-  if (!rendering_window && THIS_LCDC.window_display && !config.disable_window &&
+  if (!rendering_window && THIS_LCDC.window_display && !config_.disable_window &&
       THIS_PPU.wx <= WINDOW_MAX_X && y >= THIS_PPU.wy) {
     window_counter = MAX(0, THIS_PPU.wx - (x + WINDOW_X_OFFSET));
   }
@@ -2684,7 +2683,7 @@ void Emulator::ppu_mode3_synchronize() {
     static RGBA s_dummy_frame_buffer_line[SCREEN_WIDTH];
     pixel = s_dummy_frame_buffer_line;
   } else {
-    pixel = &frame_buffer[y * SCREEN_WIDTH + x];
+    pixel = &frame_buffer_[y * SCREEN_WIDTH + x];
   }
 
   /* Cache map_addr info. */
@@ -2698,14 +2697,13 @@ void Emulator::ppu_mode3_synchronize() {
        THIS_PPU.mode3_render_ticks += CPU_TICK, pixel += 4, x += 4) {
     bool bg_is_zero[4] = {true, true, true, true},
          bg_priority[4] = {false, false, false, false};
-
     for (i = 0; i < 4; ++i, ++mx) {
       if (UNLIKELY(window_counter-- == 0)) {
         THIS_PPU.rendering_window = rendering_window = display_bg = true;
         mx = x + i + WINDOW_X_OFFSET - THIS_PPU.wx;
         my = THIS_PPU.win_y;
         map_base = map_select_to_address(THIS_LCDC.window_tile_map_select) |
-                   ((my >> 3) * TILE_MAP_WIDTH);
+                  ((my >> 3) * TILE_MAP_WIDTH);
         map_addr = 0;
       }
       if (display_bg) {
@@ -2737,9 +2735,9 @@ void Emulator::ppu_mode3_synchronize() {
             if (THIS_IS_SGB) {
               int idx = (y >> 3) * (SCREEN_WIDTH >> 3) + (x >> 3);
               u8 palidx = (THIS_SGB.attr_map[idx >> 2] >> (2 * (3 - (idx & 3)))) & 3;
-              pal = &sgb_pal[palidx];
+              pal = &sgb_pal_[palidx];
             } else {
-              pal = &this->pal[PALETTE_TYPE_BGP];
+              pal = &this->pal_[PALETTE_TYPE_BGP];
             }
             priority = false;
             u16 tile_addr = (tile_index * TILE_HEIGHT + my7) * TILE_ROW_BYTES;
@@ -2758,9 +2756,9 @@ void Emulator::ppu_mode3_synchronize() {
         if (THIS_IS_CGB) {
           pixel[i] = THIS_PPU.bgcp.palettes[0].color[0];
         } else if (THIS_IS_SGB) {
-          pixel[i] = sgb_pal[0].color[0];
+          pixel[i] = sgb_pal_[0].color[0];
         } else {
-          pixel[i] = color_to_rgba[0].color[0];
+          pixel[i] = color_to_rgba_[0].color[0];
         }
       }
     }
@@ -2801,35 +2799,35 @@ void Emulator::ppu_mode3_synchronize() {
             oy -= 8;
           }
         }
-        PaletteRGBA* pal = NULL;
+        PaletteRGBA* pal2 = NULL;
         if (THIS_IS_CGB) {
-          pal = &THIS_PPU.obcp.palettes[o->cgb_palette & 0x7];
+          pal2 = &THIS_PPU.obcp.palettes[o->cgb_palette & 0x7];
           if (o->bank) { tile_index += 0x200; }
         } else {
-          pal = &this->pal[o->palette + 1];
+          pal2 = &this->pal_[o->palette + 1];
         }
         u16 tile_addr = (tile_index * TILE_HEIGHT + (oy & 7)) * TILE_ROW_BYTES;
-        u8 lo = THIS_VRAM.data[tile_addr];
-        u8 hi = THIS_VRAM.data[tile_addr + 1];
+        u8 lo2 = THIS_VRAM.data[tile_addr];
+        u8 hi2 = THIS_VRAM.data[tile_addr + 1];
         if (!o->xflip) {
-          lo = reverse_bits_u8(lo);
-          hi = reverse_bits_u8(hi);
+          lo2 = reverse_bits_u8(lo2);
+          hi2 = reverse_bits_u8(hi2);
         }
 
         int tile_data_offset = MAX(0, -ox_start);
         assert(tile_data_offset >= 0 && tile_data_offset < 8);
-        lo >>= tile_data_offset;
-        hi >>= tile_data_offset;
+        lo2 >>= tile_data_offset;
+        hi2 >>= tile_data_offset;
 
         int start = MAX(0, ox_start);
         assert(start >= 0 && start < 4);
         int end = MIN(3, ox_end); /* end is inclusive. */
         assert(end >= 0 && end < 4);
-        for (i = start; i <= end; ++i, lo >>= 1, hi >>= 1) {
-          u8 palette_index = ((hi & 1) << 1) | (lo & 1);
+        for (i = start; i <= end; ++i, lo2 >>= 1, hi2 >>= 1) {
+          u8 palette_index = ((hi2 & 1) << 1) | (lo2 & 1);
           if (palette_index != 0 && (!bg_priority[i] || bg_is_zero[i]) &&
               (o->priority == OBJ_PRIORITY_ABOVE_BG || bg_is_zero[i])) {
-            pixel[i] = pal->color[palette_index];
+            pixel[i] = pal2->color[palette_index];
           }
         }
       }
@@ -2876,7 +2874,7 @@ void Emulator::ppu_synchronize() {
                 THIS_PPU.frame++;
                 THIS_INTR.new_if |= IF_VBLANK;
                 if (LIKELY(THIS_PPU.display_delay_frames == 0)) {
-                  state.event |= EMULATOR_EVENT_NEW_FRAME;
+                  state_.event |= EMULATOR_EVENT_NEW_FRAME;
                 } else {
                   THIS_PPU.display_delay_frames--;
                 }
@@ -3155,9 +3153,9 @@ void Emulator::update_noise(u32 total_frames) {
 
 u32 Emulator::get_gb_frames_until_next_resampled_frame() {
   u32 result = 0;
-  u32 counter = audio_buffer.freq_counter;
+  u32 counter = audio_buffer_.freq_counter;
   while (!VALUE_WRAPPED(counter, APU_TICKS_PER_SECOND)) {
-    counter += audio_buffer.frequency;
+    counter += audio_buffer_.frequency;
     result++;
   }
   return result;
@@ -3165,14 +3163,14 @@ u32 Emulator::get_gb_frames_until_next_resampled_frame() {
 
 void Emulator::write_audio_frame(u32 gb_frames) {
   int i, j;
-  AudioBuffer* buffer = &audio_buffer;
+  AudioBuffer* buffer = &audio_buffer_;
   buffer->divisor += gb_frames;
   buffer->freq_counter += buffer->frequency * gb_frames;
   if (VALUE_WRAPPED(buffer->freq_counter, APU_TICKS_PER_SECOND)) {
     for (i = 0; i < SOUND_OUTPUT_COUNT; ++i) {
       u32 accumulator = 0;
       for (j = 0; j < APU_CHANNEL_COUNT; ++j) {
-        if (!config.disable_sound[j]) {
+        if (!config_.disable_sound[j]) {
           accumulator += THIS_APU.channel[j].accumulator * THIS_APU.so_output[j][i];
         }
       }
@@ -3247,7 +3245,7 @@ void Emulator::dma_synchronize() {
       Ticks delta_ticks = THIS_TICKS - THIS_DMA.sync_ticks;
       THIS_DMA.sync_ticks = THIS_TICKS;
 
-      Ticks cpu_tick = state.cpu_tick;
+      Ticks cpu_tick = state_.cpu_tick;
       for (; delta_ticks > 0; delta_ticks -= cpu_tick) {
         if (THIS_DMA.tick_count < DMA_DELAY_TICKS) {
           THIS_DMA.tick_count += CPU_TICK;
@@ -3319,7 +3317,7 @@ void Emulator::serial_synchronize() {
 
     if (UNLIKELY(THIS_SERIAL.transferring &&
                  THIS_SERIAL.clock == SERIAL_CLOCK_INTERNAL)) {
-      Ticks cpu_tick = state.cpu_tick;
+      Ticks cpu_tick = state_.cpu_tick;
       for (; delta_ticks > 0; delta_ticks -= cpu_tick) {
         THIS_SERIAL.tick_count += cpu_tick;
         if (VALUE_WRAPPED(THIS_SERIAL.tick_count, SERIAL_TICKS)) {
@@ -3345,7 +3343,7 @@ void Emulator::serial_synchronize() {
 
 void Emulator::tick() {
   THIS_INTR.if_ = THIS_INTR.new_if;
-  THIS_TICKS += state.cpu_tick;
+  THIS_TICKS += state_.cpu_tick;
 }
 
 u8 Emulator::read_u8_tick(Address addr) {
@@ -3630,7 +3628,7 @@ void Emulator::execute_instruction() {
   u16 u16;
   Address new_pc;
 
-  if (UNLIKELY(THIS_TICKS >= state.next_intr_ticks)) {
+  if (UNLIKELY(THIS_TICKS >= state_.next_intr_ticks)) {
     if (THIS_TICKS >= THIS_TIMER.next_intr_ticks) {
       timer_synchronize();
     }
@@ -3662,10 +3660,10 @@ void Emulator::execute_instruction() {
             THIS_CPU_SPEED.speed = static_cast<Speed>(static_cast<int>(THIS_CPU_SPEED.speed) ^ 1);
             THIS_INTR.state = CPU_STATE_NORMAL;
             if (THIS_CPU_SPEED.speed == SPEED_NORMAL) {
-              state.cpu_tick = CPU_TICK;
+              state_.cpu_tick = CPU_TICK;
               THIS_HOOK(speed_switch_i, 1);
             } else {
-              state.cpu_tick = CPU_2X_TICK;
+              state_.cpu_tick = CPU_2X_TICK;
               THIS_HOOK(speed_switch_i, 2);
             }
           } else {
@@ -3924,7 +3922,7 @@ void Emulator::execute_instruction() {
     case 0xfe: CP_N; break;
     case 0xff: CALL(0x38); break;
     default:
-      state.event |= EMULATOR_EVENT_INVALID_OPCODE;
+      state_.event |= EMULATOR_EVENT_INVALID_OPCODE;
       break;
   }
   THIS_REG.PC = new_pc;
@@ -3944,29 +3942,29 @@ void Emulator::step_internal() {
 }
 
 EmulatorEvent Emulator::run_until(Ticks until_ticks) {
-  AudioBuffer* ab = &audio_buffer;
-  if (state.event & EMULATOR_EVENT_AUDIO_BUFFER_FULL) {
+  AudioBuffer* ab = &audio_buffer_;
+  if (state_.event & EMULATOR_EVENT_AUDIO_BUFFER_FULL) {
     ab->position = ab->data;
   }
   check_joyp_intr();
-  state.event = 0;
+  state_.event = 0;
 
   u64 frames_left = ab->frames - ab->audio_buffer_get_frames();
   Ticks max_audio_ticks =
       THIS_APU.sync_ticks +
       (u32)DIV_CEIL(frames_left * CPU_TICKS_PER_SECOND, ab->frequency);
   Ticks check_ticks = MIN(until_ticks, max_audio_ticks);
-  while (state.event == 0 && THIS_TICKS < check_ticks) {
+  while (state_.event == 0 && THIS_TICKS < check_ticks) {
     step_internal();
   }
   if (THIS_TICKS >= max_audio_ticks) {
-    state.event |= EMULATOR_EVENT_AUDIO_BUFFER_FULL;
+    state_.event |= EMULATOR_EVENT_AUDIO_BUFFER_FULL;
   }
   if (THIS_TICKS >= until_ticks) {
-    state.event |= EMULATOR_EVENT_UNTIL_TICKS;
+    state_.event |= EMULATOR_EVENT_UNTIL_TICKS;
   }
   apu_synchronize();
-  return state.event;
+  return state_.event;
 }
 
 EmulatorEvent Emulator::step() {
@@ -4005,7 +4003,7 @@ static void log_cart_info(CartInfo* cart_info) {
 }
 
 Result Emulator::init_audio_buffer(u32 frequency, u32 frames) {
-  AudioBuffer* audio_buffer = &this->audio_buffer;
+  AudioBuffer* audio_buffer = &this->audio_buffer_;
   audio_buffer->frames = frames;
   size_t buffer_size =
       (frames + AUDIO_BUFFER_EXTRA_FRAMES) * SOUND_OUTPUT_COUNT;
@@ -4051,13 +4049,13 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
       0xc0, 0xde, 0xf0, 0x0d, 0xbe, 0xef, 0xfe, 0xed,
   };
   if(!(SUCCESS(get_cart_infos()))) return ERROR;
-  log_cart_info(cart_info);
+  log_cart_info(cart_info_);
   THIS_MMAP_STATE.rom_base[0] = 0;
   THIS_MMAP_STATE.rom_base[1] = 1 << ROM_BANK_SHIFT;
-  THIS_IS_CGB = !init->force_dmg && (cart_info->cgb_flag == CGB_FLAG_SUPPORTED ||
-                                cart_info->cgb_flag == CGB_FLAG_REQUIRED);
+  THIS_IS_CGB = !init->force_dmg && (cart_info_->cgb_flag == CGB_FLAG_SUPPORTED ||
+                                cart_info_->cgb_flag == CGB_FLAG_REQUIRED);
   THIS_IS_SGB = !init->force_dmg && !THIS_IS_CGB &&
-           cart_info->sgb_flag == SGB_FLAG_SUPPORTED;
+           cart_info_->sgb_flag == SGB_FLAG_SUPPORTED;
   set_af_reg(0xb0);
   THIS_REG.A = THIS_IS_CGB ? 0x11 : 0x01;
   THIS_REG.BC = 0x0013;
@@ -4067,7 +4065,7 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
   THIS_REG.PC = 0x0100;
   THIS_INTR.ime = false;
   THIS_TIMER.div_counter = 0xAC00;
-  THIS_TIMER.next_intr_ticks = THIS_SERIAL.next_intr_ticks = state.next_intr_ticks =
+  THIS_TIMER.next_intr_ticks = THIS_SERIAL.next_intr_ticks = state_.next_intr_ticks =
       INVALID_TICKS;
   THIS_WRAM.offset = 0x1000;
   /* Enable apu first, so subsequent writes succeed. */
@@ -4098,7 +4096,7 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
   set_builtin_palette(init->builtin_palette);
 
   /* Set up cgb color curve */
-  cgb_color_curve = init->cgb_color_curve;
+  cgb_color_curve_ = init->cgb_color_curve;
 
   /* Set initial CGB palettes to white. */
   int pal_index;
@@ -4114,12 +4112,12 @@ Result Emulator::init_emulator(const EmulatorInit* init) {
 
   /* Randomize RAM */
   u32 random_seed = init->random_seed;
-  state.random_seed = random_seed;
-  randomize_buffer(&random_seed, state.ext_ram.data, EXT_RAM_MAX_SIZE);
-  randomize_buffer(&random_seed, state.wram.data, WORK_RAM_SIZE);
-  randomize_buffer(&random_seed, state.hram, HIGH_RAM_SIZE);
+  state_.random_seed = random_seed;
+  randomize_buffer(&random_seed, state_.ext_ram.data, EXT_RAM_MAX_SIZE);
+  randomize_buffer(&random_seed, state_.wram.data, WORK_RAM_SIZE);
+  randomize_buffer(&random_seed, state_.hram, HIGH_RAM_SIZE);
 
-  state.cpu_tick = CPU_TICK;
+  state_.cpu_tick = CPU_TICK;
   calculate_next_ppu_intr();
   return OK;
 }
@@ -4129,32 +4127,32 @@ void Emulator::set_joypad_buttons(JoypadButtons* buttons) {
 }
 
 void Emulator::set_joypad_callback(JoypadCallback callback, void* user_data) {
-  joypad_info.callback = callback;
-  joypad_info.user_data = user_data;
+  joypad_info_.callback = callback;
+  joypad_info_.user_data = user_data;
 }
 
 JoypadCallbackInfo Emulator::get_joypad_callback() {
-  return joypad_info;
+  return joypad_info_;
 }
 
 void Emulator::set_config(const EmulatorConfig* config) {
-  this->config = *config;
+  this->config_ = *config;
 }
 
 EmulatorConfig Emulator::get_config() {
-  return config;
+  return config_;
 }
 
 FrameBuffer* Emulator::get_frame_buffer() {
-  return &frame_buffer;
+  return &frame_buffer_;
 }
 
 SgbFrameBuffer* Emulator::get_sgb_frame_buffer() {
-  return &sgb_frame_buffer;
+  return &sgb_frame_buffer_;
 }
 
 AudioBuffer* Emulator::get_audio_buffer() {
-  return &audio_buffer;
+  return &audio_buffer_;
 }
 
 Ticks Emulator::get_ticks() {
@@ -4171,14 +4169,14 @@ u32 AudioBuffer::audio_buffer_get_frames() {
 
 void Emulator::set_bw_palette(PaletteType type,
                              const PaletteRGBA* palette) {
-  color_to_rgba[type] = *palette;
+  color_to_rgba_[type] = *palette;
   update_bw_palette_rgba(type);
 }
 
 void Emulator::set_all_bw_palettes(const PaletteRGBA* palette) {
-  color_to_rgba[PALETTE_TYPE_BGP] = *palette;
-  color_to_rgba[PALETTE_TYPE_OBP0] = *palette;
-  color_to_rgba[PALETTE_TYPE_OBP1] = *palette;
+  color_to_rgba_[PALETTE_TYPE_BGP] = *palette;
+  color_to_rgba_[PALETTE_TYPE_OBP0] = *palette;
+  color_to_rgba_[PALETTE_TYPE_OBP1] = *palette;
 }
 
 Result Emulator::set_rom_file_data(const FileData* file_data) {
@@ -4186,14 +4184,14 @@ Result Emulator::set_rom_file_data(const FileData* file_data) {
   CHECK_MSG((file_data->size & (MINIMUM_ROM_SIZE - 1)) == 0,
             "File size (%ld) should be a multiple of minimum rom size (%ld).\n",
             (long)file_data->size, (long)MINIMUM_ROM_SIZE);
-  this->file_data = *file_data;
+  this->file_data_ = *file_data;
   return OK;
   ON_ERROR_RETURN;
 }
 
 bool Emulator::was_ext_ram_updated() {
-  bool result = state.ext_ram_updated;
-  state.ext_ram_updated = false;
+  bool result = state_.ext_ram_updated;
+  state_.ext_ram_updated = false;
   return result;
 }
 
@@ -4215,8 +4213,8 @@ Result Emulator::read_state(const FileData* file_data) {
   if(!(new_state->header == SAVE_STATE_HEADER)) return ERROR;
             // "header mismatch: %u, expected %u.\n", new_state->header,
             // SAVE_STATE_HEADER);
-  memcpy(&state, new_state, sizeof(EmulatorState));
-  set_cart_info(state.cart_info_index);
+  memcpy(&state_, new_state, sizeof(EmulatorState));
+  set_cart_info(state_.cart_info_index);
 
   if (THIS_IS_SGB) {
     set_bw_palette(PALETTE_TYPE_OBP0, &THIS_SGB.screen_pal[0]);
@@ -4230,8 +4228,8 @@ Result Emulator::read_state(const FileData* file_data) {
 
 Result Emulator::write_state(FileData* file_data) {
   CHECK(file_data->size >= sizeof(EmulatorState));
-  state.header = SAVE_STATE_HEADER;
-  memcpy(file_data->data, &state, file_data->size);
+  state_.header = SAVE_STATE_HEADER;
+  memcpy(file_data->data, &state_, file_data->size);
   return OK;
   ON_ERROR_RETURN;
 }
@@ -4326,7 +4324,7 @@ error:
 Emulator::Emulator() = default;
 
 Emulator::~Emulator() {
-  xfree(audio_buffer.data);
+  xfree(audio_buffer_.data);
 }
 
 void emulator_ticks_to_time(Ticks ticks, u32* day, u32* hr, u32* min, u32* sec,
@@ -4361,9 +4359,9 @@ void Emulator::set_builtin_palette(u32 index) {
 }
 
 ApuLog* Emulator::get_apu_log() {
-  return &apu_log;
+  return &apu_log_;
 }
 
 void Emulator::reset_apu_log() {
-  apu_log.write_count = 0;
+  apu_log_.write_count = 0;
 }

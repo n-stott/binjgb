@@ -17,7 +17,7 @@ if (MSVC)
 else ()
   add_definitions(
     -std=c++17 -g
-    -Wall -Wextra -Wpointer-arith -pedantic
+    -Wall -Wextra -Wpointer-arith -pedantic -Wshadow
     -Wno-implicit-fallthrough
     -Wno-gnu-anonymous-struct -Wno-nested-anon-types
     -Wno-gnu-zero-variadic-macro-arguments -Wno-c99-designator

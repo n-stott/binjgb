@@ -483,9 +483,9 @@ int main(int argc, char** argv) {
       if (s_output_ppm && s_animate) {
         char buffer[32];
         snprintf(buffer, sizeof(buffer), ".%08d.ppm", animation_frame++);
-        const char* result = replace_extension(s_output_ppm, buffer);
-        if(!(SUCCESS(write_frame_ppm(e.get(), result)))) return onError();
-        xfree((char*)result);
+        const char* withotherext = replace_extension(s_output_ppm, buffer);
+        if(!(SUCCESS(write_frame_ppm(e.get(), withotherext)))) return onError();
+        xfree((char*)withotherext);
       }
 
       if (finish_at_next_frame) {
