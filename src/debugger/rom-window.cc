@@ -30,7 +30,7 @@ void Debugger::ROMWindow::Init() {
     rom_texture_height <<= 1;
   }
 
-  rom_texture = host_create_texture(d->host, rom_texture_width,
+  rom_texture = host_create_texture(d->host_, rom_texture_width,
                                     rom_texture_height, HOST_TEXTURE_FORMAT_U8);
   emulator_clear_rom_usage();
 }
@@ -39,7 +39,7 @@ void Debugger::ROMWindow::Tick() {
   if (!is_open) return;
 
   if (ImGui::Begin(Debugger::s_rom_window_name, &is_open)) {
-    host_upload_texture(d->host, rom_texture, rom_texture_width,
+    host_upload_texture(d->host_, rom_texture, rom_texture_width,
                         rom_texture_height, emulator_get_rom_usage());
 
     PaletteRGBA palette = {

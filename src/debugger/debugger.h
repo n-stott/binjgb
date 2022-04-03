@@ -91,11 +91,11 @@ class Debugger {
     return 0x8000 + GetTileIndexInBank(tile_index) * 16;
   }
 
-  EmulatorInit emulator_init;
-  HostInit host_init;
-  std::unique_ptr<Emulator> emulator;
+  EmulatorInit emulator_init_;
+  HostInit host_init_;
+  std::unique_ptr<Emulator> emulator_;
   Emulator* e = nullptr;
-  Host* host = nullptr;
+  Host* host_ = nullptr;
   const char* save_filename = nullptr;
   const char* save_state_filename = nullptr;
   const char* rom_usage_filename = nullptr;

@@ -27,7 +27,7 @@ void Debugger::RewindWindow::Tick() {
   if (!is_open) return;
 
   if (ImGui::Begin(Debugger::s_rewind_window_name, &is_open)) {
-    bool rewinding = host_is_rewinding(d->host);
+    bool rewinding = host_is_rewinding(d->host_);
     if (ImGui::Checkbox("Rewind", &rewinding)) {
       if (rewinding) {
         d->BeginRewind();
@@ -38,9 +38,9 @@ void Debugger::RewindWindow::Tick() {
 
     if (rewinding) {
       Ticks cur_cy = d->e->get_ticks();
-      Ticks oldest_cy = host_get_rewind_oldest_ticks(d->host);
+      Ticks oldest_cy = host_get_rewind_oldest_ticks(d->host_);
       Ticks rel_cur_cy = cur_cy - oldest_cy;
-      u32 range_fr = (host_newest_ticks(d->host) - oldest_cy) / PPU_FRAME_TICKS;
+      u32 range_fr = (host_newest_ticks(d->host_) - oldest_cy) / PPU_FRAME_TICKS;
 
       // Frames.
       int frame = rel_cur_cy / PPU_FRAME_TICKS;
@@ -103,15 +103,15 @@ void Debugger::RewindWindow::Tick() {
     }
 
     ImGui::Separator();
-    JoypadStats joyp_stats = host_get_joypad_stats(d->host);
-    RewindStats rw_stats = host_get_rewind_stats(d->host);
+    JoypadStats joyp_stats = host_get_joypad_stats(d->host_);
+    RewindStats rw_stats = host_get_rewind_stats(d->host_);
     size_t base = rw_stats.base_bytes;
     size_t diff = rw_stats.diff_bytes;
     size_t total = base + diff;
     size_t uncompressed = rw_stats.uncompressed_bytes;
     size_t used = rw_stats.used_bytes;
     size_t capacity = rw_stats.capacity_bytes;
-    Ticks total_ticks = host_newest_ticks(d->host) - host_oldest_ticks(d->host);
+    Ticks total_ticks = host_newest_ticks(d->host_) - host_oldest_ticks(d->host_);
     f64 sec = (f64)total_ticks / CPU_TICKS_PER_SECOND;
 
     ImGui::Text("joypad used/capacity: %s/%s",
@@ -128,8 +128,8 @@ void Debugger::RewindWindow::Tick() {
                 d->PrettySize(total / sec * 60).c_str(),
                 d->PrettySize(total / sec * 60 * 60).c_str());
 
-    Ticks oldest = host_get_rewind_oldest_ticks(d->host);
-    Ticks newest = host_get_rewind_newest_ticks(d->host);
+    Ticks oldest = host_get_rewind_oldest_ticks(d->host_);
+    Ticks newest = host_get_rewind_newest_ticks(d->host_);
     f64 range = (f64)(newest - oldest) / CPU_TICKS_PER_SECOND;
     ImGui::Text("range: [%" PRIu64 "..%" PRIu64 "] (%.0f sec)", oldest, newest,
                 range);
@@ -167,14 +167,14 @@ void Debugger::RewindWindow::Tick() {
 void Debugger::BeginRewind() {
   if (run_state == Running || run_state == Paused) {
     emulator_push_trace(false);
-    host_begin_rewind(host);
+    host_begin_rewind(host_);
     run_state = Rewinding;
   }
 }
 
 void Debugger::EndRewind() {
   if (run_state == Rewinding) {
-    host_end_rewind(host);
+    host_end_rewind(host_);
     run_state = Running;
     emulator_pop_trace();
   }

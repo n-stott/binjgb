@@ -31,7 +31,7 @@ void Debugger::AudioWindow::Tick() {
     d->e->set_config(&config);
     if (ImGui::SliderFloat("Volume", &d->audio_volume, 0, 1)) {
       d->audio_volume = CLAMP(d->audio_volume, 0, 1);
-      host_set_audio_volume(d->host, d->audio_volume);
+      host_set_audio_volume(d->host_, d->audio_volume);
     }
 
     ImGui::Spacing();

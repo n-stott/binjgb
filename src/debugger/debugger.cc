@@ -32,7 +32,7 @@ void Debugger::SetPaletteAndEnable(ImDrawList* draw_list,
     delete ctx;
   };
 
-  draw_list->AddCallback(func, new Context(host, palette));
+  draw_list->AddCallback(func, new Context(host_, palette));
 }
 
 void Debugger::DisablePalette(ImDrawList* draw_list) {
@@ -41,7 +41,7 @@ void Debugger::DisablePalette(ImDrawList* draw_list) {
     host_enable_palette(host, false);
   };
 
-  draw_list->AddCallback(func, host);
+  draw_list->AddCallback(func, host_);
 }
 
 bool Debugger::DrawTile(ImDrawList* draw_list, int index, const ImVec2& ul_pos,
@@ -108,7 +108,7 @@ Debugger::Debugger()
       tiledata_window(this) {}
 
 Debugger::~Debugger() {
-  host_delete(host);
+  host_delete(host_);
 }
 
 bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
@@ -129,50 +129,50 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
 
   run_state = paused_at_start ? Paused : Running;
 
-  ZERO_MEMORY(emulator_init);
-  emulator_init.rom = rom;
-  emulator_init.audio_frequency = audio_frequency;
-  emulator_init.audio_frames = audio_frames;
-  emulator_init.random_seed = random_seed;
-  emulator_init.builtin_palette = builtin_palette;
-  emulator_init.force_dmg = force_dmg ? true : false;
-  emulator_init.cgb_color_curve = cgb_color_curve;
-  emulator = Emulator::try_create(&emulator_init);
-  e = emulator.get();
+  ZERO_MEMORY(emulator_init_);
+  emulator_init_.rom = rom;
+  emulator_init_.audio_frequency = audio_frequency;
+  emulator_init_.audio_frames = audio_frames;
+  emulator_init_.random_seed = random_seed;
+  emulator_init_.builtin_palette = builtin_palette;
+  emulator_init_.force_dmg = force_dmg ? true : false;
+  emulator_init_.cgb_color_curve = cgb_color_curve;
+  emulator_ = Emulator::try_create(&emulator_init_);
+  e = emulator_.get();
   if (e == nullptr) {
     return false;
   }
 
-  ZERO_MEMORY(host_init);
-  host_init.render_scale = 4;
-  host_init.audio_frequency = audio_frequency;
-  host_init.audio_frames = audio_frames;
-  host_init.audio_volume = audio_volume;
-  host_init.hooks.user_data = this;
-  host_init.hooks.audio_buffer_full = [](HostHookContext* ctx) {
+  ZERO_MEMORY(host_init_);
+  host_init_.render_scale = 4;
+  host_init_.audio_frequency = audio_frequency;
+  host_init_.audio_frames = audio_frames;
+  host_init_.audio_volume = audio_volume;
+  host_init_.hooks.user_data = this;
+  host_init_.hooks.audio_buffer_full = [](HostHookContext* ctx) {
     static_cast<Debugger*>(ctx->user_data)->OnAudioBufferFull();
   };
-  host_init.hooks.key_down = [](HostHookContext* ctx, HostKeycode code) {
+  host_init_.hooks.key_down = [](HostHookContext* ctx, HostKeycode code) {
     if (!ImGui::GetIO().WantCaptureKeyboard) {
       static_cast<Debugger*>(ctx->user_data)->OnKeyDown(code);
     }
   };
-  host_init.hooks.key_up = [](HostHookContext* ctx, HostKeycode code) {
+  host_init_.hooks.key_up = [](HostHookContext* ctx, HostKeycode code) {
     if (!ImGui::GetIO().WantCaptureKeyboard) {
       static_cast<Debugger*>(ctx->user_data)->OnKeyUp(code);
     }
   };
   // TODO: make these configurable?
-  host_init.rewind.frames_per_base_state = 45;
-  host_init.rewind.buffer_capacity = MEGABYTES(32);
-  host_init.use_sgb_border = use_sgb_border ? true : false;
-  host = host_new(&host_init, e);
-  if (host == nullptr) {
+  host_init_.rewind.frames_per_base_state = 45;
+  host_init_.rewind.buffer_capacity = MEGABYTES(32);
+  host_init_.use_sgb_border = use_sgb_border ? true : false;
+  host_ = host_new(&host_init_, e);
+  if (host_ == nullptr) {
     return false;
   }
 
   tile_data_texture =
-      host_create_texture(host, TILE_DATA_TEXTURE_WIDTH,
+      host_create_texture(host_, TILE_DATA_TEXTURE_WIDTH,
                           TILE_DATA_TEXTURE_HEIGHT, HOST_TEXTURE_FORMAT_U8);
   rom_window.Init();
 
@@ -189,15 +189,15 @@ bool Debugger::Init(const char* filename, int audio_frequency, int audio_frames,
 void Debugger::Run() {
   e->read_ext_ram_from_file(save_filename);
 
-  f64 refresh_ms = host_get_monitor_refresh_ms(host);
-  while (run_state != Exiting && host_poll_events(host)) {
-    host_begin_video(host);
+  f64 refresh_ms = host_get_monitor_refresh_ms(host_);
+  while (run_state != Exiting && host_poll_events(host_)) {
+    host_begin_video(host_);
     switch (run_state) {
       case Running:
       case SteppingFrame: {
-        EmulatorEvent event = host_run_ms(host, refresh_ms);
+        EmulatorEvent event = host_run_ms(host_, refresh_ms);
         if (run_state == SteppingFrame) {
-          host_reset_audio(host);
+          host_reset_audio(host_);
           run_state = Paused;
         }
         if (event &
@@ -208,7 +208,7 @@ void Debugger::Run() {
       }
 
       case SteppingInstruction:
-        host_step(host);
+        host_step(host_);
         run_state = Paused;
         break;
 
@@ -223,7 +223,7 @@ void Debugger::Run() {
     }
 
     emulator_get_tile_data(e, tile_data);
-    host_upload_texture(host, tile_data_texture, TILE_DATA_TEXTURE_WIDTH,
+    host_upload_texture(host_, tile_data_texture, TILE_DATA_TEXTURE_WIDTH,
                         TILE_DATA_TEXTURE_HEIGHT, tile_data);
 
     dockspace_id = ImGui::GetID("Dockspace");
@@ -288,7 +288,7 @@ void Debugger::Run() {
 
     ImGui::End();
 
-    host_end_video(host);
+    host_end_video(host_);
   }
 
   e->write_ext_ram_to_file(save_filename);
@@ -321,7 +321,7 @@ void Debugger::SetTrace(bool trace) {
 
 void Debugger::OnKeyDown(HostKeycode code) {
   EmulatorConfig emu_config = e->get_config();
-  HostConfig host_config = host_get_config(host);
+  HostConfig host_config = host_get_config(host_);
 
   switch (code) {
     case HOST_KEYCODE_1: Toggle(emu_config.disable_sound[APU_CHANNEL1]); break;
@@ -345,11 +345,11 @@ void Debugger::OnKeyDown(HostKeycode code) {
   }
 
   e->set_config(&emu_config);
-  host_set_config(host, &host_config);
+  host_set_config(host_, &host_config);
 }
 
 void Debugger::OnKeyUp(HostKeycode code) {
-  HostConfig host_config = host_get_config(host);
+  HostConfig host_config = host_get_config(host_);
 
   switch (code) {
     case HOST_KEYCODE_LSHIFT: host_config.no_sync = false; break;
@@ -358,7 +358,7 @@ void Debugger::OnKeyUp(HostKeycode code) {
     default: return;
   }
 
-  host_set_config(host, &host_config);
+  host_set_config(host_, &host_config);
 }
 
 void Debugger::StepFrame() {
@@ -402,7 +402,7 @@ void Debugger::ReadStateFromFile() {
 
 void Debugger::SetAudioVolume(f32 volume) {
   audio_volume = CLAMP(volume, 0, 1);
-  host_set_audio_volume(host, audio_volume);
+  host_set_audio_volume(host_, audio_volume);
 }
 
 void Debugger::MainMenuBar() {
@@ -467,14 +467,14 @@ std::string Debugger::PrettySize(size_t size) {
 void Debugger::BeginAutoRewind() {
   if (run_state == Running || run_state == Paused) {
     emulator_push_trace(false);
-    host_begin_rewind(host);
+    host_begin_rewind(host_);
     run_state = AutoRewinding;
   }
 }
 
 void Debugger::EndAutoRewind() {
   if (run_state == AutoRewinding) {
-    host_end_rewind(host);
+    host_end_rewind(host_);
     run_state = Running;
     emulator_pop_trace();
   }
@@ -489,6 +489,6 @@ void Debugger::AutoRewind(f64 delta_ms) {
 }
 
 void Debugger::RewindTo(Ticks ticks) {
-  host_rewind_to_ticks(host, ticks);
-  host_reset_audio(host);
+  host_rewind_to_ticks(host_, ticks);
+  host_reset_audio(host_);
 }

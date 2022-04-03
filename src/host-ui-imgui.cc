@@ -227,8 +227,6 @@ void HostUI::event(union SDL_Event* event) {
       switch (event->window.event) {
         case SDL_WINDOWEVENT_SHOWN:
         case SDL_WINDOWEVENT_SIZE_CHANGED: {
-          ImGuiIO& io = ImGui::GetIO();
-
           int iw, ih;
           SDL_GetWindowSize(window, &iw, &ih);
           f32 w = iw, h = ih;
