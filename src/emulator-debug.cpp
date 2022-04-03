@@ -21,13 +21,9 @@ static const Breakpoint s_invalid_breakpoint{};
 static int s_breakpoint_count;
 static int s_breakpoint_max_id;
 
-#define HOOK0(name) HOOK_##name(e, __func__)
-#define HOOK(name, ...) HOOK_##name(e, __func__, __VA_ARGS__)
-#define HOOK0_false(name) HOOK_##name(e, __func__)
-
-#define THIS_HOOK0(name) HOOK_##name(this, __func__)
-#define THIS_HOOK(name, ...) HOOK_##name(this, __func__, __VA_ARGS__)
-#define THIS_HOOK0_false(name) HOOK_##name(this, __func__)
+#define HOOK0(name) HOOK_##name(this, __func__)
+#define HOOK(name, ...) HOOK_##name(this, __func__, __VA_ARGS__)
+#define HOOK0_false(name) HOOK_##name(this, __func__)
 
 #define DECLARE_LOG_HOOK(system, level, name, format) \
   static void HOOK_##name(Emulator* e, const char* func_name, ...);
@@ -379,7 +375,7 @@ void emulator_disassemble_rom(Emulator* e, u32 rom_addr, char* buffer,
   snprintf(buffer, size, "[%02x]%#06x: %s", bank, addr, instr);
 }
 
-Registers emulator_get_registers(Emulator* e) { return REG; }
+Registers emulator_get_registers(Emulator* e) { return e->REG; }
 
 int emulator_get_max_breakpoint_id(void) {
   return s_breakpoint_max_id;
@@ -489,7 +485,7 @@ void emulator_remove_breakpoint(int id) {
 int emulator_get_rom_bank(Emulator* e, Address addr) {
   int region = addr >> ROM_BANK_SHIFT;
   if (region < 2) {
-    return MMAP_STATE.rom_base[region] >> ROM_BANK_SHIFT;
+    return e->MMAP_STATE.rom_base[region] >> ROM_BANK_SHIFT;
   } else {
     return -1;
   }
@@ -600,19 +596,19 @@ static inline bool hit_breakpoint(Emulator* e) {
 }
 
 bool HOOK_emulator_step(Emulator* e, [[maybe_unused]] const char* func_name) {
-  if (emulator_get_trace() && INTR.state < CPU_STATE_HALT) {
-    printf("A:%02X F:%c%c%c%c BC:%04X DE:%04x HL:%04x SP:%04x PC:%04x", REG.A,
-           REG.F.Z ? 'Z' : '-', REG.F.N ? 'N' : '-', REG.F.H ? 'H' : '-',
-           REG.F.C ? 'C' : '-', REG.BC, REG.DE, REG.HL, REG.SP, REG.PC);
+  if (emulator_get_trace() && e->INTR.state < CPU_STATE_HALT) {
+    printf("A:%02X F:%c%c%c%c BC:%04X DE:%04x HL:%04x SP:%04x PC:%04x", e->REG.A,
+           e->REG.F.Z ? 'Z' : '-', e->REG.F.N ? 'N' : '-', e->REG.F.H ? 'H' : '-',
+           e->REG.F.C ? 'C' : '-', e->REG.BC, e->REG.DE, e->REG.HL, e->REG.SP, e->REG.PC);
     printf(" (cy: %" PRIu64 ")", e->state_.ticks);
     if (s_log_level[LOG_SYSTEM_PPU] >= 1) {
-      printf(" ppu:%c%u", PPU.lcdc.display ? '+' : '-', PPU.stat.mode);
+      printf(" ppu:%c%u", e->PPU.lcdc.display ? '+' : '-', e->PPU.stat.mode);
     }
     if (s_log_level[LOG_SYSTEM_PPU] >= 2) {
-      printf(" LY:%u", PPU.ly);
+      printf(" LY:%u", e->PPU.ly);
     }
     printf(" |");
-    print_instruction(e, REG.PC);
+    print_instruction(e, e->REG.PC);
     printf("\n");
   }
   if (hit_breakpoint(e)) {
@@ -757,15 +753,15 @@ int emulator_get_rom_size(Emulator* e) {
 }
 
 TileDataSelect emulator_get_tile_data_select(Emulator* e) {
-  return PPU.lcdc.bg_tile_data_select;
+  return e->PPU.lcdc.bg_tile_data_select;
 }
 
 TileMapSelect emulator_get_tile_map_select(Emulator* e, LayerType layer_type) {
   switch (layer_type) {
     case LAYER_TYPE_BG:
-      return PPU.lcdc.bg_tile_map_select;
+      return e->PPU.lcdc.bg_tile_map_select;
     case LAYER_TYPE_WINDOW:
-      return PPU.lcdc.window_tile_map_select;
+      return e->PPU.lcdc.window_tile_map_select;
     default:
       return TILE_MAP_9800_9BFF;
   }
@@ -776,7 +772,7 @@ Palette emulator_get_palette(Emulator* e, PaletteType type) {
     case PALETTE_TYPE_BGP:
     case PALETTE_TYPE_OBP0:
     case PALETTE_TYPE_OBP1:
-      return PPU.pal[type - PALETTE_TYPE_BGP];
+      return e->PPU.pal[type - PALETTE_TYPE_BGP];
     default: {
       Palette palette;
       palette.color[0] = COLOR_WHITE;
@@ -858,33 +854,33 @@ void emulator_get_sgb_attr_map(Emulator* e, u8 out_attr_map[90]) {
 
 
 void emulator_get_bg_scroll(Emulator* e, u8* x, u8* y) {
-  *x = PPU.scx;
-  *y = PPU.scy;
+  *x = e->PPU.scx;
+  *y = e->PPU.scy;
 }
 
 void emulator_get_window_scroll(Emulator* e, u8* x, u8* y) {
-  *x = PPU.wx - WINDOW_X_OFFSET;
-  *y = PPU.wy;
+  *x = e->PPU.wx - WINDOW_X_OFFSET;
+  *y = e->PPU.wy;
 }
 
 bool emulator_get_display(Emulator* e) {
-  return PPU.lcdc.display;
+  return e->PPU.lcdc.display;
 }
 
 bool emulator_get_bg_display(Emulator* e) {
-  return PPU.lcdc.bg_display;
+  return e->PPU.lcdc.bg_display;
 }
 
 bool emulator_get_window_display(Emulator* e) {
-  return PPU.lcdc.window_display;
+  return e->PPU.lcdc.window_display;
 }
 
 bool emulator_get_obj_display(Emulator* e) {
-  return PPU.lcdc.obj_display;
+  return e->PPU.lcdc.obj_display;
 }
 
 ObjSize emulator_get_obj_size(Emulator* e) {
-  return PPU.lcdc.obj_size;
+  return e->PPU.lcdc.obj_size;
 }
 
 Obj emulator_get_obj(Emulator* e, int index) {
