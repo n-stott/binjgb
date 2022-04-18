@@ -348,54 +348,47 @@ static const u16 s_tima_mask[] = {1 << 9, 1 << 3, 1 << 5, 1 << 7};
 static u8 s_wave_volume_shift[WAVE_VOLUME_COUNT] = {4, 0, 1, 2};
 static u8 s_obj_size_to_height[] = {[OBJ_SIZE_8X8] = 8, [OBJ_SIZE_8X16] = 16};
 
-static MemoryTypeAddressPair make_pair(MemoryMapType type, Address addr) {
-  MemoryTypeAddressPair result;
-  result.type = type;
-  result.addr = addr;
-  return result;
-}
-
 static MemoryTypeAddressPair map_address(Address addr) {
   switch (addr >> 12) {
     case 0x0: case 0x1: case 0x2: case 0x3:
-      return make_pair(MEMORY_MAP_ROM0, addr & ADDR_MASK_16K);
+      return {MEMORY_MAP_ROM0, addr & ADDR_MASK_16K};
     case 0x4: case 0x5: case 0x6: case 0x7:
-      return make_pair(MEMORY_MAP_ROM1, addr & ADDR_MASK_16K);
+      return {MEMORY_MAP_ROM1, addr & ADDR_MASK_16K};
     case 0x8: case 0x9:
-      return make_pair(MEMORY_MAP_VRAM, addr & ADDR_MASK_8K);
+      return {MEMORY_MAP_VRAM, addr & ADDR_MASK_8K};
     case 0xA: case 0xB:
-      return make_pair(MEMORY_MAP_EXT_RAM, addr & ADDR_MASK_8K);
+      return {MEMORY_MAP_EXT_RAM, addr & ADDR_MASK_8K};
     case 0xC: case 0xE: /* mirror of 0xc000..0xcfff */
-      return make_pair(MEMORY_MAP_WORK_RAM0, addr & ADDR_MASK_4K);
+      return {MEMORY_MAP_WORK_RAM0, addr & ADDR_MASK_4K};
     case 0xD:
-      return make_pair(MEMORY_MAP_WORK_RAM1, addr & ADDR_MASK_4K);
+      return {MEMORY_MAP_WORK_RAM1, addr & ADDR_MASK_4K};
     default: case 0xF:
       switch ((addr >> 8) & 0xf) {
         default: /* 0xf000 - 0xfdff: mirror of 0xd000-0xddff */
-          return make_pair(MEMORY_MAP_WORK_RAM1, addr & ADDR_MASK_4K);
+          return {MEMORY_MAP_WORK_RAM1, addr & ADDR_MASK_4K};
         case 0xe:
           if (addr <= OAM_END_ADDR) { /* 0xfe00 - 0xfe9f */
-            return make_pair(MEMORY_MAP_OAM, addr - OAM_START_ADDR);
+            return {MEMORY_MAP_OAM, addr - OAM_START_ADDR};
           } else { /* 0xfea0 - 0xfeff */
-            return make_pair(MEMORY_MAP_UNUSED, addr);
+            return {MEMORY_MAP_UNUSED, addr};
           }
           break;
         case 0xf:
           switch ((addr >> 4) & 0xf) {
             case 0: case 4: case 5: case 6: case 7:
               /* 0xff00 - 0xff0f, 0xff40 - 0xff7f */
-              return make_pair(MEMORY_MAP_IO, addr - IO_START_ADDR);
+              return {MEMORY_MAP_IO, addr - IO_START_ADDR};
             case 1: case 2: /* 0xff10 - 0xff2f */
-              return make_pair(MEMORY_MAP_APU, addr - APU_START_ADDR);
+              return {MEMORY_MAP_APU, addr - APU_START_ADDR};
             case 3: /* 0xff30 - 0xff3f */
-              return make_pair(MEMORY_MAP_WAVE_RAM, addr - WAVE_RAM_START_ADDR);
+              return {MEMORY_MAP_WAVE_RAM, addr - WAVE_RAM_START_ADDR};
             case 0xf:
               if (addr == IE_ADDR) {
-                return make_pair(MEMORY_MAP_IO, addr - IO_START_ADDR);
+                return {MEMORY_MAP_IO, addr - IO_START_ADDR};
               }
               /* fallthrough */
             default: /* 0xff80 - 0xfffe */
-              return make_pair(MEMORY_MAP_HIGH_RAM, addr - HIGH_RAM_START_ADDR);
+              return {MEMORY_MAP_HIGH_RAM, addr - HIGH_RAM_START_ADDR};
           }
       }
   }
@@ -404,17 +397,17 @@ static MemoryTypeAddressPair map_address(Address addr) {
 static MemoryTypeAddressPair map_hdma_source_address(Address addr) {
   switch (addr >> 12) {
     case 0x0: case 0x1: case 0x2: case 0x3:
-      return make_pair(MEMORY_MAP_ROM0, addr & ADDR_MASK_16K);
+      return {MEMORY_MAP_ROM0, addr & ADDR_MASK_16K};
     case 0x4: case 0x5: case 0x6: case 0x7:
-      return make_pair(MEMORY_MAP_ROM1, addr & ADDR_MASK_16K);
+      return {MEMORY_MAP_ROM1, addr & ADDR_MASK_16K};
     case 0x8: case 0x9:
-      return make_pair(MEMORY_MAP_VRAM, addr & ADDR_MASK_8K);
+      return {MEMORY_MAP_VRAM, addr & ADDR_MASK_8K};
     default: case 0xA: case 0xB: case 0xE: case 0xF:
-      return make_pair(MEMORY_MAP_EXT_RAM, addr & ADDR_MASK_8K);
+      return {MEMORY_MAP_EXT_RAM, addr & ADDR_MASK_8K};
     case 0xC:
-      return make_pair(MEMORY_MAP_WORK_RAM0, addr & ADDR_MASK_4K);
+      return {MEMORY_MAP_WORK_RAM0, addr & ADDR_MASK_4K};
     case 0xD:
-      return make_pair(MEMORY_MAP_WORK_RAM1, addr & ADDR_MASK_4K);
+      return {MEMORY_MAP_WORK_RAM1, addr & ADDR_MASK_4K};
   }
 }
 
@@ -426,8 +419,7 @@ void Emulator::set_cart_info(u8 index) {
   }
 }
 
-static Result get_cart_info(FileData* file_data, size_t offset,
-                            CartInfo* cart_info) {
+static Result get_cart_info(FileData* file_data, size_t offset, CartInfo* cart_info) {
   /* Simple checksum on logo data so we don't have to include it here. :) */
   u8* data = file_data->data + offset;
   size_t i;
